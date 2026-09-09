@@ -1,0 +1,3 @@
+import Link from 'next/link';
+export const metadata={title:'会员中心'};
+export default function Membership(){return <div className="membership"><div className="page-heading"><div><div className="eyebrow">MEMBERSHIP</div><h1>一起，把研究做深。</h1><p>一个持续更新、可以回看的趋势交易研究空间。</p></div></div><div className="member-status"><span className="stage">访客模式</span><h2 className="mt-5">会员空间正在准备中</h2><p>现在可以阅读公开文章、浏览观察池，以及查看会员内容预览。</p><ul><li>趋势观察：持续记录关注依据与阶段变化</li><li>市场复盘：回看计划、执行与判断偏差</li><li>趋势课程：沉淀系统化的交易知识</li></ul><div className="notice">登录、会员有效期与续费将在后续开放。当前不收集账号信息，也不收取费用。</div><div className="actions"><Link className="button" href="/login/">查看登录入口</Link><Link className="button secondary" href="/knowledge/">先读公开课程 ↗</Link></div></div></div>}
