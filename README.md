@@ -1,75 +1,72 @@
-# 趋势交易观察室
+# 趋势交易观察室 · 内容管理版
 
-暗色、内容优先的会员研究站 MVP。Next.js App Router + TypeScript + Tailwind CSS 4，支持静态导出。
+Next.js 15 + TypeScript + Tailwind CSS 前端，Cloudflare Worker API + D1 在线内容库。保留原有暗色内容首页，并增加管理员编辑与年月归档。
 
-## 启动
+## 编辑入口
 
-需要 Node.js 20.9+，推荐 Node.js 22/24，以及 pnpm。
+网站左侧「内容管理」或 `/admin/`。线上使用 ChatGPT 登录；只有 Sites 环境变量 `ADMIN_EMAILS` 指定的已验证邮箱可管理。该环境变量只在服务端使用，默认空值会拒绝所有管理员操作。Sites 的访问权限和本应用的管理员权限分别检查。
+
+文章支持：新增、修改、标签、栏目、发布日期、置顶、公开／会员预览、分段正文、排版预览、保存草稿、发布、下架为草稿。文章标识首次保存后固定，避免旧链接失效。会员内容仅首段对访客返回；管理员可读全文。普通读者的付费解锁仍未接入。
+
+草稿仅管理员可见。保存失败保留输入；版本冲突返回 409，防止多个编辑窗口互相覆盖。离开未保存内容会提示。没有自动保存，关闭页面前请点击保存。
+
+观察池支持新增和编辑：名称、市场、趋势阶段、关注依据、失效条件、日期以及关联的已发布文章。
+
+## 历史导航
+
+首页、市场复盘和知识库的内容流右侧提供「时间档案」。点击年份展开月份，点击有内容的月份跳转到该月列表；灰色月份没有文章。点击「最近」清除日期筛选。月份保存在 URL 的 `month=YYYY-MM` 参数中，刷新和浏览器前后退均可恢复。年月由已发布文章的 `publishedAt` 自动生成。可填写历史日期补录；发布日期不是定时发布功能。
+
+当前示例文章都在 2026 年 9 月，所以初始只有 2026 年。新增其他年份文章后自动出现相应年份，不伪造历史记录。
+
+## 本地运行
+
+需要 Node.js 22.13+（推荐 24，使用内置 SQLite）和 pnpm。
 
 ```sh
 pnpm install
+pnpm build
 pnpm dev
 ```
 
-打开终端显示的地址（默认 http://localhost:3000）。
+打开 http://127.0.0.1:3000 。本地服务器包含持久 SQLite 数据库 `.local/content.sqlite`，只监听本机，模拟登录只用于开发，不会打包上线。修改代码后重新构建并重启服务器。`pnpm dev:web` 仅运行 Next.js 前端，不能单独完成后台保存。
 
 ```sh
+pnpm test
 pnpm typecheck
-pnpm build
 ```
 
-构建生成 `out/`，可部署到静态托管。预览生产导出可运行 `python3 -m http.server 3000 --directory out`。因为使用静态导出，不使用 `next start`。也可用 npm 安装并执行对应脚本，但仓库以 pnpm-lock.yaml 为准。
+测试覆盖管理员拒绝、草稿隔离、发布／下架、会员正文过滤、重复标识、乐观锁冲突、跨站写入、观察关联校验和数据库不可用。
 
-## 已有页面
-
-- `/`：重点观察卡片、最新内容流、分类、搜索、标签过滤、置顶、会员预览标记。
-- `/watchlist/`：按市场、阶段筛选的趋势观察池，含失效条件。
-- `/reviews/`：市场复盘。
-- `/knowledge/`：趋势课程与交易计划模板。
-- `/articles/[slug]/`：独立文章详情页，会员文章仅输出首段预览。
-- `/membership/`、`/login/`：明确标注尚未开放的账号与会员入口。
-- 未找到的页面显示 404。
-
-## 目录
+## 目录结构
 
 ```text
-app/                 路由、页面、全局样式
-  articles/[slug]/    文章详情与文章元数据
-components/          导航、搜索内容流、观察池筛选
-content/
-  articles.json      文章数据（7 篇教学示例）
-  watchlist.json     观察数据（3 项教学示例）
-lib/
-  types.ts           文章与观察数据模型
-  repository.ts      异步数据访问层
-.openai/hosting.json Sites 静态托管配置
-next.config.ts       静态导出与目录式路由
+app/admin/             内容管理页
+app/article/           通用文章详情，支持新增文章无需重建
+components/Archive.tsx 年份／月份历史导航
+components/Feed.tsx    内容筛选、搜索和归档链接状态
+lib/live.ts            在线数据读取与错误处理
+server/worker.mjs      Worker API、验证、授权和 D1 访问
+content/               首次数据库初始化用的示例种子
+scripts/build-worker.mjs Worker 和静态前端打包
+scripts/local-server.mjs 本地 SQLite 预览
+scripts/sqlite-adapter.mjs 测试及本地 D1 兼容适配器
+db/schema.ts           初始 SQL 模型
+drizzle/               有版本的 D1 SQL 迁移与迁移日志
+tests/                 后端权限及保存流程测试
 ```
 
-## 下周如何开始更新
+`pnpm build` 输出 `dist/server/index.js`（ESM Worker 默认 fetch 对象）、`dist/client/`、`dist/.openai/hosting.json` 和数据库迁移。此版本不能只部署 `out/`，否则没有在线数据库和保存接口。
 
-1. 在 `content/articles.json` 复制一篇记录，填写唯一 `slug`、标题、摘要、分类、标签和日期。
-2. `category` 可选：趋势观察 / 市场复盘 / 趋势课程 / 交易计划。
-3. `access` 设为 `public`（全文公开）或 `member`（仅首段预览）；`pinned` 控制置顶。正文是 `sections` 数组，每段包含 `heading` 和 `text`。
-4. 更新 `content/watchlist.json` 中的观察依据、阶段、失效条件和日期。`articleSlug` 必须指向已有文章。
-5. 运行构建并发布 `out/`。这是文件式内容管理，修改内容后需重新构建发布；尚无网页编辑后台。
+## 在线部署与内容持久性
 
-示例：
+`.openai/hosting.json` 声明 `d1: "DB"`。Sites 负责数据库绑定与迁移，管理员邮箱在 Sites 环境变量中配置。首次请求使用独立、幂等的种子导入，之后重新发布代码不会覆盖在线文章。以后日常内容更新在后台保存即可，无需重新构建。
 
-```json
-{"slug":"weekly-2026-09-13","title":"本周市场复盘","excerpt":"记录本周判断及变化。","category":"市场复盘","tags":["周复盘"],"publishedAt":"2026-09-13","pinned":false,"access":"public","readMinutes":3,"sections":[{"heading":"本周观察","text":"填写实际记录。"}]}
-```
+迁移工具的安装在当前环境被权限策略阻止，因此初始 SQL 通过项目内零依赖脚本生成，使用 Drizzle 兼容的迁移日志格式；不是 drizzle-kit 的输出。首次迁移已经存在，不应再次运行生成器或修改已上线迁移。后续数据库结构变更应追加新迁移并保留原文件。
 
-当前全部内容为教学样例，不代表真实持仓、行情或投资建议。发布正式研究前请替换样例。
+登录身份由 Sites 网关注入，不接受前端自报邮箱。自行托管时必须提供同等可信的认证网关，不能将 Worker 直接放到允许伪造身份头的入口。D1 数据不在浏览器存储中，后台账户功能不会随浏览器清理而丢失。
 
-## 后续 Supabase / API 接入
+## 限制
 
-页面通过 `lib/repository.ts` 读取数据；将这三个异步读取方法替换为服务端 Supabase 或 HTTP API 即可沿用页面模型。建议表结构：`articles`（当前文章字段 + id/status/updated_at）、`watch_items`（观察字段 + id）、`profiles`、`memberships`（user_id/status/expires_at）。正文可以继续保留结构化 JSON。
+正文目前是分段纯文本，可换行，不是富文本图片上传编辑器。普通读者付费会员尚未实现。所有初始内容仍为教学样例，请用自己的实际记录替换。源代码里种子仅供首次初始化；不要通过修改种子更新已上线数据库。
 
-真实会员上线时，移除静态导出，加入服务端会话、身份验证、会员有效期检查和数据库 RLS，正文与公开摘要分别查询。客户端不能通过 UI 开关自行提升权限。当前会员正文不会输出至生成页面，但本地 JSON、源码仓库和构建环境均不构成付费内容的安全存储。不要在本版源文件中放真正保密内容。
-
-真实支付、账号系统、收藏、阅读历史、在线 CMS 和自动行情均不在本版范围。没有伪造登录或支付成功，也没有收集用户个人信息。
-
-## 发布
-
-`out/` 可部署到 Sites、Cloudflare Pages 或其他支持目录式静态路由的托管平台。Sites 的访问权限与本网站的会员权限是两套机制，私有预览仅用于站点验收。正式公开发布之前应完成账号权限与正式内容替换。
+已添加可选的 WebMCP「保存当前草稿」工具。当前环境没有可用的 WebMCP 验证上下文，因此未验证浏览器端工具注册；普通按钮保存不依赖 WebMCP。

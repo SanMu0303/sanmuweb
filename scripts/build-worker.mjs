@@ -1,0 +1,10 @@
+import {mkdir,readFile,writeFile,cp,rm} from 'node:fs/promises';
+await rm('dist',{recursive:true,force:true});
+await mkdir('dist/server',{recursive:true});await mkdir('dist/.openai',{recursive:true});
+await cp('out','dist/client',{recursive:true});
+await cp('server/worker.mjs','dist/server/index.js');
+await writeFile('dist/server/package.json',JSON.stringify({type:'module'}));
+await writeFile('dist/server/seed.mjs',`export const seedArticles = ${await readFile('content/articles.json','utf8')};\nexport const seedWatchlist = ${await readFile('content/watchlist.json','utf8')};\n`);
+await cp('.openai/hosting.json','dist/.openai/hosting.json');
+await cp('drizzle','dist/.openai/drizzle',{recursive:true});
+console.log('Worker, frontend assets and versioned migrations prepared.');

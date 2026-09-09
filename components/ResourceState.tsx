@@ -1,0 +1,1 @@
+export default function ResourceState({error,retry}:{error:string;retry:()=>void}){return <div className="empty" role={error?'alert':'status'}><p>{error||'正在读取研究档案…'}</p>{error&&<button className="button secondary" onClick={retry}>重新读取</button>}</div>}

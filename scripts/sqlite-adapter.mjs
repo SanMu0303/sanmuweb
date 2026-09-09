@@ -1,0 +1,4 @@
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync} from 'node:fs';
+export function database(path=':memory:'){const sqlite=new DatabaseSync(path);sqlite.exec(readFileSync(new URL('../drizzle/0000_content.sql',import.meta.url),'utf8').replaceAll('--> statement-breakpoint',''));return adapter(sqlite);}
+export function adapter(sqlite){return {sqlite,prepare(sql){let args=[];const statement={bind(...values){args=values;return statement},async first(){return sqlite.prepare(sql).get(...args)||null},async all(){return {results:sqlite.prepare(sql).all(...args)}},async run(){const r=sqlite.prepare(sql).run(...args);return {meta:{changes:Number(r.changes)}}}};return statement},async batch(statements){sqlite.exec('BEGIN');try{const results=[];for(const s of statements)results.push(await s.run());sqlite.exec('COMMIT');return results}catch(e){sqlite.exec('ROLLBACK');throw e}}};}
