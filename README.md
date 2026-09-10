@@ -87,3 +87,16 @@ tests/                 后端权限及保存流程测试
 本周重点根据当周更新、每个标的最后一条记录生成；已经失效的机会不会被早先的运行阶段重新加入重点。侧栏另提供入门路径和研究主题。
 
 当前不含真实行情、付费会员解锁、图片文件上传、收藏、阅读历史、评论或点赞。图片通过管理员填写现有 HTTPS 链接或本站图表路径添加。内容并非浏览器本地存储，已保留 D1 持久性。
+
+
+## 视频知识库（示例阶段）
+
+知识库默认显示视频，支持全部 / 视频 / 文章 / 案例。`/video/?id=video-01` 展示播放器、混合课程目录、前后集及关联笔记。首页和标的时间线通过 `/api/feed` 聚合研究记录与视频，原 `/api/posts` 行为保持不变。
+
+- `content/videos.json`：Video 数据，contentType 固定为 video。原 Post 的中文 contentType 仍表示研究用途，format 区分短帖和长文，避免破坏旧数据。
+- `content/courses.json`：Course → Chapter → Lesson，Lesson 通过 contentType 与 contentId 引用视频或文章。
+- `lib/videos.ts`：类型、秒数时长与详情链接。symbol + market 使用与 Post 相同的关联键，relatedPosts / relatedVideos 引用稳定 ID。
+- `components/VideoPlayer.tsx`：YouTube、Bilibili 的限定域名嵌入，以及 selfHosted / cdn 的 HTML5 video；列表不创建播放器。
+- `/api/library` 在服务端移除访客的会员完整 videoUrl，只返回 previewUrl（需独立裁剪的试看文件）。管理员可读取完整地址。
+
+目前 6 节视频为结构示例，视频地址留空并展示待上传 / 试看占位；封面为现有结构示意图，并非真实视频截图。视频与课程暂从 mock JSON 读取，尚无视频后台编辑、上传、实际付费会员和签名媒体地址。旧内容编辑入口继续管理短帖 / 长文。下一步应把视频管理接入内容后台，并为私有媒体增加服务端授权和短期签名地址；不能只用公开文件 URL 保护付费视频。不改变当前 D1 表和已应用迁移。

@@ -10,3 +10,6 @@ await writeFile('dist/server/seed.mjs',`export const seedArticles = ${JSON.strin
 await cp('.openai/hosting.json','dist/.openai/hosting.json');
 await cp('drizzle','dist/.openai/drizzle',{recursive:true});
 console.log('Worker, frontend assets and versioned migrations prepared.');
+
+await cp('server/video-model.mjs','dist/server/video-model.mjs');
+await writeFile('dist/server/library.mjs',`export const videos = ${await readFile('content/videos.json','utf8')};\nexport const courses = ${await readFile('content/courses.json','utf8')};`);

@@ -1,4 +1,5 @@
-export const CONTENT_TYPES=['观察更新','交易计划','交易反馈','市场复盘','教学内容'] as const;
+import type {Video} from './videos';
+export const CONTENT_TYPES=['观察更新','交易计划','交易反馈','市场复盘','教学内容','video'] as const;
 export const MARKETS=['美股','加密','A股','黄金','外汇','跨市场'] as const;
 export const TREND_STAGES=['准备','启动','运行','高潮','失效'] as const;
 export type ContentType=typeof CONTENT_TYPES[number];
@@ -6,7 +7,7 @@ export type TrendStage=typeof TREND_STAGES[number];
 export interface PostImage {url:string;alt:string;caption?:string;isPreview:boolean}
 export interface PostBlock {heading:string;text:string}
 export interface Post {
-  id:string;slug:string;title:string;summary:string;content:PostBlock[];
+  video?:Video;id:string;slug:string;title:string;summary:string;content:PostBlock[];
   contentType:ContentType;format:'short'|'long';symbol:string;market:string;sector:string;
   trendStage:TrendStage|null;status:'draft'|'published';statusText:string;timeframe:string;
   tags:string[];images:PostImage[];isPinned:boolean;isMemberOnly:boolean;isPublic:boolean;

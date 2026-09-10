@@ -1,0 +1,56 @@
+[
+  {
+    "id": "trend-course",
+    "title": "趋势交易课",
+    "description": "从观察语言到执行框架，持续积累方法与案例。",
+    "chapters": [
+      {
+        "id": "chapter-basics",
+        "title": "第一章 · 趋势基础",
+        "lessons": [
+          {
+            "id": "lesson-1",
+            "contentType": "video",
+            "contentId": "video-01"
+          },
+          {
+            "id": "lesson-2",
+            "contentType": "video",
+            "contentId": "video-02"
+          },
+          {
+            "id": "lesson-3",
+            "contentType": "video",
+            "contentId": "video-03"
+          },
+          {
+            "id": "lesson-4",
+            "contentType": "video",
+            "contentId": "video-04"
+          },
+          {
+            "id": "lesson-5",
+            "contentType": "video",
+            "contentId": "video-05"
+          },
+          {
+            "id": "lesson-notes",
+            "contentType": "article",
+            "contentId": "three-entries"
+          }
+        ]
+      },
+      {
+        "id": "chapter-cases",
+        "title": "第二章 · 研究案例",
+        "lessons": [
+          {
+            "id": "lesson-6",
+            "contentType": "video",
+            "contentId": "video-06"
+          }
+        ]
+      }
+    ]
+  }
+]
