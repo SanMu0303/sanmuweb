@@ -1,18 +1,10 @@
 [
   {
+    "id": "welcome",
     "slug": "welcome",
     "title": "写在开始：建立一份可以回看的趋势档案",
-    "category": "趋势课程",
-    "access": "public",
-    "pinned": false,
-    "tags": [
-      "交易体系",
-      "从这里开始"
-    ],
-    "excerpt": "行情会过去，判断应该留下。这个空间记录观察、计划与复盘，也记录那些没有发生的交易。",
-    "publishedAt": "2026-09-09",
-    "readMinutes": 4,
-    "sections": [
+    "summary": "行情会过去，判断应该留下。这个空间记录观察、计划与复盘，也记录那些没有发生的交易。",
+    "content": [
       {
         "heading": "记录过程，而不只是结果",
         "text": "每一条观察都应该说明：为什么关注、什么条件下行动、什么变化会让判断失效。结果可以被运气影响，过程才能被重复检验。"
@@ -26,40 +18,41 @@
         "text": "写下一个值得跟踪的结构、一项确认条件和一个失效条件。没有出现确认时，等待本身也是计划的一部分。"
       }
     ],
-    "id": "welcome",
-    "format": "long",
     "contentType": "教学内容",
+    "format": "long",
     "symbol": "",
     "market": "跨市场",
     "sector": "",
     "trendStage": null,
+    "status": "published",
     "statusText": "",
     "timeframe": "",
-    "updatedAt": "2026-09-09T10:00:00+08:00",
+    "tags": [
+      "交易体系",
+      "从这里开始"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": false,
+    "isPublic": true,
+    "publishedAt": "2026-09-09T10:00:00+08:00",
+    "updatedAt": "2026-09-09T10:00:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 4,
     "tradeId": null,
     "watchlistId": null,
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
+    "id": "semiconductor",
     "slug": "semiconductor",
     "title": "半导体观察：突破之后，先看承接",
-    "category": "趋势观察",
-    "access": "member",
-    "pinned": false,
-    "tags": [
-      "半导体",
-      "启动阶段"
-    ],
-    "excerpt": "一次突破只是观察的起点。比起追逐短期涨幅，更值得记录的是回踩时的量能与结构。",
-    "publishedAt": "2026-09-08",
-    "readMinutes": 3,
-    "sections": [
+    "summary": "一次突破只是观察的起点。比起追逐短期涨幅，更值得记录的是回踩时的量能与结构。",
+    "content": [
       {
         "heading": "观察背景",
         "text": "教学情境：假设板块突破前期整理区，但个股表现开始分化。当前只建立观察，不预设突破一定有效。"
@@ -69,40 +62,41 @@
         "text": "会员正文占位：后续填入实际观察依据、确认条件与失效条件。"
       }
     ],
-    "id": "semiconductor",
-    "format": "long",
     "contentType": "观察更新",
+    "format": "long",
     "symbol": "CHIPS",
     "market": "A股",
     "sector": "半导体",
     "trendStage": "启动",
+    "status": "published",
     "statusText": "突破后观察承接",
     "timeframe": "1D",
-    "updatedAt": "2026-09-08T10:00:00+08:00",
+    "tags": [
+      "半导体",
+      "启动阶段"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": true,
+    "isPublic": false,
+    "publishedAt": "2026-09-08T10:00:00+08:00",
+    "updatedAt": "2026-09-08T10:00:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 3,
     "tradeId": null,
     "watchlistId": null,
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
+    "id": "weekly-review",
     "slug": "weekly-review",
     "title": "周复盘：把「看对」和「做对」分开",
-    "category": "市场复盘",
-    "access": "public",
-    "pinned": false,
-    "tags": [
-      "周复盘",
-      "执行"
-    ],
-    "excerpt": "回看这一周，真正值得复盘的不是错过多少涨幅，而是是否遵守了事先写下的条件。",
-    "publishedAt": "2026-09-07",
-    "readMinutes": 4,
-    "sections": [
+    "summary": "回看这一周，真正值得复盘的不是错过多少涨幅，而是是否遵守了事先写下的条件。",
+    "content": [
       {
         "heading": "本周观察",
         "text": "示例复盘：三个观察情境中，一个出现确认，两个仍在整理。这里的数量为教学示例，不是实际交易统计。"
@@ -116,40 +110,41 @@
         "text": "保留结构未破坏的观察，移除逻辑已经失效的记录。对未完成的判断标注待验证条件，不为了总结而强行给出结论。"
       }
     ],
-    "id": "weekly-review",
-    "format": "long",
     "contentType": "市场复盘",
+    "format": "long",
     "symbol": "",
     "market": "跨市场",
     "sector": "",
     "trendStage": null,
+    "status": "published",
     "statusText": "",
     "timeframe": "",
-    "updatedAt": "2026-09-07T10:00:00+08:00",
+    "tags": [
+      "周复盘",
+      "执行"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": false,
+    "isPublic": true,
+    "publishedAt": "2026-09-07T10:00:00+08:00",
+    "updatedAt": "2026-09-07T10:00:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 4,
     "tradeId": null,
     "watchlistId": null,
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
+    "id": "three-entries",
     "slug": "three-entries",
     "title": "趋势中的三个买点：先识别位置，再讨论动作",
-    "category": "趋势课程",
-    "access": "public",
-    "pinned": false,
-    "tags": [
-      "三个买点",
-      "基础课程"
-    ],
-    "excerpt": "突破、回踩与延续，面对的是不同的不确定性。先理解结构，再建立自己的确认条件。",
-    "publishedAt": "2026-09-06",
-    "readMinutes": 4,
-    "sections": [
+    "summary": "突破、回踩与延续，面对的是不同的不确定性。先理解结构，再建立自己的确认条件。",
+    "content": [
       {
         "heading": "突破的位置",
         "text": "突破表示价格离开整理区，但仍可能重新回到区间。记录突破发生的位置和参与程度，而不是只看一根K线。"
@@ -163,40 +158,41 @@
         "text": "趋势运行中再次整理后的延续，需要重新定义失效条件。不能因为此前有盈利，就忽略这次动作的风险。"
       }
     ],
-    "id": "three-entries",
-    "format": "long",
     "contentType": "教学内容",
+    "format": "long",
     "symbol": "",
     "market": "跨市场",
     "sector": "",
     "trendStage": null,
+    "status": "published",
     "statusText": "",
     "timeframe": "",
-    "updatedAt": "2026-09-06T10:00:00+08:00",
+    "tags": [
+      "三个买点",
+      "基础课程"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": false,
+    "isPublic": true,
+    "publishedAt": "2026-09-06T10:00:00+08:00",
+    "updatedAt": "2026-09-06T10:00:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 4,
     "tradeId": null,
     "watchlistId": null,
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
+    "id": "gold",
     "slug": "gold",
     "title": "黄金趋势跟踪：在运行阶段保持耐心",
-    "category": "趋势观察",
-    "access": "member",
-    "pinned": false,
-    "tags": [
-      "黄金",
-      "运行阶段"
-    ],
-    "excerpt": "当趋势已经运行一段时间，研究重点从「会不会涨」转向「什么变化会打破结构」。",
-    "publishedAt": "2026-09-05",
-    "readMinutes": 3,
-    "sections": [
+    "summary": "当趋势已经运行一段时间，研究重点从「会不会涨」转向「什么变化会打破结构」。",
+    "content": [
       {
         "heading": "观察背景",
         "text": "假设价格保持逐步抬高的低点，但波动开始放大。本例用于说明如何记录运行阶段，不代表实时黄金观点。"
@@ -206,40 +202,41 @@
         "text": "会员正文占位：补充完整的结构变化、应对方案和后续复盘。"
       }
     ],
-    "id": "gold",
-    "format": "long",
     "contentType": "观察更新",
+    "format": "long",
     "symbol": "GOLD",
     "market": "黄金",
     "sector": "贵金属",
     "trendStage": "运行",
+    "status": "published",
     "statusText": "低点抬升结构保持，等待下一次整理",
     "timeframe": "4H",
-    "updatedAt": "2026-09-05T10:00:00+08:00",
+    "tags": [
+      "黄金",
+      "运行阶段"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": true,
+    "isPublic": false,
+    "publishedAt": "2026-09-05T10:00:00+08:00",
+    "updatedAt": "2026-09-05T10:00:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 3,
     "tradeId": null,
     "watchlistId": null,
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
+    "id": "risk-plan",
     "slug": "risk-plan",
     "title": "交易计划模板：先写下判断失效的条件",
-    "category": "交易计划",
-    "access": "public",
-    "pinned": false,
-    "tags": [
-      "风险管理",
-      "计划模板"
-    ],
-    "excerpt": "行动之前，先把观察依据、确认条件、失效条件和后续复盘时间写清楚。",
-    "publishedAt": "2026-09-04",
-    "readMinutes": 4,
-    "sections": [
+    "summary": "行动之前，先把观察依据、确认条件、失效条件和后续复盘时间写清楚。",
+    "content": [
       {
         "heading": "观察依据",
         "text": "标的与日期：____。当前结构：____。支持判断的事实：____。与判断矛盾的事实：____。"
@@ -253,40 +250,41 @@
         "text": "复盘日期：____。实际变化：____。执行偏差：____。下一次应改进的环节：____。"
       }
     ],
-    "id": "risk-plan",
-    "format": "long",
     "contentType": "交易计划",
+    "format": "long",
     "symbol": "",
     "market": "跨市场",
     "sector": "",
     "trendStage": null,
+    "status": "published",
     "statusText": "",
     "timeframe": "",
-    "updatedAt": "2026-09-04T10:00:00+08:00",
+    "tags": [
+      "风险管理",
+      "计划模板"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": false,
+    "isPublic": true,
+    "publishedAt": "2026-09-04T10:00:00+08:00",
+    "updatedAt": "2026-09-04T10:00:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 4,
     "tradeId": null,
     "watchlistId": null,
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
+    "id": "software",
     "slug": "software",
     "title": "软件板块：等待整理区给出方向",
-    "category": "趋势观察",
-    "access": "public",
-    "pinned": false,
-    "tags": [
-      "软件",
-      "准备阶段"
-    ],
-    "excerpt": "准备阶段的任务是保留观察，明确需要看到什么，不把预期提前当成事实。",
-    "publishedAt": "2026-09-03",
-    "readMinutes": 3,
-    "sections": [
+    "summary": "准备阶段的任务是保留观察，明确需要看到什么，不把预期提前当成事实。",
+    "content": [
       {
         "heading": "当前情境",
         "text": "示例：价格仍在区间内波动，低点有所抬高，但上方压力尚未被确认突破。"
@@ -296,197 +294,200 @@
         "text": "持续记录整理区的变化。若价格失守区间下沿或原有依据消失，结束该观察；若结构发生变化，重新评估。"
       }
     ],
-    "id": "software",
-    "format": "short",
     "contentType": "观察更新",
+    "format": "short",
     "symbol": "SOFTWARE",
     "market": "美股",
     "sector": "软件",
     "trendStage": "准备",
+    "status": "published",
     "statusText": "",
     "timeframe": "1D",
-    "updatedAt": "2026-09-03T10:00:00+08:00",
+    "tags": [
+      "软件",
+      "准备阶段"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": false,
+    "isPublic": true,
+    "publishedAt": "2026-09-03T10:00:00+08:00",
+    "updatedAt": "2026-09-03T10:00:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 3,
     "tradeId": null,
     "watchlistId": null,
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
     "id": "research-week-0910",
     "slug": "research-week-0910",
     "title": "本周研究安排：等待确认，再讨论动作",
-    "excerpt": "本周继续跟踪 BTC 的区间承接与 NVDA 的整理结构。DOGE 这轮观察已结束，保留从发现到失效的完整记录。\n所有下方记录均为教学示例，用于展示研究方法与归档方式。",
-    "category": "趋势观察",
-    "tags": [
-      "本周重点"
-    ],
-    "publishedAt": "2026-09-10",
-    "updatedAt": "2026-09-10T09:00:00+08:00",
-    "pinned": true,
-    "access": "public",
-    "readMinutes": 2,
-    "sections": [
+    "summary": "本周继续跟踪 BTC 的区间承接与 NVDA 的整理结构。DOGE 这轮观察已结束，保留从发现到失效的完整记录。\n所有下方记录均为教学示例，用于展示研究方法与归档方式。",
+    "content": [
       {
         "heading": "",
         "text": "本周继续跟踪 BTC 的区间承接与 NVDA 的整理结构。DOGE 这轮观察已结束，保留从发现到失效的完整记录。\n所有下方记录均为教学示例，用于展示研究方法与归档方式。"
       }
     ],
-    "format": "short",
     "contentType": "观察更新",
+    "format": "short",
     "symbol": "",
     "market": "跨市场",
     "sector": "",
     "trendStage": null,
+    "status": "published",
     "statusText": "",
     "timeframe": "",
+    "tags": [
+      "本周重点"
+    ],
     "images": [],
+    "isPinned": true,
+    "isMemberOnly": false,
+    "isPublic": true,
+    "publishedAt": "2026-09-10T10:00:00+08:00",
+    "updatedAt": "2026-09-10T09:00:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 2,
     "tradeId": null,
     "watchlistId": null,
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
     "id": "doge-0901",
     "slug": "doge-0901",
     "title": "进入观察：先把确认与失效条件写下来",
-    "excerpt": "价格仍处于底部区间，低点开始收敛，但尚未形成有效突破。先放进观察池，不急于把“可能启动”当成“已经启动”。\n接下来只看两件事：能否离开区间，以及离开后是否有承接。",
-    "category": "趋势观察",
-    "tags": [
-      "底部区间",
-      "趋势准备"
-    ],
-    "publishedAt": "2026-09-01",
-    "updatedAt": "2026-09-01T10:12:00+08:00",
-    "pinned": false,
-    "access": "public",
-    "readMinutes": 2,
-    "sections": [
+    "summary": "价格仍处于底部区间，低点开始收敛，但尚未形成有效突破。先放进观察池，不急于把“可能启动”当成“已经启动”。\n接下来只看两件事：能否离开区间，以及离开后是否有承接。",
+    "content": [
       {
         "heading": "",
         "text": "价格仍处于底部区间，低点开始收敛，但尚未形成有效突破。先放进观察池，不急于把“可能启动”当成“已经启动”。\n接下来只看两件事：能否离开区间，以及离开后是否有承接。"
       }
     ],
-    "format": "short",
     "contentType": "观察更新",
+    "format": "short",
     "symbol": "DOGE",
     "market": "加密",
     "sector": "Meme",
     "trendStage": "准备",
+    "status": "published",
     "statusText": "进入观察，等待区间方向",
     "timeframe": "1H",
+    "tags": [
+      "底部区间",
+      "趋势准备"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": false,
+    "isPublic": true,
+    "publishedAt": "2026-09-01T10:00:00+08:00",
+    "updatedAt": "2026-09-01T10:12:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 2,
     "tradeId": "doge-cycle-202609",
     "watchlistId": "DOGE",
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
     "id": "doge-0903",
     "slug": "doge-0903",
     "title": "底部区间突破，暂不追价",
-    "excerpt": "示例结构离开底部区间，第一次回踩尚未完成。突破发生了，但有效性仍要交给回踩验证。\n保留观察，等待结构给出更多证据。",
-    "category": "趋势观察",
-    "tags": [
-      "区间突破",
-      "趋势启动"
-    ],
-    "publishedAt": "2026-09-03",
-    "updatedAt": "2026-09-03T14:20:00+08:00",
-    "pinned": false,
-    "access": "public",
-    "readMinutes": 2,
-    "sections": [
+    "summary": "示例结构离开底部区间，第一次回踩尚未完成。突破发生了，但有效性仍要交给回踩验证。\n保留观察，等待结构给出更多证据。",
+    "content": [
       {
         "heading": "",
         "text": "示例结构离开底部区间，第一次回踩尚未完成。突破发生了，但有效性仍要交给回踩验证。\n保留观察，等待结构给出更多证据。"
       }
     ],
-    "format": "short",
     "contentType": "观察更新",
+    "format": "short",
     "symbol": "DOGE",
     "market": "加密",
     "sector": "Meme",
     "trendStage": "启动",
+    "status": "published",
     "statusText": "区间突破，关注后续承接",
     "timeframe": "1H",
+    "tags": [
+      "区间突破",
+      "趋势启动"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": false,
+    "isPublic": true,
+    "publishedAt": "2026-09-03T10:00:00+08:00",
+    "updatedAt": "2026-09-03T14:20:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 2,
     "tradeId": "doge-cycle-202609",
     "watchlistId": "DOGE",
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
     "id": "doge-0905",
     "slug": "doge-0905",
     "title": "趋势启动确认：把计划写成条件",
-    "excerpt": "回踩没有重新跌回原区间，结构开始形成抬高的低点。这一条记录从“观察”转为“计划”。\n只有再次确认承接时才考虑行动；若价格回到原区间，暂停这份计划。",
-    "category": "交易计划",
-    "tags": [
-      "趋势启动",
-      "交易计划"
-    ],
-    "publishedAt": "2026-09-05",
-    "updatedAt": "2026-09-05T11:35:00+08:00",
-    "pinned": false,
-    "access": "public",
-    "readMinutes": 2,
-    "sections": [
+    "summary": "回踩没有重新跌回原区间，结构开始形成抬高的低点。这一条记录从“观察”转为“计划”。\n只有再次确认承接时才考虑行动；若价格回到原区间，暂停这份计划。",
+    "content": [
       {
         "heading": "",
         "text": "回踩没有重新跌回原区间，结构开始形成抬高的低点。这一条记录从“观察”转为“计划”。\n只有再次确认承接时才考虑行动；若价格回到原区间，暂停这份计划。"
       }
     ],
-    "format": "short",
     "contentType": "交易计划",
+    "format": "short",
     "symbol": "DOGE",
     "market": "加密",
     "sector": "Meme",
     "trendStage": "启动",
+    "status": "published",
     "statusText": "启动条件出现，等待执行窗口",
     "timeframe": "1H",
+    "tags": [
+      "趋势启动",
+      "交易计划"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": false,
+    "isPublic": true,
+    "publishedAt": "2026-09-05T10:00:00+08:00",
+    "updatedAt": "2026-09-05T11:35:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 2,
     "tradeId": "doge-cycle-202609",
     "watchlistId": "DOGE",
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
     "id": "doge-0908",
     "slug": "doge-0908",
     "title": "第一次分歧：先检查原有假设",
-    "excerpt": "上涨后首次出现较明显分歧。当前先观察整理期间的低点和承接，不能仅凭一根反弹就认定分歧结束。",
-    "category": "趋势观察",
-    "tags": [
-      "第一次分歧",
-      "运行阶段"
-    ],
-    "publishedAt": "2026-09-08",
-    "updatedAt": "2026-09-08T16:05:00+08:00",
-    "pinned": false,
-    "access": "member",
-    "readMinutes": 2,
-    "sections": [
+    "summary": "上涨后首次出现较明显分歧。当前先观察整理期间的低点和承接，不能仅凭一根反弹就认定分歧结束。",
+    "content": [
       {
         "heading": "",
         "text": "上涨后首次出现较明显分歧。当前先观察整理期间的低点和承接，不能仅凭一根反弹就认定分歧结束。"
@@ -496,54 +497,60 @@
         "text": "示例：把结构确认、执行偏差与后续处理分别记录，避免把最初预期代替实时判断。"
       }
     ],
-    "format": "short",
     "contentType": "观察更新",
+    "format": "short",
     "symbol": "DOGE",
     "market": "加密",
     "sector": "Meme",
     "trendStage": "运行",
+    "status": "published",
     "statusText": "第一次分歧形成，继续跟踪",
     "timeframe": "1H",
+    "tags": [
+      "第一次分歧",
+      "运行阶段"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": true,
+    "isPublic": false,
+    "publishedAt": "2026-09-08T10:00:00+08:00",
+    "updatedAt": "2026-09-08T16:05:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 2,
     "tradeId": "doge-cycle-202609",
     "watchlistId": "DOGE",
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
     "id": "doge-0910",
     "slug": "doge-0910",
     "title": "分歧未能修复，这轮观察到此结束",
-    "excerpt": "第一次分歧没有按原计划修复，关键结构已经被破坏。停止沿用此前的启动判断，也不因为曾经关注过，就急着寻找重新参与的理由。\n后续若出现新的结构，再新建一轮观察。这条失效记录与前面的四次更新一起保留，用来回看当时的判断。",
-    "category": "趋势观察",
-    "tags": [
-      "第一次分歧",
-      "结构失效",
-      "交易反馈"
-    ],
-    "publishedAt": "2026-09-10",
-    "updatedAt": "2026-09-10T18:37:00+08:00",
-    "pinned": false,
-    "access": "public",
-    "readMinutes": 2,
-    "sections": [
+    "summary": "第一次分歧没有按原计划修复，关键结构已经被破坏。停止沿用此前的启动判断，也不因为曾经关注过，就急着寻找重新参与的理由。\n后续若出现新的结构，再新建一轮观察。这条失效记录与前面的四次更新一起保留，用来回看当时的判断。",
+    "content": [
       {
         "heading": "",
         "text": "第一次分歧没有按原计划修复，关键结构已经被破坏。停止沿用此前的启动判断，也不因为曾经关注过，就急着寻找重新参与的理由。\n后续若出现新的结构，再新建一轮观察。这条失效记录与前面的四次更新一起保留，用来回看当时的判断。"
       }
     ],
-    "format": "short",
     "contentType": "交易反馈",
+    "format": "short",
     "symbol": "DOGE",
     "market": "加密",
     "sector": "Meme",
     "trendStage": "失效",
+    "status": "published",
     "statusText": "第一次分歧失败，结束本轮跟踪",
     "timeframe": "1H",
+    "tags": [
+      "第一次分歧",
+      "结构失效",
+      "交易反馈"
+    ],
     "images": [
       {
         "url": "/charts/doge-structure.svg",
@@ -552,31 +559,27 @@
         "isPreview": true
       }
     ],
+    "isPinned": false,
+    "isMemberOnly": false,
+    "isPublic": true,
+    "publishedAt": "2026-09-10T10:00:00+08:00",
+    "updatedAt": "2026-09-10T18:37:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 2,
     "tradeId": "doge-cycle-202609",
     "watchlistId": "DOGE",
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
     "id": "btc-plan-0910",
     "slug": "btc-plan-0910",
     "title": "BTC：区间上沿，先等待一次回踩",
-    "excerpt": "当前接近区间上沿，计划的核心是确认承接，而不是预测突破后的高度。尚未触发执行条件，继续等待。",
-    "category": "交易计划",
-    "tags": [
-      "区间整理",
-      "风险管理"
-    ],
-    "publishedAt": "2026-09-10",
-    "updatedAt": "2026-09-10T15:10:00+08:00",
-    "pinned": false,
-    "access": "member",
-    "readMinutes": 7,
-    "sections": [
+    "summary": "当前接近区间上沿，计划的核心是确认承接，而不是预测突破后的高度。尚未触发执行条件，继续等待。",
+    "content": [
       {
         "heading": "",
         "text": "当前接近区间上沿，计划的核心是确认承接，而不是预测突破后的高度。尚未触发执行条件，继续等待。"
@@ -590,14 +593,19 @@
         "text": "若回到整理区内部，暂停原计划。复盘时分别记录信号质量和执行质量。"
       }
     ],
-    "format": "long",
     "contentType": "交易计划",
+    "format": "long",
     "symbol": "BTC",
     "market": "加密",
     "sector": "加密资产",
     "trendStage": "准备",
+    "status": "published",
     "statusText": "计划已记录，执行条件尚未触发",
     "timeframe": "4H",
+    "tags": [
+      "区间整理",
+      "风险管理"
+    ],
     "images": [
       {
         "url": "/charts/btc-range.svg",
@@ -606,70 +614,67 @@
         "isPreview": true
       }
     ],
+    "isPinned": false,
+    "isMemberOnly": true,
+    "isPublic": false,
+    "publishedAt": "2026-09-10T10:00:00+08:00",
+    "updatedAt": "2026-09-10T15:10:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 7,
     "tradeId": null,
     "watchlistId": "BTC",
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
     "id": "nvda-watch-0910",
     "slug": "nvda-watch-0910",
     "title": "NVDA：量能收敛，继续等待方向",
-    "excerpt": "这一段整理的波动有所收敛，暂时没有足够证据改变判断。继续记录区间上下沿，等待有效突破或失效。\n相比提前决定方向，现在更重要的是保持观察标准一致。",
-    "category": "趋势观察",
-    "tags": [
-      "半导体",
-      "区间整理"
-    ],
-    "publishedAt": "2026-09-10",
-    "updatedAt": "2026-09-10T12:25:00+08:00",
-    "pinned": false,
-    "access": "public",
-    "readMinutes": 2,
-    "sections": [
+    "summary": "这一段整理的波动有所收敛，暂时没有足够证据改变判断。继续记录区间上下沿，等待有效突破或失效。\n相比提前决定方向，现在更重要的是保持观察标准一致。",
+    "content": [
       {
         "heading": "",
         "text": "这一段整理的波动有所收敛，暂时没有足够证据改变判断。继续记录区间上下沿，等待有效突破或失效。\n相比提前决定方向，现在更重要的是保持观察标准一致。"
       }
     ],
-    "format": "short",
     "contentType": "观察更新",
+    "format": "short",
     "symbol": "NVDA",
     "market": "美股",
     "sector": "半导体",
     "trendStage": "准备",
+    "status": "published",
     "statusText": "整理结构保留，尚未触发计划",
     "timeframe": "1D",
+    "tags": [
+      "半导体",
+      "区间整理"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": false,
+    "isPublic": true,
+    "publishedAt": "2026-09-10T10:00:00+08:00",
+    "updatedAt": "2026-09-10T12:25:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 2,
     "tradeId": null,
     "watchlistId": "NVDA",
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   },
   {
     "id": "review-august",
     "slug": "review-august",
     "title": "月度复盘：哪些等待是有效的",
-    "excerpt": "这个月的教学示例聚焦等待：把没有触发的计划同样保留下来，才能知道判断是否一致。",
-    "category": "市场复盘",
-    "tags": [
-      "月复盘",
-      "执行反馈"
-    ],
-    "publishedAt": "2026-08-31",
-    "updatedAt": "2026-08-31T20:00:00+08:00",
-    "pinned": false,
-    "access": "public",
-    "readMinutes": 7,
-    "sections": [
+    "summary": "这个月的教学示例聚焦等待：把没有触发的计划同样保留下来，才能知道判断是否一致。",
+    "content": [
       {
         "heading": "从过程开始",
         "text": "这个月的教学示例聚焦等待：把没有触发的计划同样保留下来，才能知道判断是否一致。"
@@ -683,22 +688,33 @@
         "text": "每份计划增加一个明确的失效条件，并在复盘时与实际变化对照。"
       }
     ],
-    "format": "long",
     "contentType": "市场复盘",
+    "format": "long",
     "symbol": "",
     "market": "跨市场",
     "sector": "",
     "trendStage": null,
+    "status": "published",
     "statusText": "",
     "timeframe": "",
+    "tags": [
+      "月复盘",
+      "执行反馈"
+    ],
     "images": [],
+    "isPinned": false,
+    "isMemberOnly": false,
+    "isPublic": true,
+    "publishedAt": "2026-08-31T10:00:00+08:00",
+    "updatedAt": "2026-08-31T20:00:00+08:00",
     "author": {
       "id": "sanmu",
       "name": "三木"
     },
-    "isExample": true,
+    "readTime": 7,
     "tradeId": null,
     "watchlistId": null,
-    "relatedPosts": []
+    "relatedPosts": [],
+    "isExample": true
   }
 ]

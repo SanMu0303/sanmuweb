@@ -1,32 +1,32 @@
 [
   {
-    "symbol": "CHIPS",
-    "name": "半导体板块",
-    "market": "A 股",
-    "stage": "启动",
-    "thesis": "突破后的回踩，观察量能与承接。",
-    "invalidation": "重新跌回整理区，且承接条件消失。",
-    "updatedAt": "2026-09-09",
-    "articleSlug": "semiconductor"
+    "symbol": "BTC",
+    "name": "比特币",
+    "market": "加密",
+    "stage": "准备",
+    "thesis": "区间上沿观察承接，执行条件尚未触发。",
+    "invalidation": "价格重新回到整理区内部，暂停计划。",
+    "updatedAt": "2026-09-10",
+    "articleSlug": "btc-plan-0910"
+  },
+  {
+    "symbol": "NVDA",
+    "name": "英伟达",
+    "market": "美股",
+    "stage": "准备",
+    "thesis": "量能收敛，等待整理结构给出方向。",
+    "invalidation": "区间下沿失守，观察依据消失。",
+    "updatedAt": "2026-09-10",
+    "articleSlug": "nvda-watch-0910"
   },
   {
     "symbol": "GOLD",
     "name": "黄金",
-    "market": "全球市场",
+    "market": "黄金",
     "stage": "运行",
     "thesis": "跟踪低点抬升，关注结构完整性。",
     "invalidation": "低点抬升的结构被破坏。",
     "updatedAt": "2026-09-09",
     "articleSlug": "gold"
-  },
-  {
-    "symbol": "SOFTWARE",
-    "name": "软件板块",
-    "market": "美股",
-    "stage": "准备",
-    "thesis": "区间仍在整理，耐心等待方向。",
-    "invalidation": "区间下沿失守，原有依据消失。",
-    "updatedAt": "2026-09-09",
-    "articleSlug": "software"
   }
 ]
