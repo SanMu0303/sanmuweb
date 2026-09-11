@@ -134,3 +134,68 @@ body:has(.home-feed) .sidebar,body:has(.home-feed) .mobile-header{background:#10
 .home-feed .composer-tools input:not([type=checkbox]){min-width:0;width:120px}
 .home-feed .composer-tools input[aria-label=标签]{width:180px}
 .home-feed .bold-toolbar span{color:#91958f}
+
+/* Continuous journal: open records, inline prose, and a quiet watch strip. */
+.home-feed .stream-column .research-record,
+.home-feed .stream-column .research-record:hover{
+ background:transparent;border:0;border-bottom:1px solid #252827;
+ border-radius:0;box-shadow:none;padding:16px 0;margin:0 0 18px;
+}
+.home-feed .stream-column .research-record:hover{border-bottom-color:#303432}
+.home-feed .compact-long{display:block}
+.home-feed .record-heading{margin-bottom:8px}
+.home-feed .symbol-chip,.home-feed .topic-label{font-size:16px;font-weight:600;color:#f2f3f0}
+.home-feed .timeframe,.home-feed .record-bottom-meta,.home-feed .record-tags,.home-feed .record-footline,.home-feed .record-footline>span{color:#8b918a}
+.home-feed .record-body p,.home-feed .record-summary,.home-feed .record-preview p{font-size:15px;line-height:1.75;color:#e8eae7;margin-top:0}
+.home-feed .record-body strong,.home-feed .record-summary strong{display:inline;font-size:inherit;line-height:inherit;font-weight:600;color:#f5f6f3;margin:0}
+.home-feed .terminal-heading p,.home-feed .record-deck,.home-feed .focus-observation p,.home-feed .weekly-focus p,.home-feed .start-here>span{color:#a9ada7}
+.home-feed .record-badges{opacity:.9}
+.home-feed .record-stage{border:0;padding:1px 3px;background:transparent}
+.home-feed .record-type{border:0;padding:0}
+.home-feed .record-footer{padding-top:8px;border:0}
+.home-feed .post-thumbnails,.home-feed .post-thumbnails button{background:transparent;border:0;border-radius:0;box-shadow:none;padding:0}
+.home-feed .post-thumbnails.single{width:500px;max-width:100%;display:block;margin:10px 0 0}
+.home-feed .post-thumbnails.single button{display:block;max-width:100%;width:fit-content}
+.home-feed .post-thumbnails.single img{width:auto;max-width:100%;height:auto;max-height:230px;object-fit:contain;border-radius:0}
+.home-feed .post-thumbnails button>span{opacity:0;background:#0b0c0dd9;transition:opacity .12s}
+.home-feed .post-thumbnails button:hover>span,.home-feed .post-thumbnails button:focus-visible>span{opacity:1}
+.home-feed>.terminal-heading{margin:0 0 2px}
+.home-feed .terminal-heading h1{font-size:18px;line-height:1.3}
+.home-feed .terminal-heading p{font-size:12px;line-height:1.4;white-space:nowrap}
+.home-feed>.quick-composer{margin-bottom:4px;border:0}
+.home-feed .composer-prompt{height:36px;min-height:36px;padding:4px 0}
+.home-feed .pinned-brief{margin:0 0 6px}
+.home-feed .pinned-brief summary{min-height:22px;padding:1px 0;line-height:20px;font-size:12px}
+.home-feed .pinned-brief summary b{font-size:12px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-feed .focus-section{margin-bottom:12px}
+.home-feed .focus-section>.section-line{margin-bottom:3px}
+.home-feed .focus-section .section-line h2{font-size:13px;line-height:20px;color:#a9ada7;font-weight:500}
+.home-feed .focus-section .section-line h2 span{font-size:11px}
+.home-feed .focus-grid{gap:20px}
+.home-feed .focus-observation,.home-feed .focus-observation:hover{height:48px;min-height:48px;display:block;padding:4px 0;background:transparent;border:0;border-radius:0;box-shadow:none}
+.home-feed .focus-observation>div{justify-content:flex-start;gap:12px;flex-wrap:nowrap;line-height:18px}
+.home-feed .focus-observation b{font-size:14px;line-height:18px}
+.home-feed .focus-observation p{font-size:12px;line-height:18px;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.home-feed .focus-observation footer{display:none}
+.home-feed .stream-column>.research-filters{margin-bottom:2px;padding-bottom:4px;border:0}
+.home-feed .research-search,.home-feed .research-filter-row select{height:32px;background:transparent;border-color:#202322;border-radius:0;font-size:12px}
+.home-feed .research-filter-row{gap:8px}
+.home-feed .type-tabs{gap:12px}
+.home-feed .type-tabs button{font-size:12px}
+.home-feed .stream-heading h2{font-size:18px}
+@media(max-width:760px){
+ .home-feed .terminal-heading h1{font-size:17px}
+ .home-feed .terminal-heading p{font-size:11px}
+ .home-feed .focus-grid{grid-template-columns:minmax(0,1fr);gap:0}
+ .home-feed .focus-observation,.home-feed .focus-observation:hover{height:26px;min-height:26px;display:flex;align-items:center;gap:10px;padding:2px 0}
+ .home-feed .focus-observation>div{flex:0 0 110px;justify-content:space-between;gap:8px}
+ .home-feed .focus-observation p{min-width:0;flex:1;margin:0;font-size:11px}
+ .home-feed .stream-column .research-record{padding:14px 0;margin-bottom:18px}
+ .home-feed .record-body p,.home-feed .record-summary,.home-feed .record-preview p{font-size:14px}
+ .home-feed .post-thumbnails.single{width:100%}
+ .home-feed .post-thumbnails.single img{max-width:100%;max-height:230px}
+}
+/* Reserve thumbnail width before lazy images load; avoid inherited long-preview sizing. */
+.home-feed .post-thumbnails.single button{width:100%}
+.home-feed .post-thumbnails.single img,.home-feed .compact-long .post-thumbnails.single img{width:100%;height:auto;max-height:230px;object-fit:contain}
+@media(max-width:760px){.home-feed .focus-observation,.home-feed .focus-observation:hover{flex-direction:row}.home-feed .focus-observation>div{width:110px;height:auto}.home-feed .focus-observation p{line-height:18px}}
