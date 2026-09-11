@@ -199,3 +199,19 @@ body:has(.home-feed) .sidebar,body:has(.home-feed) .mobile-header{background:#10
 .home-feed .post-thumbnails.single button{width:100%}
 .home-feed .post-thumbnails.single img,.home-feed .compact-long .post-thumbnails.single img{width:100%;height:auto;max-height:230px;object-fit:contain}
 @media(max-width:760px){.home-feed .focus-observation,.home-feed .focus-observation:hover{flex-direction:row}.home-feed .focus-observation>div{width:110px;height:auto}.home-feed .focus-observation p{line-height:18px}}
+
+/* A bright, compact entry to pinned research; the feed itself remains unchanged. */
+.home-feed>.pinned-brief{display:grid;gap:10px;margin:6px 0 24px}
+.home-feed .pinned-entry{display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:90px;max-height:110px;padding:14px 18px;background:#b7c96f;color:#11130f;border:0;border-radius:2px;text-decoration:none;cursor:pointer;transition:background-color .15s}
+.home-feed .pinned-entry:hover{background:#c2cf7a}
+.home-feed .pinned-entry:focus-visible{outline:2px solid #f2f3f1;outline-offset:3px}
+.home-feed .pinned-copy{min-width:0;flex:1}
+.home-feed .pinned-title-line{display:flex;align-items:center;gap:10px;min-width:0}
+.home-feed .pinned-label{flex-shrink:0;background:#263019;color:#eff3dd;font-size:11px;line-height:20px;padding:0 6px;border-radius:2px;font-weight:600}
+.home-feed .pinned-title-line h2{font-size:16px;line-height:22px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#11130f}
+.home-feed .pinned-copy p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:6px 0 0;font-size:13px;line-height:19px;color:#303820}
+.home-feed .pinned-action{display:flex;flex-direction:column;gap:10px;align-items:flex-end;white-space:nowrap;font-size:12px;color:#29311d}
+.home-feed .pinned-action span{font-weight:600;color:#11130f}
+.home-feed .pinned-action time{font-size:11px}
+@media(max-width:760px){.home-feed .pinned-entry{padding:12px;gap:10px;min-height:100px;max-height:110px;align-items:flex-start}.home-feed .pinned-title-line{gap:6px}.home-feed .pinned-title-line h2{font-size:14px;line-height:20px}.home-feed .pinned-copy p{font-size:12px;line-height:18px}.home-feed .pinned-action{font-size:11px;gap:12px;padding-top:3px}.home-feed .pinned-action time{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.home-feed .pinned-entry{transition:none}}
