@@ -109,3 +109,28 @@ body:has(.home-feed){background:#0d1110}
 @media(min-width:1051px) and (max-width:1200px){.home-feed>.quick-composer{width:calc(100% - 264px)}}
 @media(max-width:1050px){.home-feed>.quick-composer{width:100%;max-width:840px}}
 @media(max-width:760px){.home-feed .focus-observation{height:88px;min-height:88px;padding:7px;gap:3px}.home-feed .focus-observation p{font-size:11px}.home-feed .stream-column .research-record{padding:14px;margin-bottom:16px}.home-feed .short-lead,.home-feed .record-title{font-size:15px}.home-feed .post-thumbnails.single{width:100%;max-width:100%}.home-feed .post-thumbnails.single img{height:auto;max-height:190px}.home-feed .record-body p,.home-feed .record-summary,.home-feed .record-preview p{font-size:14px}}
+
+/* Neutral research shell: green is reserved for interaction and status accents. */
+body:has(.home-feed){background:#0b0c0d;color:#f2f3f1}
+body:has(.home-feed) .sidebar,body:has(.home-feed) .mobile-header{background:#101214;border-color:#252829}
+.home-feed{color:#f2f3f1}
+.home-feed .stream-column .research-record{background:#141617;border-color:#252829}
+.home-feed .stream-column .research-record:hover{background:#191c1d;border-color:#303435}
+.home-feed .focus-observation{background:#141617;border-color:#252829}
+.home-feed .focus-observation:hover{background:#191c1d}
+.home-feed .record-body p,.home-feed .record-body h4,.home-feed .record-summary,.home-feed .record-preview p{color:#e7e8e6}
+.home-feed .record-body strong,.home-feed .symbol-chip,.home-feed .topic-label,.home-feed .record-title,.home-feed .terminal-heading h1,.home-feed .section-line h2,.home-feed .focus-observation b{color:#f2f3f1}
+.home-feed .record-deck,.home-feed .terminal-heading p,.home-feed .focus-observation p,.home-feed .weekly-focus p,.home-feed .start-here>span{color:#a7aaa6}
+.home-feed .record-bottom-meta,.home-feed .record-tags,.home-feed .record-footline,.home-feed .record-footline>span,.home-feed .timeframe,.home-feed .section-line>span,.home-feed .module-heading>span,.home-feed .start-here small,.home-feed .sidebar-tags,.home-feed .focus-observation footer{color:#91958f}
+.home-feed .research-search,.home-feed .research-filter-row select,.home-feed .quick-composer form,.home-feed .quick-composer textarea,.home-feed .composer-tools input,.home-feed .composer-tools select{background:#101214;border-color:#252829;color:#e7e8e6}
+.home-feed .research-search input{color:#e7e8e6}
+.home-feed .research-filters,.home-feed>.quick-composer,.home-feed .research-rail,.home-feed .research-sidebar .sidebar-module{border-color:#252829}
+.home-feed .research-rail{scrollbar-color:#3d4240 transparent}
+.home-feed .composer-prompt{color:#a7aaa6}
+.home-feed .module-heading h2,.home-feed .weekly-focus>span{color:#e7e8e6}
+.home-feed .record-body section+section{margin-top:10px}
+.home-feed .record-body p{white-space:pre-wrap}
+.home-feed .composer-tools{flex-wrap:wrap}
+.home-feed .composer-tools input:not([type=checkbox]){min-width:0;width:120px}
+.home-feed .composer-tools input[aria-label=标签]{width:180px}
+.home-feed .bold-toolbar span{color:#91958f}
