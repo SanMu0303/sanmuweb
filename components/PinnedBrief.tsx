@@ -1,3 +1,4 @@
+import {formatPostTime} from '@/lib/postTime.mjs';
 import type {Post} from '@/lib/posts';
 
 export default function PinnedBrief({posts}:{posts:Post[]}) {
@@ -7,7 +8,7 @@ export default function PinnedBrief({posts}:{posts:Post[]}) {
   const summary=(post.summary||post.content[0]?.text||'').replaceAll('**','');
   return <a key={post.id} className="pinned-entry" href={'/article/?slug='+encodeURIComponent(post.slug)}>
    <div className="pinned-copy"><div className="pinned-title-line"><span className="pinned-label">置顶</span><h2>{title}</h2></div><p>{summary}</p></div>
-   <div className="pinned-action"><time dateTime={post.updatedAt}>{post.updatedAt.slice(0,10).replaceAll('-','.')}</time><span>查看详情 ↗</span></div>
+   <div className="pinned-action"><time dateTime={post.updatedAt||post.publishedAt}>{formatPostTime(post.updatedAt,post.publishedAt)}</time><span>查看详情 ↗</span></div>
   </a>;
  })}</section>;
 }

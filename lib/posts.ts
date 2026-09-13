@@ -19,4 +19,4 @@ export type PostFilters={query:string;contentType:string;market:string;stage:str
 export const EMPTY_FILTERS:PostFilters={query:'',contentType:'',market:'',stage:'',symbol:'',tag:'',month:''};
 export function timelineHref(symbol:string,market:string){return '/symbol/?symbol='+encodeURIComponent(symbol)+'&market='+encodeURIComponent(market)}
 export function filterHref(key:string,value:string){return '/?'+key+'='+encodeURIComponent(value)+'#research-stream'}
-export function formatTime(value:string){return new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(value)).replaceAll('/','.');}
+export {formatPostTime} from './postTime.mjs';
