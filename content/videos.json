@@ -27,7 +27,12 @@
     "relatedVideos": [
       "video-02"
     ],
-    "isExample": true
+    "isExample": true,
+    "topics": [
+      "趋势基础"
+    ],
+    "chapterId": "chapter-basics",
+    "lessonNumber": 1
   },
   {
     "id": "video-02",
@@ -57,7 +62,13 @@
     "relatedVideos": [
       "video-03"
     ],
-    "isExample": true
+    "isExample": true,
+    "topics": [
+      "趋势阶段",
+      "市场专题"
+    ],
+    "chapterId": "chapter-basics",
+    "lessonNumber": 2
   },
   {
     "id": "video-03",
@@ -87,7 +98,13 @@
     "relatedVideos": [
       "video-04"
     ],
-    "isExample": true
+    "isExample": true,
+    "topics": [
+      "趋势基础",
+      "趋势阶段"
+    ],
+    "chapterId": "chapter-basics",
+    "lessonNumber": 3
   },
   {
     "id": "video-04",
@@ -117,7 +134,13 @@
     "relatedVideos": [
       "video-05"
     ],
-    "isExample": true
+    "isExample": true,
+    "topics": [
+      "持仓与退出",
+      "风险管理"
+    ],
+    "chapterId": "chapter-basics",
+    "lessonNumber": 4
   },
   {
     "id": "video-05",
@@ -147,7 +170,12 @@
     "relatedVideos": [
       "video-06"
     ],
-    "isExample": true
+    "isExample": true,
+    "topics": [
+      "标的筛选"
+    ],
+    "chapterId": "chapter-basics",
+    "lessonNumber": 5
   },
   {
     "id": "video-06",
@@ -177,6 +205,12 @@
       "doge-0910"
     ],
     "relatedVideos": [],
-    "isExample": true
+    "isExample": true,
+    "topics": [
+      "实盘案例",
+      "趋势阶段"
+    ],
+    "chapterId": "chapter-cases",
+    "lessonNumber": 7
   }
 ]

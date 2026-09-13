@@ -5,3 +5,9 @@ export interface Chapter {id:string;title:string;lessons:Lesson[]}
 export interface Course {id:string;title:string;description:string;chapters:Chapter[]}
 export const videoHref=(id:string)=>'/video/?id='+encodeURIComponent(id);
 export const durationLabel=(seconds:number)=>Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+// Additive course metadata; legacy contentType/chapter fields remain compatible.
+export interface Video {chapterId?:string;lessonNumber?:number;topics?:string[]}
+export interface Lesson {chapterId?:string;order?:number;type?:'video'|'article'}
+export interface Chapter {courseId?:string;order?:number}
+export interface Course {thumbnail?:string;totalLessons?:number;publishedLessons?:number}
+export interface LearningProgress {courseId:string;lessonId:string|null;progress:number|null;lastWatchedAt:string|null;lastPosition:number|null}

@@ -1,0 +1,3 @@
+import type {Video,Course} from '@/lib/videos';
+import {durationLabel,videoHref} from '@/lib/videos';
+export default function LibraryVideoCard({video:v,course}:{video:Video;course?:Course}){return <article className="archive-video"><a className="archive-cover" href={videoHref(v.id)} aria-label={'观看：'+v.title}><img src={v.thumbnail} alt={v.title} loading="lazy"/><span aria-hidden="true">▶</span></a><h3><a href={videoHref(v.id)}>{v.title}</a></h3><p>{course?.title||v.category}{v.lessonNumber?' · 第'+v.lessonNumber+'课':''}</p><div className="archive-meta"><span>{durationLabel(v.duration)}</span><span className={v.isMemberOnly?'member':''}>{v.isMemberOnly?'会员':'公开'}</span><time dateTime={v.publishedAt}>{v.publishedAt.slice(5,10)}</time></div></article>}
