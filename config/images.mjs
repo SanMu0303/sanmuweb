@@ -1,0 +1,1 @@
+export const IMAGE_CONFIG=Object.freeze({maxImages:9,maxFileBytes:15*1024*1024,maxTotalBytes:50*1024*1024,accept:'image/jpeg,image/png,image/webp',mimeTypes:['image/jpeg','image/png','image/webp'],uploadTimeoutMs:120000,temporaryTtlMs:72*60*60*1000});

@@ -4,7 +4,7 @@ export const MARKETS=['美股','加密','A股','黄金','外汇','跨市场'] as
 export const TREND_STAGES=['准备','启动','运行','高潮','失效'] as const;
 export type ContentType=typeof CONTENT_TYPES[number];
 export type TrendStage=typeof TREND_STAGES[number];
-export interface PostImage {url:string;alt:string;caption?:string;isPreview:boolean}
+export interface PostImage {id?:string;thumbnailUrl?:string;storagePath?:string;width?:number;height?:number;mimeType?:string;fileSize?:number;sortOrder?:number;url:string;alt:string;caption?:string;isPreview:boolean}
 export interface PostBlock {heading:string;text:string}
 export interface Post {
   video?:Video;id:string;slug:string;title:string;summary:string;content:PostBlock[];
