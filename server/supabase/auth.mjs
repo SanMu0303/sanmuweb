@@ -1,5 +1,5 @@
 import {configuration} from './client.mjs';
-const anonymous={id:null,email:null,signedIn:false,isAdmin:false};
+const anonymous={id:null,email:null,signedIn:false,isAdmin:false,role:'guest'};
 export function administrators(env){return (env.ADMIN_EMAILS||'').split(',').map(v=>v.trim().toLowerCase()).filter(Boolean)}
 export function createAuth(env=process.env,transport=fetch){
  const {url,key}=configuration(env);
@@ -8,7 +8,7 @@ export function createAuth(env=process.env,transport=fetch){
   if(!response.ok)throw Object.assign(new Error(response.status===429?'请求过于频繁，请稍后重试':'登录验证失败，请重新登录'),{status:response.status>=500?503:response.status===429?429:401});
   return response.status===204?null:response.json();
  }
- function project(user){return user?.id&&user?.email_confirmed_at?{id:user.id,email:user.email,signedIn:true,isAdmin:administrators(env).includes((user.email||'').toLowerCase())}:anonymous}
+ function project(user){return user?.id&&user?.email_confirmed_at?{id:user.id,email:user.email,signedIn:true,isAdmin:administrators(env).includes((user.email||'').toLowerCase()),role:administrators(env).includes((user.email||'').toLowerCase())?'admin':'guest'}:anonymous}
  return {
   async identify(request){
    const match=(request.headers.get('cookie')||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('research_access='));

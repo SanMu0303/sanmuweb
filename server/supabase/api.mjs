@@ -38,6 +38,7 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
    if(['/api/admin/articles','/api/admin/watchlist'].includes(path)){
     const isArticle=path.endsWith('/articles'),table=isArticle?'articles':'watch_items';
     if(method==='GET')return json(await repo.list(table));
+    if(method==='DELETE'&&isArticle){const input=await body(request),existing=await repo.get(table,input.slug);if(!existing)fail('记录不存在',404);if(!Number.isInteger(input.revision))fail('缺少版本号');return json(await repo.save(table,{...existing,status:'draft',pinned:false,deletedAt:new Date().toISOString(),updatedAt:new Date().toISOString()},input.revision,user.id))}
     if(method==='PUT'){const input=await body(request),value=isArticle?article(input):watch(input);if(!isArticle&&value.articleSlug&&!await repo.get('articles',value.articleSlug,{publishedOnly:true}))fail('请关联已发布文章，或清空关联文章');return json(await repo.save(table,value,input.revision??0,user.id))}
    }
    return json({error:'接口不存在'},404);

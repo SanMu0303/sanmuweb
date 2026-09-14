@@ -40,7 +40,7 @@ export function useImageUploads(){
   if(current.current.length+urls.length>IMAGE_CONFIG.maxImages){setError(`单条动态最多上传${IMAGE_CONFIG.maxImages}张图片`);return false}
   setItems(list=>[...list,...urls.map(url=>{const id=crypto.randomUUID();return {id,preview:url,status:'success' as const,image:{id,url,thumbnailUrl:url,alt:'研究配图',isPreview:false}}})]);setError('');return true;
  }
- function reset(){for(const url of blobUrls.current)URL.revokeObjectURL(url);blobUrls.current.clear();setItems([]);setError('')}
+ function reset(images:PostImage[]=[]){for(const url of blobUrls.current)URL.revokeObjectURL(url);blobUrls.current.clear();setItems(images.map((image,index)=>({id:image.id||'existing-'+index,preview:image.thumbnailUrl||image.url,status:'success',image})));setError('')}
  const uploading=items.some(i=>i.status==='waiting'||i.status==='uploading');
  const blocked=items.some(i=>i.status!=='success'||i.deleting);
  const images=items.filter(i=>i.image).map((i,index)=>({...i.image!,sortOrder:index}));

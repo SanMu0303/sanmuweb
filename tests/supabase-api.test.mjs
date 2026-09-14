@@ -20,3 +20,10 @@ test('API protects writes and projects member content before searching',async()=
  const write=await api(new Request('https://site.test/api/admin/articles',{method:'PUT',headers:{origin:'https://site.test','Content-Type':'application/json'},body:'{}'}));assert.equal(write.status,401);
  const cross=await api(new Request('https://site.test/api/auth/login',{method:'POST',headers:{origin:'https://other.test','Content-Type':'application/json'},body:'{}'}));assert.equal(cross.status,403);
 });
+test('delete requires admin and archives with revision while retaining images',async()=>{
+ const doc={slug:'record',status:'published',pinned:true,images:[{url:'/api/images/example'}]};let saved;
+ const repo={get:async()=>doc,save:async(...args)=>{saved=args;return args[1]}};
+ const req=()=>new Request('https://site.test/api/admin/articles',{method:'DELETE',headers:{origin:'https://site.test','Content-Type':'application/json'},body:JSON.stringify({slug:'record',revision:7})});
+ for(const user of [{signedIn:false,isAdmin:false},{signedIn:true,isAdmin:false}]){const api=createApi({env,repo,auth:{identify:async()=>user}});assert.equal((await api(req())).status,user.signedIn?403:401);assert.equal(saved,undefined)}
+ const api=createApi({env,repo,auth:{identify:async()=>({id:'owner',signedIn:true,isAdmin:true})}});assert.equal((await api(req())).status,200);assert.equal(saved[1].status,'draft');assert.equal(saved[1].pinned,false);assert.ok(saved[1].deletedAt);assert.deepEqual(saved[1].images,doc.images);assert.equal(saved[2],7);assert.equal(saved[3],'owner');
+});
