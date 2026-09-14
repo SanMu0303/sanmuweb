@@ -16,3 +16,5 @@ await writeFile('dist/server/library.mjs',`export const videos = ${await readFil
 
 for(const file of ['image-storage.mjs','image-model.mjs'])await cp('server/'+file,'dist/server/'+file);
 await cp('config/images.mjs','dist/server/image-config.mjs');
+
+await cp('server/content-validation.mjs','dist/server/content-validation.mjs');
