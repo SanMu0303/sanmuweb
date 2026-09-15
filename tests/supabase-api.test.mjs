@@ -27,3 +27,10 @@ test('delete requires admin and archives with revision while retaining images',a
  for(const user of [{signedIn:false,isAdmin:false},{signedIn:true,isAdmin:false}]){const api=createApi({env,repo,auth:{identify:async()=>user}});assert.equal((await api(req())).status,user.signedIn?403:401);assert.equal(saved,undefined)}
  const api=createApi({env,repo,auth:{identify:async()=>({id:'owner',signedIn:true,isAdmin:true})}});assert.equal((await api(req())).status,200);assert.equal(saved[1].status,'draft');assert.equal(saved[1].pinned,false);assert.ok(saved[1].deletedAt);assert.deepEqual(saved[1].images,doc.images);assert.equal(saved[2],7);assert.equal(saved[3],'owner');
 });
+test('sync success returns the persisted watch identity and conflicts do not return success',async()=>{
+ const doc={slug:'sync-test',title:'测试',excerpt:'测试',category:'趋势观察',tags:[],publishedAt:'2026-09-15',pinned:false,access:'public',readMinutes:1,sections:[{heading:'',text:'测试'}],status:'published',format:'short',symbol:'APP',market:'美股',trendStage:'准备',watchSync:{enabled:true,revision:3},revision:0};
+ let fail=false;const repo={saveWithWatch:async()=>{if(fail)throw Object.assign(new Error('观察池已更新，请刷新后重新同步'),{status:409});return {slug:doc.slug,revision:1}},get:async()=>({symbol:'APP',revision:4,isWeeklyFocus:true})};
+ const api=createApi({env,repo,auth:{identify:async()=>({id:'owner',isAdmin:true})}});
+ const req=()=>new Request('https://site.test/api/admin/articles',{method:'PUT',headers:{origin:'https://site.test','Content-Type':'application/json'},body:JSON.stringify(doc)});
+ const response=await api(req());assert.equal(response.status,200);assert.deepEqual((await response.json()).watchSyncResult,{symbol:'APP',revision:4,isWeeklyFocus:true});fail=true;assert.equal((await api(req())).status,409);
+});
