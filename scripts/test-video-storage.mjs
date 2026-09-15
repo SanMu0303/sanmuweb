@@ -11,10 +11,14 @@ try{
  const put=await fetch(upload.uploadUrl,{method:'PUT',headers:{'Content-Type':'video/mp4'},body:bytes});assert.ok(put.ok,'object upload '+put.status);
  const doc={id,revision:0,title:'临时视频验收',videoProvider:'selfHosted',uploadId:upload.id,duration:2,status:'published'};
  const saved=await(await handler.handle(req('/api/admin/videos',doc),user,repo)).json();assert.equal(saved.revision,1);
+ if(process.env.VIDEO_TEST_PRODUCTION==='1'){const library=await(await fetch('https://sanmuweb.vercel.app/api/library/')).json();assert.ok(library.videos.some(v=>v.id===id));const live=await fetch('https://sanmuweb.vercel.app/api/video-files/'+id+'/',{redirect:'manual'});assert.equal(live.status,302);const range=await fetch(live.headers.get('location'),{headers:{Range:'bytes=0-31'}});assert.equal(range.status,206);await range.arrayBuffer();console.log('PASS: Vercel library and playback redirect');
+
+ } 
  const play=await handler.handle(new Request('https://sanmuweb.vercel.app/api/video-files/'+id),{isAdmin:false},repo);assert.equal(play.status,302);
  const stream=await fetch(play.headers.get('location'),{headers:{Range:'bytes=0-31'}});assert.equal(stream.status,206);assert.equal((await stream.arrayBuffer()).byteLength,32);
  await handler.handle(req('/api/admin/videos',{...doc,revision:1,isMemberOnly:true}),user,repo);
  await assert.rejects(handler.handle(new Request('https://sanmuweb.vercel.app/api/video-files/'+id),{isAdmin:false},repo),{status:404});
+ if(process.env.VIDEO_TEST_PRODUCTION==='1'){const denied=await fetch('https://sanmuweb.vercel.app/api/video-files/'+id+'/',{redirect:'manual'});assert.equal(denied.status,404);console.log('PASS: Vercel private video restriction')}
  console.log('PASS: real MP4 upload, persistence, signed playback, range request, member restriction');
 }finally{
  await c.request('/rest/v1/videos?id=eq.'+id,{method:'DELETE'});
