@@ -1,0 +1,4 @@
+"use client";
+export type WatchSyncValue={enabled:boolean;summary:string;invalidation:string};
+export const emptyWatchSync=():WatchSyncValue=>({enabled:false,summary:'',invalidation:''});
+export default function WatchSync({value,onChange,firstLine}:{value:WatchSyncValue;onChange:(v:WatchSyncValue)=>void;firstLine:string}){return <div style={{margin:'12px 0',fontSize:13}}><label><input type="checkbox" checked={value.enabled} onChange={e=>onChange({...value,enabled:e.target.checked})}/> 同步更新观察池</label>{value.enabled&&<div style={{display:'grid',gap:8,marginTop:8}}><small>将公开更新标的、阶段和当前判断。会员正文与图片不会复制到观察池；历史动态保留。请确认标的和市场正确。</small><label>当前判断<input maxLength={2000} value={value.summary} placeholder={firstLine||'默认取正文首句'} onChange={e=>onChange({...value,summary:e.target.value})}/></label><label>失效条件（留空沿用原记录）<textarea rows={2} maxLength={2000} value={value.invalidation} onChange={e=>onChange({...value,invalidation:e.target.value})}/></label></div>}</div>}

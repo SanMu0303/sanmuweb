@@ -21,6 +21,9 @@ export function createRepository(client=createSupabase()) {
    const rows=await client.request(query(table,{select:'*',[keyFor(table)]:'eq.'+key,limit:'1',...(publishedOnly&&table==='articles'?{status:'eq.published'}:{})}));
    return documentOf(rows[0]);
   },
+  async saveWithWatch(document,revision,owner,sync){
+   return client.request('/rest/v1/rpc/save_post_with_watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_document:document,p_revision:revision,p_owner:owner,p_sync:sync})});
+  },
   async save(table,document,expectedRevision,owner) {
    const column=keyFor(table),key=document[column];
    if(typeof key!=='string'||!key||!Number.isInteger(expectedRevision)||expectedRevision<0)throw new Error('Invalid document identity or revision');
