@@ -1,4 +1,5 @@
 "use client";
+import './image-uploader.css';
 import {useRef,useState,type ReactNode} from 'react';
 import {IMAGE_CONFIG} from '@/config/images.mjs';
 import type {ImageUploads} from '@/lib/useImageUploads';

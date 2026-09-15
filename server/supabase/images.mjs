@@ -56,6 +56,7 @@ export function createImages(client=createSupabase(),transport=fetch){
    if(path.startsWith('/api/images/')&&['GET','HEAD'].includes(request.method)){
     const current=await row(path.split('/')[3]);if(!current||!['temporary','attached'].includes(current.state))fail('图片不存在',404);
     let allowed=user.isAdmin&&current.owner===user.id;
+    if(!allowed&&current.state==='attached'&&current.post_slug?.startsWith('watch:')){const watch=await repo.get('watch_items',current.post_slug.slice(6));allowed=!!watch?.images?.some(i=>i.url==='/api/images/'+current.id&&i.storagePath===current.storage_path)}
     if(!allowed&&current.post_slug){const post=await repo.get('articles',current.post_slug,{publishedOnly:true});allowed=!!post&&projectPost(post,user.isAdmin).images.some(i=>i.storagePath===current.storage_path)}
     if(!allowed)fail('图片不存在或无权查看',404);
     return new Response(null,{status:302,headers:{Location:await download(current.storage_path),'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}});

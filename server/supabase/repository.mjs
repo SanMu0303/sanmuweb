@@ -24,10 +24,14 @@ export function createRepository(client=createSupabase()) {
   async save(table,document,expectedRevision,owner) {
    const column=keyFor(table),key=document[column];
    if(typeof key!=='string'||!key||!Number.isInteger(expectedRevision)||expectedRevision<0)throw new Error('Invalid document identity or revision');
+   if(table==='watch_items'&&owner){
+    if(!owner)throw new Error('图片关联事务需要已验证的管理员身份');
+    return client.request('/rest/v1/rpc/save_research_watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_document:document,p_revision:expectedRevision,p_owner:owner})});
+   }
    if(table==='articles'&&owner){
     return client.request('/rest/v1/rpc/save_research_article',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_document:document,p_revision:expectedRevision,p_owner:owner})});
    }
-   if(table==='articles'&&document.images?.some(i=>i.storagePath||i.url?.startsWith('/api/images/')))throw new Error('图片关联事务需要已验证的管理员身份');
+   if(document.images?.some(i=>i.storagePath||i.url?.startsWith('/api/images/')))throw new Error('图片关联事务需要已验证的管理员身份');
    const {revision:ignored,...clean}=document;
    const row={[column]:key,document:clean,revision:expectedRevision+1,...(table==='articles'?{status:clean.status,published_at:clean.publishedAt}:{})};
    let rows;
