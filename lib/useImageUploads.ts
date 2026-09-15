@@ -12,7 +12,7 @@ export function useImageUploads(){
  const patch=(id:string,update:Partial<UploadItem>)=>setItems(list=>list.map(i=>i.id===id?{...i,...update}:i));
  useEffect(()=>{if(running.current)return;const item=items.find(i=>i.status==='waiting'&&!i.deleting);if(!item?.file)return;
   patch(item.id,{status:'uploading',error:undefined});
-  const promise=uploadImage(item.file,item.id).then(image=>patch(item.id,{status:'success',image})).catch(e=>patch(item.id,{status:'error',error:(e as Error).message})).finally(()=>{running.current=null});
+  const promise=uploadImage(item.file,item.id).then(image=>{running.current=null;patch(item.id,{status:'success',image})}).catch(e=>{running.current=null;patch(item.id,{status:'error',error:(e as Error).message})});
   running.current={id:item.id,promise};
  },[items]);
  useEffect(()=>()=>{for(const url of blobUrls.current)URL.revokeObjectURL(url)},[]);
