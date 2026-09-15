@@ -21,6 +21,9 @@ export function createRepository(client=createSupabase()) {
    const rows=await client.request(query(table,{select:'*',[keyFor(table)]:'eq.'+key,limit:'1',...(publishedOnly&&table==='articles'?{status:'eq.published'}:{})}));
    return documentOf(rows[0]);
   },
+  async history(symbol){
+   const all=[];for(let offset=0;;offset+=500){const rows=await client.request('/rest/v1/watch_history?'+new URLSearchParams({symbol:'eq.'+symbol,select:'document,revision,recorded_at',order:'revision.desc',limit:'500',offset:String(offset)}));all.push(...rows);if(rows.length<500)return all;}
+  },
   async saveWithWatch(document,revision,owner,sync){
    return client.request('/rest/v1/rpc/save_post_with_watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_document:document,p_revision:revision,p_owner:owner,p_sync:sync})});
   },

@@ -20,3 +20,11 @@ test('synchronized writes use a single transaction RPC with both revisions',asyn
  await repo.saveWithWatch(post,3,'admin',{revision:2,summary:'判断',invalidation:''});
  assert.equal(call.path,'/rest/v1/rpc/save_post_with_watch');assert.equal(call.body.p_revision,3);assert.equal(call.body.p_sync.revision,2);assert.equal(call.body.p_owner,'admin');
 });
+test('weekly focus is explicit and otherwise preserves the existing selection',()=>{
+ assert.equal(watchSync({enabled:true,revision:0,weeklyFocus:true},post).weeklyFocus,true);
+ assert.equal(Object.hasOwn(watchSync({enabled:true,revision:0},post),'weeklyFocus'),false);
+});
+test('history is requested independently in descending revision order',async()=>{
+ const repo=createRepository({request:async(path)=>{assert.match(path,/watch_history/);assert.match(path,/revision.desc/);assert.match(path,/symbol=eq.BTC/);return [{revision:2,document:{thesis:'新版'}},{revision:1,document:{thesis:'旧版'}}]}});
+ assert.equal((await repo.history('BTC')).length,2);
+});

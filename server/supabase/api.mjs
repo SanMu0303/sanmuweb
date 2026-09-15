@@ -34,6 +34,7 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
     const p=projectPost(a,user.isAdmin);return json(path.startsWith('/api/posts/')?p:{...a,sections:p.content,images:p.images,locked:p.locked});
    }
    if(path==='/api/articles'&&method==='GET')return json((await repo.list('articles',{publishedOnly:true})).map(({sections,...a})=>({...a,images:projectPost(a,user.isAdmin).images})).sort((a,b)=>Number(b.pinned)-Number(a.pinned)||b.publishedAt.localeCompare(a.publishedAt)));
+   if(/^\/api\/watchlist\/[^/]+\/history$/.test(path)&&method==='GET')return json(await repo.history(decodeURIComponent(path.split('/')[3])));
    if(path==='/api/watchlist'&&method==='GET')return json(await repo.list('watch_items'));
    if(['/api/admin/articles','/api/admin/watchlist'].includes(path)){
     const isArticle=path.endsWith('/articles'),table=isArticle?'articles':'watch_items';

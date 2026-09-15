@@ -32,5 +32,6 @@ try{
  await client.request('/rest/v1/watch_items?'+new URLSearchParams({symbol:'eq.'+slug}),{method:'DELETE'});
  if(ids.length)await client.request('/storage/v1/object/'+client.config.bucket,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({prefixes:ids.map(id=>'posts/'+id)})});
  await client.request('/rest/v1/image_uploads?'+new URLSearchParams({owner:'eq.'+owner}),{method:'DELETE'});
+ await client.request('/rest/v1/watch_history?'+new URLSearchParams({symbol:'eq.'+slug}),{method:'DELETE'});
  console.log('Integration fixture cleanup completed');
 }

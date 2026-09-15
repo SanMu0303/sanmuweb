@@ -15,5 +15,5 @@ export function watchSync(input,value){
  if(!input?.enabled)return null;
  if(value.status!=='published'||value.format!=='short'||!value.symbol||!value.trendStage)fail('同步观察池需要已发布短帖、标的和趋势阶段');
  if(!Number.isInteger(input.revision)||input.revision<0)fail('请刷新观察池后重试');
- return {revision:input.revision,summary:text(input.summary||value.sections[0].text.replaceAll('**','').split(/[。！？\n]/)[0],'当前判断',2000),invalidation:text(input.invalidation||'','失效条件',2000,true)};
+ return {...(input.weeklyFocus===true?{weeklyFocus:true}:{}),revision:input.revision,summary:text(input.summary||value.sections[0].text.replaceAll('**','').split(/[。！？\n]/)[0],'当前判断',2000),invalidation:text(input.invalidation||'','失效条件',2000,true)};
 }
