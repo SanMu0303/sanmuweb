@@ -12,7 +12,7 @@ test('authentication ignores spoofed platform headers and verifies user with Aut
 });
 test('API protects writes and projects member content before searching',async()=>{
  const doc={slug:'member',title:'Example',excerpt:'Summary',publishedAt:'2026-09-14',sections:[{text:'public preview',heading:''},{text:'hidden secret',heading:''}],access:'member',status:'published',images:[],tags:[]};
- const repo={list:async()=>[doc],get:async()=>doc,save:async()=>{throw new Error('unauthorized write')}};
+ const repo={list:async table=>table==='videos'?[]:[doc],get:async()=>doc,save:async()=>{throw new Error('unauthorized write')}};
  const auth={identify:async()=>({signedIn:false,isAdmin:false})};
  const api=createApi({env,repo,auth});
  const get=await api(new Request('https://site.test/api/feed'));assert.equal(get.status,200);assert.equal(JSON.stringify(await get.json()).includes('hidden secret'),false);

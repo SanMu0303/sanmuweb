@@ -1,3 +1,4 @@
+import {createVideos} from './videos.mjs';
 import {createImages} from './images.mjs';
 import {createRepository} from './repository.mjs';
 import {createAuth,sessionCookie} from './auth.mjs';
@@ -23,10 +24,12 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
    if(path==='/api/session'&&method==='GET')return json({...user,configured:!!env.ADMIN_EMAILS});
    if(path.startsWith('/api/admin/')&&!user.isAdmin)return json({error:user.signedIn?'当前账号没有管理权限':'请先登录管理员账号'},user.signedIn?403:401);
    if(path.startsWith('/api/images/')||path.startsWith('/api/admin/images'))return await createImages().handle(request,user,repo);
-   if(path==='/api/library'&&method==='GET')return json({videos:videos.map(v=>projectVideo(v,user.isAdmin)),courses});
+   if(path.startsWith('/api/video-files/')||path==='/api/admin/videos'||path==='/api/admin/video-uploads')return await createVideos().handle(request,user,repo);
+   const libraryVideos=async()=>{const saved=await repo.list('videos');return [...saved.filter(v=>v.status==='published'),...videos.filter(v=>!saved.some(s=>s.id===v.id))]};
+   if(path==='/api/library'&&method==='GET')return json({videos:(await libraryVideos()).map(v=>projectVideo(v,user.isAdmin)),courses});
    if(['/api/feed','/api/posts'].includes(path)&&method==='GET'){
     const posts=(await repo.list('articles',{publishedOnly:true})).map(a=>projectPost(a,user.isAdmin));
-    if(path==='/api/feed')posts.push(...videos.map(v=>videoPost(projectVideo(v,user.isAdmin))));
+    if(path==='/api/feed')posts.push(...(await libraryVideos()).map(v=>videoPost(projectVideo(v,user.isAdmin))));
     const p=Object.fromEntries(url.searchParams);return json(orderPosts(filterPosts(posts,{query:p.q,contentType:p.type,market:p.market,stage:p.stage,symbol:p.symbol,tag:p.tag,month:p.month}),p.order==='asc'));
    }
    if((path.startsWith('/api/posts/')||path.startsWith('/api/articles/'))&&method==='GET'){

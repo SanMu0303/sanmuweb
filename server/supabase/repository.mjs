@@ -1,7 +1,7 @@
 import {createSupabase} from './client.mjs';
 
 const conflict=()=>Object.assign(new Error('内容已在其他窗口更新，请重新载入后合并。'),{status:409});
-const tables={articles:'slug',watch_items:'symbol'};
+const tables={articles:'slug',watch_items:'symbol',videos:'id'};
 const documentOf=row=>row?{...row.document,revision:row.revision}:null;
 // All callers must authorize writes and validate documents before using this
 // service-role repository. Raw documents must be projected before public reads.

@@ -1,0 +1,44 @@
+import {createSupabase} from './client.mjs';
+import {VIDEO_CONFIG as config} from '../../config/videos.mjs';
+import {videoSource} from '../video-source.mjs';
+const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status})};
+const change=(method,data)=>({method,headers:{'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(data)});
+export function createVideos(client=createSupabase(),transport=fetch){
+ const bucket=config.bucket;
+ const get=async id=>typeof id!=='string'||!/^[a-f0-9-]{36}$/.test(id)?null:(await client.request('/rest/v1/video_uploads?'+new URLSearchParams({id:'eq.'+id,select:'*',limit:'1'})))[0];
+ const sign=async path=>{const d=await client.request('/storage/v1/object/sign/'+bucket+'/'+path,change('POST',{expiresIn:3600}));return client.config.url+'/storage/v1'+d.signedURL};
+ return {async handle(request,user,repo){const path=new URL(request.url).pathname.replace(/\/$/,'');
+ if(path.startsWith('/api/video-files/')&&['GET','HEAD'].includes(request.method)){
+ const id=path.split('/')[3];const video=await repo.get('videos',id);if(!video||video.status!=='published'||(video.isMemberOnly&&!user.isAdmin))fail('视频不存在或没有播放权限',404);
+ const upload=await get(video.uploadId);if(!upload)fail('视频文件不存在',404);
+ return new Response(null,{status:302,headers:{Location:await sign(upload.storage_path),'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}});
+ }
+ if(path==='/api/admin/video-uploads'&&request.method==='POST'){
+ const input=await request.json();if(!config.mimeTypes.includes(input.mimeType)||!Number.isInteger(input.fileSize)||input.fileSize<=0||input.fileSize>config.maxFileBytes)fail('请选择50MB以内的 MP4 或 WebM 视频');
+ const id=crypto.randomUUID(),storage_path='videos/'+id;
+ await client.request('/rest/v1/video_uploads',change('POST',{id,owner:user.id,storage_path,mime_type:input.mimeType,file_size:input.fileSize}));
+ const d=await client.request('/storage/v1/object/upload/sign/'+bucket+'/'+storage_path,change('POST',{}));
+ return Response.json({id,uploadUrl:client.config.url+'/storage/v1'+d.url});
+ }
+ if(path==='/api/admin/videos'&&request.method==='GET')return Response.json(await repo.list('videos'),{headers:{'Cache-Control':'private, no-store'}});
+ if(path==='/api/admin/videos'&&request.method==='PUT'){
+ const input=await request.json();if(typeof input.id!=='string'||!/^video-[a-z0-9-]+$/.test(input.id)||typeof input.title!=='string'||!input.title.trim()||input.title.length>180)fail('请填写视频标题');
+ if(!Number.isInteger(input.revision)||input.revision<0)fail('视频版本不正确');
+ let source=videoSource(input.videoUrl||'');let uploadId='';
+ if(input.videoProvider==='selfHosted'){
+ const upload=await get(input.uploadId);if(!upload||upload.owner!==user.id)fail('请先上传视频');
+ const response=await transport(await sign(upload.storage_path),{headers:{Range:'bytes=0-31'},signal:AbortSignal.timeout(30000)});if(!response.ok)fail('视频上传尚未完成');
+ const size=Number(response.headers.get('content-range')?.split('/')[1]||response.headers.get('content-length'));const reader=response.body.getReader();let bytes=new Uint8Array();try{while(bytes.length<12){const next=await reader.read();if(next.done)break;const b=new Uint8Array(bytes.length+next.value.length);b.set(bytes);b.set(next.value,bytes.length);bytes=b}}finally{await reader.cancel()}
+ const valid=upload.mime_type==='video/mp4'?String.fromCharCode(...bytes.slice(4,8))==='ftyp':[26,69,223,163].every((n,i)=>bytes[i]===n);
+ if(!valid||size!==Number(upload.file_size))fail('视频内容或大小校验失败，请重新上传');
+ uploadId=upload.id;source={videoProvider:'selfHosted',videoUrl:'/api/video-files/'+input.id};
+ }
+ if(!source)fail('请输入有效的 Bilibili BV 视频链接或 YouTube 链接');
+ const field=(v,max=2000)=>typeof v==='string'?v.trim().slice(0,max):'';
+ const now=new Date().toISOString();const existing=await repo.get('videos',input.id);
+ const video={id:input.id,contentType:'video',title:input.title.trim(),description:field(input.description),...source,uploadId,thumbnail:'/charts/btc-range.svg',duration:Math.max(0,Math.min(86400,Number(input.duration)||0)),category:field(input.category,80)||'视频研究',topics:[field(input.category,80)||'市场专题'],chapter:'',courseId:'',tags:Array.isArray(input.tags)?input.tags.filter(t=>typeof t==='string').slice(0,12).map(t=>t.slice(0,30)):[],symbol:field(input.symbol,40).toUpperCase(),market:field(input.market,40)||'跨市场',sector:'',isMemberOnly:input.isMemberOnly===true,publishedAt:existing?.publishedAt||now,updatedAt:now,relatedPosts:[],relatedVideos:[],isExample:false,status:input.status==='draft'?'draft':'published'};
+ return Response.json(await repo.save('videos',video,input.revision,user.id));
+ }
+ fail('视频接口不存在',404);
+ }};
+}

@@ -1,0 +1,10 @@
+begin;
+create table if not exists public.videos(id text primary key,document jsonb not null,revision integer not null default 1 check(revision>0));
+create table if not exists public.video_uploads(id uuid primary key,owner text not null,storage_path text unique not null,mime_type text not null,file_size bigint not null,created_at timestamptz not null default now());
+alter table public.videos enable row level security;
+alter table public.video_uploads enable row level security;
+revoke all on public.videos,public.video_uploads from anon,authenticated;
+grant select,insert,update,delete on public.videos,public.video_uploads to service_role;
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('research-videos','research-videos',false,52428800,array['video/mp4','video/webm']) on conflict(id) do nothing;
+do $$ begin if exists(select 1 from storage.buckets where id='research-videos' and public=true) then raise exception 'research-videos must be private'; end if;end $$;
+commit;
