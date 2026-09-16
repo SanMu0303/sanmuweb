@@ -5,7 +5,7 @@ import {createApi} from '../server/supabase/api.mjs';
 const env={SUPABASE_URL:'https://example.supabase.co',SUPABASE_SECRET_KEY:'sb_secret_test',ADMIN_EMAILS:'owner@example.com'};
 test('authentication ignores spoofed platform headers and verifies user with Auth server',async()=>{
  let calls=0;
- const auth=createAuth(env,async(url,options)=>{calls++;assert.equal(options.headers.Authorization,'Bearer valid');return Response.json({id:'u',email:'owner@example.com',email_confirmed_at:'2026-09-14'})});
+ const auth=createAuth(env,async(url,options)=>{calls++;if(url.includes('/rest/v1/rpc/')){assert.equal(options.headers.Authorization,undefined);assert.equal(options.headers.apikey,'sb_secret_test');return Response.json({nickname:'交易员1234'})}assert.equal(options.headers.Authorization,'Bearer valid');return Response.json({id:'u',email:'owner@example.com',email_confirmed_at:'2026-09-14'})});
  assert.equal((await auth.identify(new Request('https://site.test',{headers:{'oai-authenticated-user-email':'owner@example.com','oai-authenticated-user-id':'u'}}))).isAdmin,false);
  assert.equal(calls,0);
  assert.equal((await auth.identify(new Request('https://site.test',{headers:{cookie:'research_access=valid'}}))).isAdmin,true);

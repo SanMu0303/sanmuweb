@@ -8,26 +8,28 @@ const user={id:'reader',email:'reader@example.com',email_confirmed_at:'2026-09-1
 const session={access_token:'private-token',refresh_token:'private-refresh',expires_in:7200};
 const password=' a password with spaces ';
 const req=(path,data,origin='https://site.test')=>new Request('https://site.test/api/auth/'+path,{method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify(data)});
-const payload={email:' Reader@Example.com ',password,code:'12345678',isAdmin:true,role:'admin',userId:'owner',token:'attacker-token',type:'email',data:{role:'admin'}};
+const payload={email:' Reader@Example.com ',password,code:'123456',isAdmin:true,role:'admin',userId:'owner',token:'attacker-token',type:'email',data:{role:'admin'}};
 function harness(reply){
- const calls=[];
+ const calls=[],rpcCalls=[];
  const auth=createAuth(env,async(url,options)=>{
+  if(url.includes('/rest/v1/rpc/')){rpcCalls.push({url,body:JSON.parse(options.body)});return Response.json({nickname:'交易员1234'})}
   const call={path:url.replace(env.SUPABASE_URL+'/auth/v1',''),method:options.method,headers:options.headers,body:options.body?JSON.parse(options.body):undefined};
   calls.push(call);
   return reply?reply(call,calls):Response.json(call.path==='/verify'||call.path.startsWith('/token?')?session:user);
  });
- return {calls,auth,api:createApi({env,repo:{},auth})};
+ return {calls,rpcCalls,auth,api:createApi({env,repo:{},auth})};
 }
 function assertPrivateBody(body){
  for(const key of ['token','access_token','refresh_token','password','code'])assert.equal(body[key],undefined,key+' must remain private');
 }
 
 test('password login uses the password grant, verifies identity, and keeps credentials server-side',async()=>{
- const {api,calls}=harness();const response=await api(req('login',payload));
+ const {api,calls,rpcCalls}=harness();const response=await api(req('login',payload));
  assert.equal(response.status,200);
  assert.deepEqual(calls.map(c=>[c.path,c.method]),[['/token?grant_type=password','POST'],['/user','GET']]);
  assert.deepEqual(calls[0].body,{email:user.email,password});
  assert.equal(calls[1].headers.Authorization,'Bearer private-token');
+ assert.deepEqual(rpcCalls.map(c=>c.body),[{p_user_id:user.id}]);
  const body=await response.json();assertPrivateBody(body);assert.equal(body.role,'user');assert.equal(body.isAdmin,false);
  assert.match(response.headers.get('set-cookie'),/HttpOnly; SameSite=Lax; Max-Age=3600; Secure/);
 });
@@ -55,7 +57,7 @@ test('accidentally disabled email confirmation cannot bypass registration verifi
 test('new passwords are checked before signup or consuming any OTP, including the UTF-8 byte limit',async()=>{
  const {auth,calls}=harness();
  for(const invalid of [undefined,null,123,'','1234567','a'.repeat(73),'中'.repeat(25)]){
-  for(const run of [()=>auth.sendRegistration(user.email,invalid),()=>auth.register(user.email,invalid,'12345678'),()=>auth.resetPassword(user.email,invalid,'12345678')]){
+  for(const run of [()=>auth.sendRegistration(user.email,invalid),()=>auth.register(user.email,invalid,'123456'),()=>auth.resetPassword(user.email,invalid,'123456')]){
    await assert.rejects(run,{status:400});
   }
  }
@@ -73,7 +75,7 @@ test('registration verifies signup OTP before applying the mailbox owner passwor
  });
  const response=await api(req('register',payload));assert.equal(response.status,200);
  assert.deepEqual(calls.map(c=>[c.path,c.method]),[['/verify','POST'],['/user','GET'],['/user','PUT']]);
- assert.deepEqual(calls[0].body,{email:user.email,token:'12345678',type:'signup'});
+ assert.deepEqual(calls[0].body,{email:user.email,token:'123456',type:'signup'});
  assert.deepEqual(calls[2].body,{password});assert.equal(calls[2].headers.Authorization,'Bearer private-token');assert.equal(storedPassword,password);
  const body=await response.json();assertPrivateBody(body);assert.equal(body.isAdmin,false);assert.match(response.headers.get('set-cookie'),/HttpOnly/);
 });
@@ -92,7 +94,7 @@ test('missing sessions and unchecked identities never establish a login or write
 test('invalid, expired and reused codes never update passwords or establish sessions',async()=>{
  for(const path of ['register','password/reset']){
   const {api,calls}=harness(()=>Response.json({code:'otp_expired'},{status:403}));
-  const invalid=await api(req(path,{...payload,code:'abc123'}));assert.equal(invalid.status,400);assert.equal(calls.length,0);
+  for(const code of ['abc123','12345','1234567','12345678']){const invalid=await api(req(path,{...payload,code}));assert.equal(invalid.status,400);assert.equal(calls.length,0)}
   for(let attempt=0;attempt<2;attempt++){
    const response=await api(req(path,payload));assert.equal(response.status,400);assert.equal(response.headers.get('set-cookie'),null);assert.match((await response.json()).error,/错误或已过期/);
   }
@@ -134,7 +136,7 @@ test('recovery requests never create users and give the same response for nonexi
 test('reset uses recovery verification, updates password, retires its session and clears website cookie',async()=>{
  const {api,calls}=harness();const response=await api(req('password/reset',payload));assert.equal(response.status,200);
  assert.deepEqual(calls.map(c=>[c.path,c.method]),[['/verify','POST'],['/user','GET'],['/user','PUT'],['/logout','POST']]);
- assert.deepEqual(calls[0].body,{email:user.email,token:'12345678',type:'recovery'});assert.deepEqual(calls[2].body,{password});
+ assert.deepEqual(calls[0].body,{email:user.email,token:'123456',type:'recovery'});assert.deepEqual(calls[2].body,{password});
  assert.equal(calls[3].headers.Authorization,'Bearer private-token');assert.deepEqual(await response.json(),{passwordReset:true});
  assert.equal(response.headers.get('set-cookie'),'research_access=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure');
 });
