@@ -19,8 +19,9 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
     const check=checkMutation(request,env);
     if(!check.ok){console.warn('Request rejected',{path,status:403,reason:check.reason,origin:request.headers.get('origin'),expected:check.expected,contentType:request.headers.get('content-type')});return json({error:check.reason==='origin'?'请求来源不正确，请从当前网站重新打开登录页':'请求内容类型不正确，请使用 JSON'},403)}
    }
-   if(path==='/api/auth/login'&&method==='POST'){const input=await body(request),session=await auth.login(input.email,input.password);return json(session.user,200,{'Set-Cookie':sessionCookie(session.token,session.expires,publicOrigin(request,env).startsWith('https:'))})}
-   if(path==='/api/auth/register'&&method==='POST'){const input=await body(request),session=await auth.register(input.email,input.password,input.nickname,publicOrigin(request,env));return session.token?json(session.user,200,{'Set-Cookie':sessionCookie(session.token,session.expires,publicOrigin(request,env).startsWith('https:'))}):json({confirmationRequired:true,message:'请查看邮箱确认邮件，确认后返回登录；已有账号可直接登录。'});}
+   if(path==='/api/auth/otp/send'&&method==='POST'){const input=await body(request);return json(await auth.sendOtp(input.email))}
+   if(path==='/api/auth/otp/verify'&&method==='POST'){const input=await body(request),session=await auth.verifyOtp(input.email,input.code);return json(session.user,200,{'Set-Cookie':sessionCookie(session.token,session.expires,publicOrigin(request,env).startsWith('https:'))})}
+   if(['/api/auth/login','/api/auth/register'].includes(path)&&method==='POST')return json({error:'已改为邮箱验证码登录，请刷新页面后获取验证码。'},410);
    if(path==='/api/auth/logout'&&method==='POST'){await auth.logout(request);return json({signedOut:true},200,{'Set-Cookie':sessionCookie('',0,publicOrigin(request,env).startsWith('https:'))})}
    const user=await auth.identify(request);
    if(path==='/api/session'&&method==='GET')return json({...user,configured:!!env.ADMIN_EMAILS});
