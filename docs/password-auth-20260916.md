@@ -13,7 +13,7 @@
 
 新密码8–72字符，且UTF-8编码最多72字节；不会去除密码前后空格。客户端不保存密码或访问令牌。Cookie 保留 HttpOnly、SameSite=Lax，在 HTTPS 使用 Secure，最多一小时。管理员仍仅由 ADMIN_EMAILS 控制。
 
-验证码发送保留60秒间隔，实际限流、8位验证码及有效期由 Supabase 控制。注册邮件使用 Confirm sign up 模板，找回密码使用 Reset password 模板；正文均为 {{ .Token }}，不依赖邮件链接。重复注册已确认账号可能返回隐藏账号存在性的成功响应，因此发送提示不保证该地址一定有邮件。
+验证码发送保留60秒间隔，实际限流、6位验证码及有效期由 Supabase 控制。注册邮件使用 Confirm sign up 模板，找回密码使用 Reset password 模板；正文均为 {{ .Token }}，不依赖邮件链接。重复注册已确认账号可能返回隐藏账号存在性的成功响应，因此发送提示不保证该地址一定有邮件。
 
 之前仅使用验证码登录、未设置密码的账号，通过忘记密码建立自己的密码。真实用户密码由用户本人填写和提交，验收不替用户更改密码。
 
@@ -27,3 +27,5 @@
 - https://supabase.com/docs/reference/javascript/auth-resetpasswordforemail
 - https://supabase.com/docs/reference/javascript/auth-updateuser
 - https://github.com/supabase/auth/blob/master/internal/api/signup.go
+
+默认昵称与六位验证码的后续变更见 [六位验证码与唯一默认昵称](nickname-and-six-digit-otp-20260916.md)。
