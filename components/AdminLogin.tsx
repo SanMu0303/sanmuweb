@@ -55,9 +55,9 @@ export default function AdminLogin({register=false,resetPassword=false}:{registe
     <label>{resetPassword?'新密码':'密码'}<input ref={passwordInput} name="password" type="password" autoComplete={needsCode?'new-password':'current-password'} required minLength={needsCode?8:undefined} maxLength={needsCode?72:1024} aria-describedby={needsCode?'password-help':undefined} value={password} disabled={!!busy} onChange={e=>setPassword(e.target.value)}/></label>
     {needsCode&&<>
      <small id="password-help">密码长度为 8–72 个字符。</small>
-     <label>邮箱验证码<input name="code" type="text" inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6,8}" minLength={6} maxLength={8} placeholder="输入邮件中的数字验证码" value={code} disabled={!!busy} onChange={e=>setCode(e.target.value.replace(/\D/g,''))}/></label>
+     <label>邮箱验证码<input name="code" type="text" inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" minLength={6} maxLength={6} placeholder="输入邮件中的 6 位数字验证码" value={code} disabled={!!busy} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))}/></label>
      <button type="button" className="button secondary" disabled={!!busy||remaining>0} onClick={sendCode}>{busy==='send'?'正在发送…':remaining>0?`${remaining}秒后重新发送`:'获取验证码'}</button>
-     <small>请填写最新邮件中的验证码，已收到验证码可直接提交。</small>
+     <small>请填写最新邮件中的 6 位验证码，已收到验证码可直接提交。</small>
     </>}
     <button className="button" type="submit" disabled={!!busy}>{busy==='submit'?(resetPassword?'正在重置…':register?'正在注册…':'正在登录…'):(resetPassword?'重置密码':register?'注册':'登录')}</button>
     {!needsCode&&<small><Link href="/forgot-password/">忘记密码</Link></small>}
