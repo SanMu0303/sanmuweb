@@ -2,52 +2,65 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createAuth} from '../server/supabase/auth.mjs';
 import {createApi} from '../server/supabase/api.mjs';
+import {authSession,authSessionId,hashToken,webSessionFixture} from './helpers/web-session-fixture.mjs';
 const memberships={get:async()=>({status:'none',expiresAt:null,revision:0})};
 
 const env={SUPABASE_URL:'https://project.supabase.co',SUPABASE_SECRET_KEY:'test',ADMIN_EMAILS:'owner@example.com'};
 const user={id:'reader',email:'reader@example.com',email_confirmed_at:'2026-09-16',user_metadata:{role:'admin',isAdmin:true}};
-const session={access_token:'private-token',refresh_token:'private-refresh',expires_in:7200};
+const session=authSession(user.id);
 const password=' a password with spaces ';
 const req=(path,data,origin='https://site.test')=>new Request('https://site.test/api/auth/'+path,{method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify(data)});
 const payload={email:' Reader@Example.com ',password,code:'123456',isAdmin:true,role:'admin',userId:'owner',token:'attacker-token',type:'email',data:{role:'admin'}};
 function harness(reply){
- const calls=[],rpcCalls=[];
+ const calls=[],rpcCalls=[],events=[];
+ const fixture=webSessionFixture(user.id,{events});
  const auth=createAuth(env,async(url,options)=>{
   if(url.includes('/rest/v1/rpc/')){rpcCalls.push({url,body:JSON.parse(options.body)});return Response.json({nickname:'交易员1234'})}
   const call={path:url.replace(env.SUPABASE_URL+'/auth/v1',''),method:options.method,headers:options.headers,body:options.body?JSON.parse(options.body):undefined};
+  events.push(call.path);
   calls.push(call);
   return reply?reply(call,calls):Response.json(call.path==='/verify'||call.path.startsWith('/token?')?session:user);
- });
- return {calls,rpcCalls,auth,api:createApi({memberships,env,repo:{},auth})};
+ },{sessions:fixture.sessions});
+ return {calls,rpcCalls,events,sessionCalls:fixture.calls,epoch:fixture.epoch,auth,api:createApi({memberships,env,repo:{},auth})};
 }
 function assertPrivateBody(body){
- for(const key of ['token','access_token','refresh_token','password','code'])assert.equal(body[key],undefined,key+' must remain private');
+ for(const key of ['token','accessToken','access_token','refreshToken','refresh_token','password','code','raw','sessionId'])assert.equal(body[key],undefined,key+' must remain private');
+ for(const credential of [session.access_token,session.refresh_token])assert.equal(JSON.stringify(body).includes(credential),false);
 }
 
 test('password login uses the password grant, verifies identity, and keeps credentials server-side',async()=>{
- const {api,calls,rpcCalls}=harness();const response=await api(req('login',payload));
+ const {api,calls,rpcCalls,sessionCalls,events,epoch}=harness();const response=await api(req('login',payload));
  assert.equal(response.status,200);
  assert.deepEqual(calls.map(c=>[c.path,c.method]),[['/token?grant_type=password','POST'],['/user','GET']]);
  assert.deepEqual(calls[0].body,{email:user.email,password});
- assert.equal(calls[1].headers.Authorization,'Bearer private-token');
+ assert.equal(calls[1].headers.Authorization,'Bearer '+session.access_token);
  assert.deepEqual(rpcCalls.map(c=>c.body),[{p_user_id:user.id}]);
  const body=await response.json();assertPrivateBody(body);assert.equal(body.role,'user');assert.equal(body.isAdmin,false);
- assert.match(response.headers.get('set-cookie'),/HttpOnly; SameSite=Lax; Max-Age=3600; Secure/);
+ const cookie=response.headers.get('set-cookie');assert.match(cookie,/research_session=[a-f0-9]{64}; Path=\/; HttpOnly; SameSite=Lax; Max-Age=2592000; Secure/);
+ assert.match(cookie,/research_access=; Path=\/; HttpOnly; SameSite=Lax; Max-Age=0; Secure/);
+ const opaque=cookie.match(/research_session=([a-f0-9]{64})/)[1];
+ assert.deepEqual(sessionCalls.map(c=>c.method),['begin','create']);assert.deepEqual(sessionCalls[0].args,[user.email]);
+ assert.deepEqual(sessionCalls[1].args.slice(0,3),[hashToken(opaque),user.id,authSessionId]);assert.equal(sessionCalls[1].args[4],epoch);
+ assert.equal(sessionCalls[1].args[3].token,session.access_token);assert.equal(sessionCalls[1].args[3].refreshToken,session.refresh_token);
+ assert.deepEqual(events,['sessions.begin','/token?grant_type=password','/user','sessions.create']);
+ assert.equal(cookie.includes(session.access_token),false);assert.equal(cookie.includes(session.refresh_token),false);
 });
 
 test('historical short passwords still reach login; wrong passwords never establish a session',async()=>{
- const {api,calls}=harness(()=>Response.json({code:'invalid_credentials'},{status:400}));
+ const {api,calls,sessionCalls}=harness(()=>Response.json({code:'invalid_credentials'},{status:400}));
  const response=await api(req('login',{email:user.email,password:'short'}));
  assert.equal(calls.length,1);assert.equal(calls[0].body.password,'short');assert.equal(response.status,400);
  assert.equal(response.headers.get('set-cookie'),null);assert.match((await response.json()).error,/邮箱或密码/);
+ assert.deepEqual(sessionCalls.map(c=>c.method),['begin']);
 });
 
 test('registration send requests a confirmation with email/password and never signs in early',async()=>{
- const {api,calls}=harness(()=>Response.json({id:'unconfirmed',email:user.email}));
+ const {api,calls,sessionCalls}=harness(()=>Response.json({id:'unconfirmed',email:user.email}));
  const response=await api(req('register/send',payload));
  assert.equal(response.status,200);assert.deepEqual(calls.map(c=>c.path),['/signup']);
  assert.deepEqual(calls[0].body,{email:user.email,password});
  assert.deepEqual(await response.json(),{codeSent:true,retryAfter:60});assert.equal(response.headers.get('set-cookie'),null);
+ assert.deepEqual(sessionCalls,[]);
 });
 
 test('accidentally disabled email confirmation cannot bypass registration verification',async()=>{
@@ -69,7 +82,7 @@ test('new passwords are checked before signup or consuming any OTP, including th
 test('registration verifies signup OTP before applying the mailbox owner password, including spaces',async()=>{
  // A repeated unconfirmed signup may retain someone else's original password upstream.
  let storedPassword='pre-registration-password';
- const {api,calls}=harness(call=>{
+ const {api,calls,sessionCalls,events,epoch}=harness(call=>{
   if(call.path==='/verify')return Response.json(session);
   if(call.method==='PUT')storedPassword=call.body.password;
   return Response.json(user);
@@ -77,7 +90,9 @@ test('registration verifies signup OTP before applying the mailbox owner passwor
  const response=await api(req('register',payload));assert.equal(response.status,200);
  assert.deepEqual(calls.map(c=>[c.path,c.method]),[['/verify','POST'],['/user','GET'],['/user','PUT']]);
  assert.deepEqual(calls[0].body,{email:user.email,token:'123456',type:'signup'});
- assert.deepEqual(calls[2].body,{password});assert.equal(calls[2].headers.Authorization,'Bearer private-token');assert.equal(storedPassword,password);
+ assert.deepEqual(calls[2].body,{password});assert.equal(calls[2].headers.Authorization,'Bearer '+session.access_token);assert.equal(storedPassword,password);
+ assert.deepEqual(events,['sessions.begin','/verify','/user','/user','sessions.create']);assert.deepEqual(sessionCalls[0].args,[user.email]);
+ assert.equal(sessionCalls[1].args[1],user.id);assert.equal(sessionCalls[1].args[2],authSessionId);assert.equal(sessionCalls[1].args[4],epoch);
  const body=await response.json();assertPrivateBody(body);assert.equal(body.isAdmin,false);assert.match(response.headers.get('set-cookie'),/HttpOnly/);
 });
 
@@ -105,8 +120,9 @@ test('invalid, expired and reused codes never update passwords or establish sess
 
 test('same_password is accepted only as the exact upstream error after verified identity',async()=>{
  for(const path of ['register','password/reset']){
-  const {api,calls}=harness(call=>call.method==='PUT'?Response.json({error_code:'same_password'},{status:422}):Response.json(call.path==='/verify'?session:user));
+  const {api,calls,sessionCalls}=harness(call=>call.method==='PUT'?Response.json({error_code:'same_password'},{status:422}):Response.json(call.path==='/verify'?session:user));
   const response=await api(req(path,payload));assert.equal(response.status,200);assert.equal(calls[1].method,'GET');assert.equal(calls[2].method,'PUT');
+  if(path==='password/reset'){assert.deepEqual(sessionCalls,[{method:'revokeAll',args:[user.id]}]);assert.equal(calls.at(-1).path,'/logout?scope=global')}
   const unrelated=harness(call=>call.method==='PUT'?Response.json({code:'validation_failed',message:'same_password'},{status:422}):Response.json(call.path==='/verify'?session:user));
   const failure=await unrelated.api(req(path,payload));assert.equal(failure.status,400);assert.equal(failure.headers.get('set-cookie'),null);assert.match((await failure.json()).error,/重新获取验证码/);
  }
@@ -122,7 +138,7 @@ test('password save failures stay unsuccessful and explain consumed-code recover
   ]){
    const {api,calls}=harness(call=>call.method==='PUT'?failure.reply():Response.json(call.path==='/verify'?session:user));
    const response=await api(req(path,payload));assert.equal(response.status,failure.status);assert.equal(response.headers.get('set-cookie'),null);
-   const body=await response.json();assert.match(body.error,/重新获取验证码/);assert.doesNotMatch(body.error,/private/);assert.ok(calls.every(c=>c.path!=='/logout'));
+   const body=await response.json();assert.match(body.error,/重新获取验证码/);assert.doesNotMatch(body.error,/private/);assert.ok(calls.every(c=>!c.path.startsWith('/logout')));
    if(failure.status===503){assert.match(body.error,/新密码登录/);assert.match(body.error,/忘记密码/)}
   }
  }
@@ -135,11 +151,12 @@ test('recovery requests never create users and give the same response for nonexi
 });
 
 test('reset uses recovery verification, updates password, retires its session and clears website cookie',async()=>{
- const {api,calls}=harness();const response=await api(req('password/reset',payload));assert.equal(response.status,200);
- assert.deepEqual(calls.map(c=>[c.path,c.method]),[['/verify','POST'],['/user','GET'],['/user','PUT'],['/logout','POST']]);
+ const {api,calls,sessionCalls,events}=harness();const response=await api(req('password/reset',payload));assert.equal(response.status,200);
+ assert.deepEqual(calls.map(c=>[c.path,c.method]),[['/verify','POST'],['/user','GET'],['/user','PUT'],['/logout?scope=global','POST']]);
  assert.deepEqual(calls[0].body,{email:user.email,token:'123456',type:'recovery'});assert.deepEqual(calls[2].body,{password});
- assert.equal(calls[3].headers.Authorization,'Bearer private-token');assert.deepEqual(await response.json(),{passwordReset:true});
- assert.equal(response.headers.get('set-cookie'),'research_access=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure');
+ assert.equal(calls[3].headers.Authorization,'Bearer '+session.access_token);assert.deepEqual(await response.json(),{passwordReset:true});
+ assert.deepEqual(sessionCalls,[{method:'revokeAll',args:[user.id]}]);assert.ok(events.indexOf('sessions.revokeAll')<events.indexOf('/logout?scope=global'));
+ assert.deepEqual(response.headers.getSetCookie(),['research_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure','research_access=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure']);
 });
 
 test('send failures and rate limits never report success',async()=>{
@@ -151,7 +168,7 @@ test('send failures and rate limits never report success',async()=>{
 
 test('every authentication mutation rejects cross-origin requests before contacting auth',async()=>{
  const {api,calls}=harness();
- for(const path of ['login','register/send','register','password/send','password/reset','logout','otp/send','otp/verify']){
+ for(const path of ['login','register/send','register','password/send','password/reset','logout','logout-all','reauth','otp/send','otp/verify']){
   const response=await api(req(path,payload,'https://evil.test'));assert.equal(response.status,403);assert.equal(response.headers.get('set-cookie'),null);
  }
  assert.equal(calls.length,0);

@@ -5,6 +5,7 @@ import {createAuth} from '../server/supabase/auth.mjs';
 import {createImages} from '../server/supabase/images.mjs';
 import {createVideos} from '../server/supabase/videos.mjs';
 import {watchSync} from '../server/content-validation.mjs';
+import {opaqueToken,webSessionFixture} from './helpers/web-session-fixture.mjs';
 
 const origin='https://site.test';
 const env={SUPABASE_URL:'https://example.supabase.co',SUPABASE_SECRET_KEY:'sb_secret_test',ADMIN_EMAILS:'owner@example.com'};
@@ -23,10 +24,10 @@ const doc={slug:'member-research',title:'会员研究',excerpt:'公开摘要',pu
 const video={id:'video-member',title:'会员视频',description:'公开视频简介',isMemberOnly:true,status:'published',videoProvider:'selfHosted',videoUrl:'/api/video-files/video-member',uploadId,storagePath:'videos/'+uploadId,publishedAt:doc.publishedAt,updatedAt:doc.updatedAt,tags:[],relatedPosts:[]};
 function request(path,method='GET',data,headers={}){return new Request(origin+path,{method,headers:{origin,'content-type':'application/json',...headers},...(data===undefined?{}:{body:JSON.stringify(data)})})}
 function fixture({user=reader,state=none,repo:overrides={},members:memberOverrides={},auth:authOverrides={}}={}){
- const calls={membership:[],save:[],list:[],get:[]};
+ const calls={membership:[],save:[],list:[],get:[],reauth:[]};
  const repo={list:async table=>table==='videos'?[video]:[doc],get:async(table,id,options)=>{calls.get.push({table,id,options});if(table==='videos')return video;return options?.publishedOnly&&doc.status!=='published'?null:doc},...overrides};
  const members={get:async id=>{calls.membership.push(id);return typeof state==='function'?state():state},list:async filters=>{calls.list.push(filters);return {users:[{...reader,membership:state}],total:1,page:1,pageSize:20}},save:async(...args)=>{calls.save.push(args);return membership(args[2].action==='revoke'?'revoked':'active')},...memberOverrides};
- const auth={identify:async()=>user,...authOverrides};
+ const auth={identify:async()=>user,requireRecent:async r=>{calls.reauth.push(r.url)},...authOverrides};
  return {api:createApi({env,repo,auth,memberships:members}),calls};
 }
 
@@ -52,12 +53,12 @@ test('guests and users without records stay ordinary and cannot spoof membership
 test('login and registration return database membership rather than client-supplied privilege fields',async()=>{
  for(const endpoint of ['/api/auth/login','/api/auth/register']){
   let supplied;
-  const session={user:{...reader,isMember:true,membership:membership('active')},token:'test-session',expires:3600};
+  const session={user:{...reader,isMember:true,membership:membership('active')},token:opaqueToken,expires:2592000};
   const handler=async(...args)=>{supplied=args;return session};
   const {api,calls}=fixture({auth:{login:handler,register:handler}});
   const response=await api(request(endpoint,'POST',{email:reader.email,password:'chosen-password',code:'123456',isAdmin:true,isMember:true,membership:membership('active')}));
   assert.equal(response.status,200);const body=await response.json();assert.equal(body.isMember,false);assert.equal(body.isAdmin,false);assert.equal(body.membership.status,'none');assert.deepEqual(calls.membership,[readerId]);
-  assert.equal(supplied[0],reader.email);assert.equal(supplied[1],'chosen-password');assert.equal(JSON.stringify(body).includes('test-session'),false);assert.match(response.headers.get('set-cookie'),/HttpOnly/);
+  assert.equal(supplied[0],reader.email);assert.equal(supplied[1],'chosen-password');assert.equal(JSON.stringify(body).includes(opaqueToken),false);assert.match(response.headers.get('set-cookie'),/research_session=[a-f0-9]{64}/);assert.match(response.headers.get('set-cookie'),/HttpOnly/);
  }
 });
 
@@ -125,18 +126,21 @@ test('member administration requires an authenticated admin and records the trus
   const {api,calls}=fixture({user});
   for(const [path,method,data] of [['/api/admin/members','GET'],['/api/admin/members/'+readerId,'PUT',{action:'revoke',revision:1}]])assert.equal((await api(request(path,method,data))).status,user.signedIn?403:401);
   assert.equal(calls.list.length,0);assert.equal(calls.save.length,0);
+  assert.equal(calls.reauth.length,0);
  }
  const {api,calls}=fixture({user:admin});
  const list=await api(request('/api/admin/members?q=reader%40example.com&page=2&status=expired'));assert.equal(list.status,200);assert.equal(calls.list.length,1);assert.equal(calls.list[0].query,'reader@example.com');assert.equal(Number(calls.list[0].page),2);assert.equal(calls.list[0].status,'expired');
  const data={action:'set',expiresAt:'2099-01-01T00:00:00.000Z',revision:4,actor:'forged-id',userId:ownerId};
  const changed=await api(request('/api/admin/members/'+readerId,'PUT',data));assert.equal(changed.status,200);assert.equal((await changed.json()).status,'active');assert.equal(calls.save.length,1);assert.equal(calls.save[0][0]?.id||calls.save[0][0],ownerId);assert.equal(calls.save[0][1],readerId);
  const revoked=await api(request('/api/admin/members/'+readerId,'PUT',{action:'revoke',revision:5}));assert.equal(revoked.status,200);assert.equal((await revoked.json()).status,'revoked');
+ assert.deepEqual(calls.reauth,[origin+'/api/admin/members/'+readerId,origin+'/api/admin/members/'+readerId]);
 });
 
 test('member mutations reject cross-origin and non-JSON requests before calling the service',async()=>{
  const {api,calls}=fixture({user:admin});
  for(const headers of [{origin:'https://attacker.test'},{origin:'null'},{'content-type':'text/plain'}])assert.equal((await api(request('/api/admin/members/'+readerId,'PUT',{action:'revoke',revision:1},headers))).status,403);
  assert.equal(calls.save.length,0);assert.equal(calls.membership.length,0);
+ assert.equal(calls.reauth.length,0);
 });
 
 test('membership service errors fail closed and expose revision conflicts without success responses',async()=>{
@@ -147,8 +151,9 @@ test('membership service errors fail closed and expose revision conflicts withou
 });
 
 test('Auth user metadata cannot assert admin or membership privilege',async()=>{
- const auth=createAuth(env,async url=>Response.json(url.includes('/rest/v1/rpc/')?{nickname:'交易员1234'}:{...reader,email_confirmed_at:'2026-09-16',user_metadata:{isAdmin:true,isMember:true,role:'admin',membership:membership('active')}}));
- const result=await auth.identify(request('/api/session','GET',undefined,{cookie:'research_access=verified-reader-token'}));
+ const sessions=webSessionFixture(readerId);
+ const auth=createAuth(env,async url=>Response.json(url.includes('/rest/v1/rpc/')?{nickname:'交易员1234'}:{...reader,email_confirmed_at:'2026-09-16',user_metadata:{isAdmin:true,isMember:true,role:'admin',membership:membership('active')}}),{sessions:sessions.sessions});
+ const result=await auth.identify(request('/api/session','GET',undefined,{cookie:sessions.cookie}));
  assert.equal(result.isAdmin,false);assert.notEqual(result.isMember,true);assert.equal(result.role,'user');
 });
 
