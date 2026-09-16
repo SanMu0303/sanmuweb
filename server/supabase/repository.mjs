@@ -24,6 +24,17 @@ export function createRepository(client=createSupabase()) {
   async history(symbol){
    const all=[];for(let offset=0;;offset+=500){const rows=await client.request('/rest/v1/watch_history?'+new URLSearchParams({symbol:'eq.'+symbol,select:'document,revision,recorded_at',order:'revision.desc',limit:'500',offset:String(offset)}));all.push(...rows);if(rows.length<500)return all;}
   },
+  async archive(table,key,expectedRevision,restore=false) {
+   if(!['watch_items','videos'].includes(table)||!Number.isInteger(expectedRevision)||expectedRevision<0)throw new Error('Invalid archive request');
+   const current=await this.get(table,key);if(!current)throw Object.assign(new Error('记录不存在'),{status:404});
+   if(current.revision!==expectedRevision)throw conflict();
+   const {revision,...document}=current;
+   if(restore)delete document.deletedAt;else document.deletedAt=new Date().toISOString();
+   document.updatedAt=table==='watch_items'?new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Shanghai'}):new Date().toISOString();
+   if(table==='watch_items')document.isWeeklyFocus=false;else document.status='draft';
+   const rows=await client.request(query(table,{[keyFor(table)]:'eq.'+key,revision:'eq.'+expectedRevision}),{method:'PATCH',headers:{'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({document,revision:expectedRevision+1})});
+   if(rows.length!==1)throw conflict();return documentOf(rows[0]);
+  },
   async saveWithWatch(document,revision,owner,sync){
    return client.request('/rest/v1/rpc/save_post_with_watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_document:document,p_revision:revision,p_owner:owner,p_sync:sync})});
   },
