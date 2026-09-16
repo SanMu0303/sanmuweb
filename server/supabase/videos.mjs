@@ -1,17 +1,19 @@
 import {createSupabase} from './client.mjs';
 import {VIDEO_CONFIG as config} from '../../config/videos.mjs';
 import {videoSource} from '../video-source.mjs';
+import {canReadMemberContent,memberAssetLifetime} from '../member-access.mjs';
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status})};
 const change=(method,data)=>({method,headers:{'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(data)});
 export function createVideos(client=createSupabase(),transport=fetch,examples=[]){
  const bucket=config.bucket;
  const get=async id=>typeof id!=='string'||!/^[a-f0-9-]{36}$/.test(id)?null:(await client.request('/rest/v1/video_uploads?'+new URLSearchParams({id:'eq.'+id,select:'*',limit:'1'})))[0];
- const sign=async path=>{const d=await client.request('/storage/v1/object/sign/'+bucket+'/'+path,change('POST',{expiresIn:3600}));return client.config.url+'/storage/v1'+d.signedURL};
+ const sign=async(path,expiresIn=3600)=>{const d=await client.request('/storage/v1/object/sign/'+bucket+'/'+path,change('POST',{expiresIn}));return client.config.url+'/storage/v1'+d.signedURL};
  return {async handle(request,user,repo){const path=new URL(request.url).pathname.replace(/\/$/,'');
  if(path.startsWith('/api/video-files/')&&['GET','HEAD'].includes(request.method)){
- const id=path.split('/')[3];const video=await repo.get('videos',id);if(!video||video.status!=='published'||video.deletedAt||(video.isMemberOnly&&!user.isAdmin))fail('视频不存在或没有播放权限',404);
+ const id=path.split('/')[3];const video=await repo.get('videos',id);if(!video||video.status!=='published'||video.deletedAt||(video.isMemberOnly&&!canReadMemberContent(user)))fail('视频不存在或没有播放权限',404);
  const upload=await get(video.uploadId);if(!upload)fail('视频文件不存在',404);
- return new Response(null,{status:302,headers:{Location:await sign(upload.storage_path),'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}});
+ const expiresIn=video.isMemberOnly?memberAssetLifetime(user):3600;if(!expiresIn)fail('视频不存在或没有播放权限',404);
+ return new Response(null,{status:302,headers:{Location:await sign(upload.storage_path,expiresIn),'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}});
  }
  if(path==='/api/admin/video-uploads'&&request.method==='POST'){
  const input=await request.json();if(!config.mimeTypes.includes(input.mimeType)||!Number.isInteger(input.fileSize)||input.fileSize<=0||input.fileSize>config.maxFileBytes)fail('请选择50MB以内的 MP4 或 WebM 视频');

@@ -1,6 +1,7 @@
 import {createSupabase} from './client.mjs';
 import {IMAGE_CONFIG} from '../../config/images.mjs';
 import {projectPost} from '../post-model.mjs';
+import {canReadMemberContent,memberAssetLifetime} from '../member-access.mjs';
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status})};
 const json=(value,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'private, no-store'}});
 const validId=id=>/^[a-f0-9-]{36}$/.test(id);
@@ -11,7 +12,7 @@ export function createImages(client=createSupabase(),transport=fetch){
  const change=(method,body)=>({method,headers:{'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(body)});
  async function row(id){if(!validId(id))fail('图片标识不正确');return (await client.request(query(id,{select:'*'})))[0]}
  function signedUrl(path){const url=new URL(path,client.config.url+base+'/');if(url.origin!==client.config.url||!url.pathname.startsWith('/storage/v1/'))throw new Error('Invalid storage URL');return url.toString()}
- async function download(path){const data=await client.request(base+'/object/sign/'+bucket+'/'+path,change('POST',{expiresIn:60}));return signedUrl(base+data.signedURL)}
+ async function download(path,expiresIn=60){const data=await client.request(base+'/object/sign/'+bucket+'/'+path,change('POST',{expiresIn}));return signedUrl(base+data.signedURL)}
  async function cleanExpired(owner){
   const expired=await client.request('/rest/v1/image_uploads?'+new URLSearchParams({owner:'eq.'+owner,state:'in.(waiting,temporary,deleting)',created_at:'lt.'+(Date.now()-IMAGE_CONFIG.temporaryTtlMs),limit:'20',select:'id'}));
   for(const item of expired){
@@ -55,11 +56,13 @@ export function createImages(client=createSupabase(),transport=fetch){
    }
    if(path.startsWith('/api/images/')&&['GET','HEAD'].includes(request.method)){
     const current=await row(path.split('/')[3]);if(!current||!['temporary','attached'].includes(current.state))fail('图片不存在',404);
-    let allowed=user.isAdmin&&current.owner===user.id;
+    let allowed=user.isAdmin&&current.owner===user.id,requiresMembership=false;
     if(!allowed&&current.state==='attached'&&current.post_slug?.startsWith('watch:')){const watch=await repo.get('watch_items',current.post_slug.slice(6));allowed=!!watch?.images?.some(i=>i.url==='/api/images/'+current.id&&i.storagePath===current.storage_path);if(!allowed&&repo.history)allowed=(await repo.history(current.post_slug.slice(6))).some(h=>h.document.images?.some(i=>i.url==='/api/images/'+current.id&&i.storagePath===current.storage_path))}
-    if(!allowed&&current.post_slug){const post=await repo.get('articles',current.post_slug,{publishedOnly:true});allowed=!!post&&projectPost(post,user.isAdmin).images.some(i=>i.storagePath===current.storage_path)}
+    if(!allowed&&current.post_slug){const post=await repo.get('articles',current.post_slug,{publishedOnly:true});allowed=!!post&&projectPost(post,canReadMemberContent(user)).images.some(i=>i.storagePath===current.storage_path);requiresMembership=allowed&&post.access==='member'&&!projectPost(post,false).images.some(i=>i.storagePath===current.storage_path)}
     if(!allowed)fail('图片不存在或无权查看',404);
-    return new Response(null,{status:302,headers:{Location:await download(current.storage_path),'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}});
+    const expiresIn=requiresMembership?memberAssetLifetime(user):60;
+    if(!expiresIn)fail('图片不存在或无权查看',404);
+    return new Response(null,{status:302,headers:{Location:await download(current.storage_path,expiresIn),'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}});
    }
    return json({error:'图片接口不存在'},404);
   }
