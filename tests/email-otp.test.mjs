@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createAuth} from '../server/supabase/auth.mjs';
 import {createApi} from '../server/supabase/api.mjs';
+const memberships={get:async()=>({status:'none',expiresAt:null,revision:0})};
 
 const env={SUPABASE_URL:'https://project.supabase.co',SUPABASE_SECRET_KEY:'test',ADMIN_EMAILS:'owner@example.com'};
 const user={id:'reader',email:'reader@example.com',email_confirmed_at:'2026-09-16',user_metadata:{role:'admin',isAdmin:true}};
@@ -17,7 +18,7 @@ function harness(reply){
   calls.push(call);
   return reply?reply(call,calls):Response.json(call.path==='/verify'||call.path.startsWith('/token?')?session:user);
  });
- return {calls,rpcCalls,auth,api:createApi({env,repo:{},auth})};
+ return {calls,rpcCalls,auth,api:createApi({memberships,env,repo:{},auth})};
 }
 function assertPrivateBody(body){
  for(const key of ['token','access_token','refresh_token','password','code'])assert.equal(body[key],undefined,key+' must remain private');
