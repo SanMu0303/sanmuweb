@@ -1,3 +1,4 @@
+import {createProfile} from './profile.mjs';
 import {createVideos} from './videos.mjs';
 import {createImages} from './images.mjs';
 import {createRepository} from './repository.mjs';
@@ -19,9 +20,11 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
     if(!check.ok){console.warn('Request rejected',{path,status:403,reason:check.reason,origin:request.headers.get('origin'),expected:check.expected,contentType:request.headers.get('content-type')});return json({error:check.reason==='origin'?'请求来源不正确，请从当前网站重新打开登录页':'请求内容类型不正确，请使用 JSON'},403)}
    }
    if(path==='/api/auth/login'&&method==='POST'){const input=await body(request),session=await auth.login(input.email,input.password);return json(session.user,200,{'Set-Cookie':sessionCookie(session.token,session.expires,publicOrigin(request,env).startsWith('https:'))})}
+   if(path==='/api/auth/register'&&method==='POST'){const input=await body(request),session=await auth.register(input.email,input.password,input.nickname,publicOrigin(request,env));return session.token?json(session.user,200,{'Set-Cookie':sessionCookie(session.token,session.expires,publicOrigin(request,env).startsWith('https:'))}):json({confirmationRequired:true,message:'请查看邮箱确认邮件，确认后返回登录；已有账号可直接登录。'});}
    if(path==='/api/auth/logout'&&method==='POST'){await auth.logout(request);return json({signedOut:true},200,{'Set-Cookie':sessionCookie('',0,publicOrigin(request,env).startsWith('https:'))})}
    const user=await auth.identify(request);
    if(path==='/api/session'&&method==='GET')return json({...user,configured:!!env.ADMIN_EMAILS});
+   if(path==='/api/profile'||path==='/api/profile/avatar'){if(!user.signedIn)return json({error:'请先登录'},401);if(path.endsWith('/avatar')&&method==='GET')return await createProfile().avatar(request,auth);if(path==='/api/profile'&&method==='GET')return json(user);if(path==='/api/profile'&&method==='PUT')return json(await createProfile().save(request,await body(request),auth));}
    if(path.startsWith('/api/admin/')&&!user.isAdmin)return json({error:user.signedIn?'当前账号没有管理权限':'请先登录管理员账号'},user.signedIn?403:401);
    if(path.startsWith('/api/images/')||path.startsWith('/api/admin/images'))return await createImages().handle(request,user,repo);
    if(path.startsWith('/api/video-files/')||path==='/api/admin/videos'||path==='/api/admin/video-uploads')return await createVideos(undefined,undefined,videos).handle(request,user,repo);
