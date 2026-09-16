@@ -26,7 +26,7 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
   post.images=post.images.map(({storagePath,...image})=>image);
   return post;
  }
- return async request=>{
+ const handle=async request=>{
   try{
    const url=new URL(request.url),path=url.pathname.replace(/\/$/,''),method=request.method;
    if(!['GET','HEAD'].includes(method)){
@@ -40,8 +40,11 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
    if(path==='/api/auth/password/reset'&&method==='POST'){const input=await body(request);return json(await auth.resetPassword(input.email,input.password,input.code),200,{'Set-Cookie':sessionCookie('',0,publicOrigin(request,env).startsWith('https:'))})}
    if(['/api/auth/otp/send','/api/auth/otp/verify'].includes(path)&&method==='POST')return json({error:'已改为邮箱密码登录，请刷新页面。未设置密码可点击忘记密码。'},410);
    if(path==='/api/auth/logout'&&method==='POST'){await auth.logout(request);return json({signedOut:true},200,{'Set-Cookie':sessionCookie('',0,publicOrigin(request,env).startsWith('https:'))})}
+   if(path==='/api/auth/logout-all'&&method==='POST'){await auth.logout(request,true);return json({signedOut:true},200,{'Set-Cookie':sessionCookie('',0,publicOrigin(request,env).startsWith('https:'))})}
+   if(path==='/api/auth/reauth'&&method==='POST'){const input=await body(request);return json(await auth.reauthenticate(request,input.password))}
    const identity=await auth.identify(request);
    if(path.startsWith('/api/admin/')&&!identity.isAdmin)return json({error:identity.signedIn?'当前账号没有管理权限':'请先登录管理员账号'},identity.signedIn?403:401);
+   if(path.startsWith('/api/admin/')&&!['GET','HEAD'].includes(method))await auth.requireRecent(request);
    if(path==='/api/admin/members'&&method==='GET')return json(await memberService().list({query:url.searchParams.get('q')||'',page:url.searchParams.has('page')?Number(url.searchParams.get('page')):1,status:url.searchParams.get('status')||'all'}));
    if(/^\/api\/admin\/members\/[^/]+$/.test(path)&&method==='PUT')return json(await memberService().save(identity,decodeURIComponent(path.split('/')[4]),await body(request)));
    const user=await withMembership(identity);
@@ -71,6 +74,7 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
     if(method==='PUT'){const input=await body(request),value=isArticle?article(input):watch(input);if(isArticle){const sync=watchSync(input.watchSync,value);if(sync){const current=await repo.get('watch_items',value.symbol);if(current?.deletedAt)fail('该观察已在回收站，请先到内容管理恢复后再同步',409);const saved=await repo.saveWithWatch(value,input.revision??0,user.id,sync);const observation=await repo.get('watch_items',value.symbol);return json({...saved,watchSyncResult:{symbol:value.symbol,revision:observation?.revision,isWeeklyFocus:!!observation?.isWeeklyFocus}})}}if(!isArticle&&value.articleSlug&&!await repo.get('articles',value.articleSlug,{publishedOnly:true}))fail('请关联已发布文章，或清空关联文章');return json(await repo.save(table,value,input.revision??0,user.id))}
    }
    return json({error:'接口不存在'},404);
-  }catch(error){const status=error.status||503;return json({error:status>=500?(error.publicMessage||'服务暂时不可用，请稍后重试'):error.message},status)}
+  }catch(error){const status=error.status||503;return json({error:status>=500?(error.publicMessage||'服务暂时不可用，请稍后重试'):error.message,...(status===428&&error.code==='reauthentication_required'?{code:error.code}:{})},status)}
  };
+ return async request=>{const response=await handle(request);return auth.applyCookies?auth.applyCookies(request,response,publicOrigin(request,env).startsWith('https:')):response};
 }
