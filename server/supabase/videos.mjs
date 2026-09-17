@@ -2,6 +2,7 @@ import {createSupabase} from './client.mjs';
 import {VIDEO_CONFIG as config} from '../../config/videos.mjs';
 import {videoSource} from '../video-source.mjs';
 import {canReadMemberContent,memberAssetLifetime} from '../member-access.mjs';
+import {createVideoCovers} from './video-covers.mjs';
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status})};
 const change=(method,data)=>({method,headers:{'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(data)});
 export function createVideos(client=createSupabase(),transport=fetch,examples=[]){
@@ -32,6 +33,8 @@ export function createVideos(client=createSupabase(),transport=fetch,examples=[]
  if(path==='/api/admin/videos'&&request.method==='PUT'){
  const input=await request.json();if(typeof input.id!=='string'||!/^video-[a-z0-9-]+$/.test(input.id)||typeof input.title!=='string'||!input.title.trim()||input.title.length>180)fail('请填写视频标题');
  if(!Number.isInteger(input.revision)||input.revision<0)fail('视频版本不正确');
+ if(input.category!==undefined&&typeof input.category!=='string')fail('分类格式不正确');
+ const category=(input.category||'').trim();if(Array.from(category).length>80)fail('分类最多80个字符');
  let source=videoSource(input.videoUrl||'');let uploadId='';
  if(input.videoProvider==='selfHosted'){
  const upload=await get(input.uploadId);if(!upload||upload.owner!==user.id)fail('请先上传视频');
@@ -44,7 +47,8 @@ export function createVideos(client=createSupabase(),transport=fetch,examples=[]
  if(!source)fail('请输入有效的 Bilibili BV 视频链接或 YouTube 链接');
  const field=(v,max=2000)=>typeof v==='string'?v.trim().slice(0,max):'';
  const now=new Date().toISOString();const existing=await repo.get('videos',input.id);
- const video={id:input.id,contentType:'video',title:input.title.trim(),description:field(input.description),...source,uploadId,thumbnail:'/charts/btc-range.svg',duration:Math.max(0,Math.min(86400,Number(input.duration)||0)),category:field(input.category,80)||'视频研究',topics:[field(input.category,80)||'市场专题'],chapter:'',courseId:'',tags:Array.isArray(input.tags)?input.tags.filter(t=>typeof t==='string').slice(0,12).map(t=>t.slice(0,30)):[],symbol:field(input.symbol,40).toUpperCase(),market:field(input.market,40)||'跨市场',sector:'',isMemberOnly:input.isMemberOnly===true,publishedAt:existing?.publishedAt||now,updatedAt:now,relatedPosts:[],relatedVideos:[],isExample:false,status:input.status==='draft'?'draft':'published'};
+ const cover=await createVideoCovers(client,transport).select(input,existing,user);
+ const video={id:input.id,contentType:'video',title:input.title.trim(),description:field(input.description),...source,uploadId,...cover,duration:Math.max(0,Math.min(86400,Number(input.duration)||0)),category,topics:category?[category]:[],chapter:'',courseId:'',tags:Array.isArray(input.tags)?input.tags.filter(t=>typeof t==='string').slice(0,12).map(t=>t.slice(0,30)):[],symbol:field(input.symbol,40).toUpperCase(),market:field(input.market,40)||'跨市场',sector:'',isMemberOnly:input.isMemberOnly===true,publishedAt:existing?.publishedAt||now,updatedAt:now,relatedPosts:[],relatedVideos:[],isExample:false,status:input.status==='draft'?'draft':'published'};
  return Response.json(await repo.save('videos',video,input.revision,user.id));
  }
  fail('视频接口不存在',404);
