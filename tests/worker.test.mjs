@@ -14,4 +14,25 @@ test('research feed supports lifecycle, full-body search and paid preview bounda
 
 test('legacy documents normalize without requiring destructive schema changes',async()=>{const {normalizePost,orderPosts,filterPosts,toArticleDocument}=await import('../server/post-model.mjs');const normalized=normalizePost(post);assert.equal(normalized.contentType,'观察更新');assert.equal(normalized.format,'long');assert.equal(normalized.isMemberOnly,true);assert.equal(toArticleDocument(normalized).excerpt,post.excerpt);const dates=[{...normalized,id:'new',updatedAt:'2026-09-10T10:00:00Z',publishedAt:'2026-09-10T10:00:00Z'},{...normalized,id:'old',updatedAt:'2026-08-10T10:00:00Z',publishedAt:'2026-08-10T10:00:00Z'}];assert.equal(orderPosts(dates,true)[0].id,'old');assert.equal(orderPosts(dates)[0].id,'new');assert.equal(filterPosts(dates,{month:'2026-08'})[0].id,'old')});
 
-test('video library protects full sources and joins symbol research without changing posts API',async()=>{const {projectVideo}=await import('../server/video-model.mjs');const privateVideo={isMemberOnly:true,videoUrl:'https://private.test/full.mp4',previewUrl:'https://public.test/preview.mp4'};assert.equal(projectVideo(privateVideo).videoUrl,'');assert.equal(projectVideo(privateVideo).previewUrl,privateVideo.previewUrl);assert.equal(projectVideo(privateVideo,true).videoUrl,privateVideo.videoUrl);const env=setup();const library=await(await worker.fetch(req('/api/library'),env)).json();assert.equal(library.videos.length,6);assert(library.videos.filter(v=>v.isMemberOnly).every(v=>v.locked&&!v.videoUrl));const postIds=new Set((await(await worker.fetch(req('/api/posts'),env)).json()).flatMap(p=>[p.id,p.slug]));for(const v of library.videos){assert(v.relatedPosts.every(id=>postIds.has(id)));assert(v.relatedVideos.every(id=>library.videos.some(x=>x.id===id)))}for(const c of library.courses)for(const ch of c.chapters)for(const l of ch.lessons)assert(l.contentType==='video'?library.videos.some(v=>v.id===l.contentId):postIds.has(l.contentId));const feed=await(await worker.fetch(req('/api/feed?symbol=DOGE&market='+encodeURIComponent('加密')),env)).json();assert.equal(feed.length,6);assert(feed.some(p=>p.video?.id==='video-06'));const onlyVideos=await(await worker.fetch(req('/api/feed?type=video'),env)).json();assert.equal(onlyVideos.length,6);env.DB.sqlite.close()});
+test('an empty seeded video library preserves article feeds and member source protection',async()=>{
+ const {projectVideo}=await import('../server/video-model.mjs');
+ const privateVideo={isMemberOnly:true,videoUrl:'https://private.test/full.mp4',previewUrl:'https://public.test/preview.mp4'};
+ assert.equal(projectVideo(privateVideo).videoUrl,'');
+ assert.equal(projectVideo(privateVideo).previewUrl,privateVideo.previewUrl);
+ assert.equal(projectVideo(privateVideo,true).videoUrl,privateVideo.videoUrl);
+ const env=setup();
+ try{
+  const library=await(await worker.fetch(req('/api/library'),env)).json();
+  assert.deepEqual(library,{videos:[],courses:[]});
+  const posts=await(await worker.fetch(req('/api/posts'),env)).json();
+  assert(posts.length>0,'clearing video examples must not remove article records');
+  const feed=await(await worker.fetch(req('/api/feed'),env)).json();
+  assert.deepEqual(feed,posts);
+  const symbolQuery='?symbol=DOGE&market='+encodeURIComponent('加密');
+  const symbolPosts=await(await worker.fetch(req('/api/posts'+symbolQuery),env)).json();
+  const symbolFeed=await(await worker.fetch(req('/api/feed'+symbolQuery),env)).json();
+  assert(symbolPosts.length>0,'the existing symbol research remains available');
+  assert.deepEqual(symbolFeed,symbolPosts);
+  assert.deepEqual(await(await worker.fetch(req('/api/feed?type=video'),env)).json(),[]);
+ }finally{env.DB.sqlite.close()}
+});

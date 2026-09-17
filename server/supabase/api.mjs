@@ -1,5 +1,6 @@
 import {createProfile} from './profile.mjs';
 import {createVideos} from './videos.mjs';
+import {createVideoCovers} from './video-covers.mjs';
 import {createImages} from './images.mjs';
 import {createRepository} from './repository.mjs';
 import {createAuth,sessionCookie} from './auth.mjs';
@@ -51,6 +52,7 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
    if(path==='/api/session'&&method==='GET')return json({...user,configured:!!env.ADMIN_EMAILS});
    if(path==='/api/profile'||path==='/api/profile/avatar'){if(!user.signedIn)return json({error:'请先登录'},401);if(path.endsWith('/avatar')&&method==='GET')return await createProfile().avatar(request,auth);if(path==='/api/profile'&&method==='GET')return json(user);if(path==='/api/profile'&&method==='PUT')return json(await createProfile().save(request,await body(request),auth));}
    if(path.startsWith('/api/images/')||path.startsWith('/api/admin/images'))return await createImages().handle(request,user,repo);
+   if(path.startsWith('/api/video-covers/')||path==='/api/admin/video-covers'||path.startsWith('/api/admin/video-covers/'))return await createVideoCovers().handle(request,user,repo);
    if(path.startsWith('/api/video-files/')||path==='/api/admin/videos'||path==='/api/admin/video-uploads')return await createVideos(undefined,undefined,videos).handle(request,user,repo);
    const libraryVideos=async()=>{const saved=await repo.list('videos');return [...saved.filter(v=>v.status==='published'&&!v.deletedAt),...videos.filter(v=>!saved.some(s=>s.id===v.id))]};
    if(path==='/api/library'&&method==='GET'){const visible=await libraryVideos();const ids=new Set(visible.map(v=>v.id));const visibleCourses=courses.map(c=>{const chapters=(c.chapters||[]).map(ch=>({...ch,lessons:ch.lessons.filter(l=>l.contentType!=='video'||ids.has(l.contentId))}));return {...c,chapters,publishedLessons:chapters.reduce((n,ch)=>n+ch.lessons.length,0)}});return json({videos:visible.map(v=>projectVideo(v,canReadMemberContent(user))),courses:visibleCourses});}
