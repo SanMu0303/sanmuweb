@@ -20,6 +20,7 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
  const [stage,setStage]=useState('');
  const [member,setMember]=useState(false);
  const [syncWatch,setSyncWatch]=useState(false);
+ const [syncSummary,setSyncSummary]=useState('');
  const [weeklyFocus,setWeeklyFocus]=useState(false);
  const [syncInvalidation,setSyncInvalidation]=useState('');
  const uploads=useImageUploads();
@@ -35,6 +36,7 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
   setSyncWatch(false);
   setWeeklyFocus(false);
   setSyncInvalidation('');
+  setSyncSummary('');
   setOpen(true);
   requestAnimationFrame(()=>dialog.current?.showModal());
  }
@@ -54,6 +56,9 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
   if(uploads.blocked){setError(uploads.uploading?'图片上传中，请等待完成。':'请重试或删除失败的图片后再发布。');return}
   const normalizedSymbol=symbol.trim().toUpperCase();
   if(syncWatch&&(!normalizedSymbol||!stage)){setError('同步到观察池前，请填写标的并选择趋势阶段。');return}
+  const firstSentence=text.trim().replaceAll('**','').split(/[。！？\n]/).map(part=>part.trim()).find(Boolean)||text.trim().replaceAll('**','');
+  const publicSummary=syncSummary.trim()||(member?'':firstSentence.slice(0,500));
+  if(syncWatch&&member&&!publicSummary){setError('会员短文同步到观察池前，请填写可公开的摘要。');return}
   submitting.current=true;
   setBusy(true);
   try{
@@ -90,7 +95,7 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
     status:'published',
     revision:0,
     isExample:false,
-    ...(syncWatch?{watchSync:{enabled:true,revision:watchRevision,weeklyFocus,summary:text.trim(),invalidation:syncInvalidation.trim()}}:{}),
+    ...(syncWatch?{watchSync:{enabled:true,revision:watchRevision,weeklyFocus,summary:publicSummary,invalidation:syncInvalidation.trim()}}:{}),
    })});
    setText('');
    uploads.reset();
@@ -102,6 +107,7 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
    setSyncWatch(false);
    setWeeklyFocus(false);
    setSyncInvalidation('');
+   setSyncSummary('');
    setSlug('note-'+Date.now().toString(36));
    dialog.current?.close();
    setOpen(false);
@@ -151,7 +157,7 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
      </div>
      <div className={'composer-sync-box'+(syncWatch?' selected':'')}>
       <label className="composer-sync-toggle"><input type="checkbox" checked={syncWatch} onChange={e=>setSyncWatch(e.target.checked)}/><span><strong>同步到观察池</strong><small>发布短文时，同时保存一条趋势观察记录并保留历史观点。</small></span></label>
-      {syncWatch&&<div className="composer-sync-fields"><small>需要填写标的和趋势阶段；会员正文不会复制到观察池。</small><label><input type="checkbox" checked={weeklyFocus} onChange={e=>setWeeklyFocus(e.target.checked)}/>列为本周重点（最多 3 个）</label><label>失效条件（可选）<textarea rows={2} maxLength={2000} value={syncInvalidation} onChange={e=>setSyncInvalidation(e.target.value)} placeholder="例如：跌破关键支撑后停止跟踪"/></label></div>}
+      {syncWatch&&<div className="composer-sync-fields"><small>需要填写标的和趋势阶段；观察池只保存这条摘要，不会复制会员正文。</small><label>公开摘要{member&&<span aria-hidden="true">（必填）</span>}<textarea rows={2} maxLength={500} value={syncSummary} onChange={e=>setSyncSummary(e.target.value)} placeholder={member?'填写允许公开展示的判断摘要':'留空则自动使用正文首句（最多 500 字）'}/></label><label><input type="checkbox" checked={weeklyFocus} onChange={e=>setWeeklyFocus(e.target.checked)}/>列为本周重点（最多 3 个）</label><label>失效条件（可选）<textarea rows={2} maxLength={2000} value={syncInvalidation} onChange={e=>setSyncInvalidation(e.target.value)} placeholder="例如：跌破关键支撑后停止跟踪"/></label></div>}
      </div>
     </fieldset>
     {error&&<p role="alert" className="quick-composer-error">{error}</p>}
