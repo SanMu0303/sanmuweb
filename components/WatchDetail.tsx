@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
+import {useRouter} from 'next/navigation';
 import {request,useResource} from '@/lib/live';
 import {TREND_STAGES,type Post} from '@/lib/posts';
 import type {WatchItem} from '@/lib/types';
@@ -18,12 +19,15 @@ function slug(symbol:string){return 'watch-'+symbol.toLowerCase().replace(/[^a-z
 export default function WatchDetail({symbol}:{symbol:string}){
  const resource=useResource<Detail>('/api/watchlist/'+encodeURIComponent(symbol));
  const session=useResource<{isAdmin:boolean}>('/api/session');
+ const router=useRouter();
  const dialog=useRef<HTMLDialogElement>(null);const [text,setText]=useState('');const [stage,setStage]=useState<WatchItem['stage']>('准备');const [sync,setSync]=useState(true);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [notice,setNotice]=useState('');
+ const [ending,setEnding]=useState(false);
  const uploads=useImageUploads();
  const detail=resource.data;
  useEffect(()=>{if(detail)setStage(detail.item.stage)},[detail?.item.stage]);
  function open(){if(!detail)return;setText('');setStage(detail.item.stage);setSync(true);setError('');setNotice('');uploads.reset();dialog.current?.showModal()}
  function close(){if(!busy)dialog.current?.close()}
+ async function endObservation(){if(!detail||ending||busy||detail.item.observationStatus==='ended'||detail.item.endedAt)return;if(!window.confirm('结束这个观察周期？历史观点会保留，之后不会再接受同步更新。'))return;setEnding(true);setError('');setNotice('');try{await request<WatchItem>('/api/admin/watchlist',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'end',symbol:detail.item.symbol,revision:detail.item.revision??0})});router.push('/watchlist/');router.refresh()}catch(e){setError((e as Error).message);setEnding(false)}}
  async function publish(e:React.FormEvent){e.preventDefault();if(!detail||busy||!text.trim())return;if(uploads.blocked){setError(uploads.uploading?'图片上传中，请等待完成。':'请重试或删除上传失败的图片后再保存。');return}setBusy(true);setError('');setNotice('');const item=detail.item;try{
   if(sync){
    const hasImages=uploads.images.length>0;
@@ -43,16 +47,17 @@ export default function WatchDetail({symbol}:{symbol:string}){
  if(resource.error)return <div className="empty" role="alert"><p>{resource.error}</p><button className="button" onClick={resource.retry}>重新读取</button></div>;
  if(!detail)return <div className="empty" role="status">正在读取观察记录…</div>;
  const {item,history}=detail;
+ const ended=item.observationStatus==='ended'||!!item.endedAt;
  const records=[...history];
  if(!records.length||!records.some(h=>h.revision===item.revision))records.push({document:item,revision:item.revision??0,recorded_at:item.updatedAt});
  records.sort((a,b)=>a.revision-b.revision);
  const latestRevision=records.at(-1)?.revision;
  return <div className="watch-detail">
   <Link className="breadcrumb" href="/watchlist/">← 返回趋势观察池</Link>
-  <header className="watch-detail-header"><div><div className="eyebrow">TREND OBSERVATION · {item.symbol}</div><h1>{item.name}</h1><p>{item.symbol} · {item.market}</p></div><div className="watch-detail-stage"><small>当前趋势阶段</small><span className={'stage stage-'+item.stage}>{item.stage}</span></div></header>
+  <header className="watch-detail-header"><div><div className="eyebrow">TREND OBSERVATION · {item.symbol}</div><h1>{item.name}</h1><p>{item.symbol} · {item.market}</p></div><div className="watch-detail-stage"><small>当前趋势阶段</small><span className={'stage stage-'+item.stage}>{item.stage}</span>{ended&&<span className="watch-lifecycle-ended">已结束</span>}</div></header>
   {notice&&<p className="notice" role="status">{notice}</p>}
   <section className="watch-detail-summary"><div className="risk">当前失效条件：{item.invalidation||'暂未设置'}</div><div className="watch-detail-meta"><span>创建时间：{date(item.createdAt||item.updatedAt)}</span><span>最近更新时间：{date(item.updatedAt)}</span>{item.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(item.articleSlug)}>查看关联短文 ↗</Link>}</div></section>
-  {session.data?.isAdmin&&<button className="button watch-update-trigger" onClick={open}>＋ 添加更新内容</button>}
+  {session.data?.isAdmin&&<div className="watch-detail-actions"><button className="button secondary" onClick={endObservation} disabled={ending||busy||ended}>{ending?'结束中…':ended?'已结束观察':'结束观察'}</button>{!ended&&<button className="button watch-update-trigger" onClick={open}>＋ 添加观点</button>}</div>}
   <section className="watch-map-section" aria-labelledby="watch-map-heading">
    <div className="section-line"><h2 id="watch-map-heading">观点脉络 <span>{records.length} 条</span></h2><small className="watch-map-hint">从最初观察到最新判断</small></div>
    <div className="watch-map-root"><span>{item.symbol}</span><strong>{item.name}</strong><small>观察起点 · {date(item.createdAt||records[0]?.recorded_at||item.updatedAt)}</small></div>
@@ -69,6 +74,6 @@ export default function WatchDetail({symbol}:{symbol:string}){
     </li>)}
    </ol>
   </section>
-  <dialog ref={dialog} className="watch-update-dialog" onCancel={e=>{e.preventDefault();close()}}><form className="watch-update-form" onSubmit={publish}><h2>添加「{item.name}」更新</h2><p>这次更新会保留在标的详情时间线上。</p><label>更新内容<textarea required maxLength={2000} value={text} onChange={e=>setText(e.target.value)} placeholder="记录新的结构、条件和判断……"/></label><label>更新后的趋势阶段<select value={stage} onChange={e=>setStage(e.target.value as WatchItem['stage'])}>{TREND_STAGES.map(s=><option key={s}>{s}</option>)}</select></label><div className="watch-update-images"><div className="section-line"><h3>观点配图</h3><span>可选，最多 9 张</span></div><ImageUploader uploads={uploads} disabled={busy}><p>上传图表或截图，保存后会显示在这条观点卡片中。</p></ImageUploader></div><label className="checkbox-label"><input type="checkbox" checked={sync} onChange={e=>setSync(e.target.checked)}/>同步到首页短文</label><small>同步后会发布一条公开短文，并同时更新趋势观察卡片的简介、阶段和最近更新时间。</small>{error&&<p className="notice error" role="alert">{error}</p>}<div className="actions"><button className="button" type="submit" disabled={busy||!text.trim()||uploads.uploading}>{busy?'保存中…':sync?'发布并同步':'保存更新'}</button><button className="button secondary" type="button" onClick={close} disabled={busy}>取消</button></div></form></dialog>
+  <dialog ref={dialog} className="watch-update-dialog" onCancel={e=>{e.preventDefault();close()}}><form className="watch-update-form" onSubmit={publish}><h2>添加「{item.name}」观点</h2><p>这条观点会保留在标的详情时间线上。</p><label>观点内容<textarea required maxLength={2000} value={text} onChange={e=>setText(e.target.value)} placeholder="记录新的结构、条件和判断……"/></label><label>观点阶段<select value={stage} onChange={e=>setStage(e.target.value as WatchItem['stage'])}>{TREND_STAGES.map(s=><option key={s}>{s}</option>)}</select></label><div className="watch-update-images"><div className="section-line"><h3>观点配图</h3><span>可选，最多 9 张</span></div><ImageUploader uploads={uploads} disabled={busy}><p>上传图表或截图，保存后会显示在这条观点卡片中。</p></ImageUploader></div><label className="checkbox-label"><input type="checkbox" checked={sync} onChange={e=>setSync(e.target.checked)}/>同步到首页短文</label><small>同步后会发布一条公开短文，并同时更新趋势观察卡片的简介、阶段和最近更新时间。</small>{error&&<p className="notice error" role="alert">{error}</p>}<div className="actions"><button className="button" type="submit" disabled={busy||ended||!text.trim()||uploads.uploading}>{busy?'保存中…':sync?'发布并同步':'保存观点'}</button><button className="button secondary" type="button" onClick={close} disabled={busy}>取消</button></div></form></dialog>
  </div>;
 }
