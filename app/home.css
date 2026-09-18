@@ -235,3 +235,75 @@ body:has(.home-feed) .sidebar,body:has(.home-feed) .mobile-header{background:#10
 .home-feed .home-symbol-tag{display:inline-flex;align-items:center;border:1px solid #52624d;border-radius:3px;padding:2px 7px;color:#b9cba9;font:600 11px/1.35 monospace;letter-spacing:.25px;transition:border-color .15s,background .15s}.home-feed .home-symbol-tag:hover{border-color:#91a77c;background:#263126;color:#d2e0c6}
 
 .home-feed .record-bottom-meta>.home-symbol-tag{margin-left:10px}.home-feed .record-bottom-meta>.home-symbol-tag::before{content:none}.home-feed .record-footline:has(.watchlist-entry-button){display:flex;flex-basis:100%;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:10px}.home-feed .record-footline>.watchlist-entry-dialog{font-size:14px;text-align:left}.home-feed .watchlist-entry-form p{font-size:14px;line-height:1.7}
+
+/* Homepage rhythm: keep the journal and side rail on a predictable grid. */
+@media(min-width:1051px){
+  main:has(> .home-feed){padding-left:32px;padding-right:32px}
+  .home-feed{width:min(1152px,100%);margin:0 auto}
+  .home-feed .research-layout{grid-template-columns:minmax(0,3fr) minmax(240px,1fr);gap:32px;max-width:1152px}
+  .home-feed .stream-column{max-width:none;min-width:0}
+  .home-feed .research-rail{width:auto;min-width:0}
+}
+
+/* Every homepage label uses the same compact pill treatment. */
+.home-feed .record-badges{gap:6px}
+.home-feed .record-badges > .record-type,
+.home-feed .record-badges > .record-stage,
+.home-feed .record-badges > .record-pin,
+.home-feed .record-tags a,
+.home-feed .record-bottom-meta > span,
+.home-feed .record-bottom-meta > a:not(.home-symbol-tag),
+.home-feed .home-symbol-tag{
+  display:inline-flex;
+  align-items:center;
+  min-height:20px;
+  padding:1px 6px;
+  border:1px solid #343b36;
+  border-radius:3px;
+  background:#111415;
+  color:#aab1aa;
+  line-height:1.35;
+  white-space:nowrap;
+}
+.home-feed .record-badges > .record-type{border-left:1px solid #59635a;padding-left:6px}
+.home-feed .record-badges > .record-stage{border-color:#4b574b;background:#171b18}
+.home-feed .record-badges > .record-pin{border-color:#59604e;color:#c1c9a7}
+.home-feed .record-tags{display:flex;align-items:center;gap:6px;flex-basis:100%;line-height:1.35}
+.home-feed .record-tags a{color:#abb3ac;transition:border-color .15s,background-color .15s,color .15s}
+.home-feed .record-tags a:hover,.home-feed .record-tags a:focus-visible{border-color:#69746b;background:#1d2420;color:#e1e6df}
+.home-feed .record-bottom-meta{gap:5px;align-items:center}
+.home-feed .record-bottom-meta > * + *::before{content:none;padding:0}
+.home-feed .record-bottom-meta > time{margin-right:2px}
+.home-feed .record-bottom-meta > .home-symbol-tag{margin-left:0;border-color:#596652;color:#c4d3b7;background:#182019}
+.home-feed .record-bottom-meta > .home-symbol-tag:hover{border-color:#91a77c;background:#263126;color:#d2e0c6}
+
+/* Compact homepage cards keep the author line left aligned after action links are removed. */
+.home-feed .record-footline{justify-content:flex-start;min-width:0}
+@media(min-width:1201px){
+  .home-feed .record-footline{display:flex;flex-basis:100%;align-items:center}
+  .home-feed .record-tags{margin-left:0}
+}
+@media(max-width:760px){
+  .home-feed .record-tags{gap:5px}
+  .home-feed .record-tags a,.home-feed .record-bottom-meta > span,.home-feed .record-bottom-meta > a:not(.home-symbol-tag),.home-feed .home-symbol-tag{min-height:19px;padding:1px 5px}
+}
+
+/* Homepage short-post composer. Keep the feed compact and put the full editor in a modal. */
+.quick-composer-dialog{width:min(760px,calc(100% - 32px));max-height:calc(100dvh - 40px);margin:auto;padding:0;border:1px solid #52604d;border-radius:7px;background:#151a17;color:#e7ece6;box-shadow:0 24px 80px #000b;overflow:auto}
+.quick-composer-dialog::backdrop{background:#050806cc}
+.quick-composer-form{display:grid;gap:18px;padding:26px}
+.quick-composer-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;border-bottom:1px solid #2d392f;padding-bottom:16px}
+.quick-composer-header h2{margin:7px 0 0;font-size:22px;font-weight:500;color:#e2eadf}
+.quick-composer-close{width:32px;height:32px;border:1px solid #435044;border-radius:4px;background:transparent;color:#b9c5b8;font-size:21px;line-height:1;cursor:pointer}
+.quick-composer-close:hover{background:#273226;color:#eff4ea}
+.quick-composer-dialog .composer-fieldset{display:grid;gap:11px}
+.quick-composer-dialog .composer-tools{gap:9px;padding-top:1px}
+.quick-composer-dialog .composer-tools input:not([type=checkbox]),.quick-composer-dialog .composer-tools select{height:34px;background:#101411;border-color:#3c493e;color:#dce7da}
+.quick-composer-dialog .composer-tools input[aria-label=标签]{flex:1 1 180px}
+.quick-composer-dialog .composer-tools label{color:#b7c4b4}
+.quick-composer-dialog textarea{min-height:180px;background:#101411;border-color:#3c493e;color:#e1e9df}
+.quick-composer-error{margin:0;color:#e4b8a0;font-size:13px;line-height:1.7}
+.quick-composer-actions{display:flex;align-items:center;justify-content:space-between;gap:20px;border-top:1px solid #2d392f;padding-top:16px}
+.quick-composer-actions p{margin:0;color:#8f9f91;font-size:12px;line-height:1.6}
+.quick-composer-actions>div{display:flex;gap:9px;flex-shrink:0}
+@media(max-width:560px){.quick-composer-form{padding:20px}.quick-composer-dialog{width:calc(100% - 20px);max-height:calc(100dvh - 20px)}.quick-composer-actions{align-items:stretch;flex-direction:column}.quick-composer-actions>div{justify-content:flex-end}.quick-composer-dialog .composer-tools input:not([type=checkbox]),.quick-composer-dialog .composer-tools select{flex:1 1 130px}}
