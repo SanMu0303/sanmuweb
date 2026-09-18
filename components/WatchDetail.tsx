@@ -5,6 +5,7 @@ import {request,useResource} from '@/lib/live';
 import {TREND_STAGES,type Post} from '@/lib/posts';
 import type {WatchItem} from '@/lib/types';
 import PostImages from './PostImages';
+import BoldText from './BoldText';
 
 type HistoryEntry={document:WatchItem;revision:number;recorded_at:string};
 type Detail={item:WatchItem;history:HistoryEntry[]};
@@ -33,13 +34,32 @@ export default function WatchDetail({symbol}:{symbol:string}){
  if(resource.error)return <div className="empty" role="alert"><p>{resource.error}</p><button className="button" onClick={resource.retry}>重新读取</button></div>;
  if(!detail)return <div className="empty" role="status">正在读取观察记录…</div>;
  const {item,history}=detail;
+ const records=[...history];
+ if(!records.length||!records.some(h=>h.revision===item.revision))records.push({document:item,revision:item.revision??0,recorded_at:item.updatedAt});
+ records.sort((a,b)=>a.revision-b.revision);
+ const latestRevision=records.at(-1)?.revision;
  return <div className="watch-detail">
   <Link className="breadcrumb" href="/watchlist/">← 返回趋势观察池</Link>
   <header className="watch-detail-header"><div><div className="eyebrow">TREND OBSERVATION · {item.symbol}</div><h1>{item.name}</h1><p>{item.symbol} · {item.market}</p></div><div className="watch-detail-stage"><small>当前趋势阶段</small><span className={'stage stage-'+item.stage}>{item.stage}</span></div></header>
   {notice&&<p className="notice" role="status">{notice}</p>}
-  <section className="watch-detail-summary"><p>{item.thesis}</p><div className="risk">失效条件：{item.invalidation||'暂未设置'}</div><div className="watch-detail-meta"><span>创建时间：{date(item.createdAt||item.updatedAt)}</span><span>最近更新时间：{date(item.updatedAt)}</span>{item.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(item.articleSlug)}>查看关联短文 ↗</Link>}</div></section>
+  <section className="watch-detail-summary"><div className="risk">当前失效条件：{item.invalidation||'暂未设置'}</div><div className="watch-detail-meta"><span>创建时间：{date(item.createdAt||item.updatedAt)}</span><span>最近更新时间：{date(item.updatedAt)}</span>{item.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(item.articleSlug)}>查看关联短文 ↗</Link>}</div></section>
   {session.data?.isAdmin&&<button className="button watch-update-trigger" onClick={open}>＋ 添加更新内容</button>}
-  <section><div className="section-line"><h2>完整更新记录 <span>{history.length} 条</span></h2></div><div className="watch-history-list">{history.map(h=><article className="watch-history-entry" key={h.revision}><header><strong>{date(h.recorded_at)}</strong><span>版本 {h.revision} · {h.document.stage}</span></header><p>{h.document.thesis}</p>{h.document.images?.length?<PostImages images={h.document.images}/>:null}{h.document.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(h.document.articleSlug)}>查看对应短文 ↗</Link>}</article>)}</div></section>
+  <section className="watch-map-section" aria-labelledby="watch-map-heading">
+   <div className="section-line"><h2 id="watch-map-heading">观点脉络 <span>{records.length} 条</span></h2><small className="watch-map-hint">从最初观察到最新判断</small></div>
+   <div className="watch-map-root"><span>{item.symbol}</span><strong>{item.name}</strong><small>观察起点 · {date(item.createdAt||records[0]?.recorded_at||item.updatedAt)}</small></div>
+   <ol className="watch-history-list watch-map" aria-label="按时间连接的观察观点">
+    {records.map((h,index)=><li className={'watch-map-node'+(h.revision===latestRevision?' is-latest':'')} key={h.revision}>
+     <article className="watch-history-entry">
+      <header><strong><span className="watch-map-index">{String(index+1).padStart(2,'0')}</span>{h.revision===latestRevision?'最新观点':index===0?'初始观点':'观点更新'}</strong><span className={'record-stage record-stage-'+h.document.stage}>{h.document.stage}</span></header>
+      <time className="watch-map-date" dateTime={h.recorded_at}>{date(h.recorded_at)}</time>
+      <p><BoldText text={h.document.thesis}/></p>
+      {h.document.images?.length?<PostImages images={h.document.images}/>:null}
+      {h.document.invalidation&&h.document.invalidation!=='暂未设置'&&<div className="watch-map-risk">失效条件：{h.document.invalidation}</div>}
+      {h.document.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(h.document.articleSlug)}>查看对应短文 ↗</Link>}
+     </article>
+    </li>)}
+   </ol>
+  </section>
   <dialog ref={dialog} className="watch-update-dialog" onCancel={e=>{e.preventDefault();close()}}><form className="watch-update-form" onSubmit={publish}><h2>添加「{item.name}」更新</h2><p>这次更新会保留在标的详情时间线上。</p><label>更新内容<textarea required maxLength={2000} value={text} onChange={e=>setText(e.target.value)} placeholder="记录新的结构、条件和判断……"/></label><label>更新后的趋势阶段<select value={stage} onChange={e=>setStage(e.target.value as WatchItem['stage'])}>{TREND_STAGES.map(s=><option key={s}>{s}</option>)}</select></label><label className="checkbox-label"><input type="checkbox" checked={sync} onChange={e=>setSync(e.target.checked)}/>同步到首页短文</label><small>同步后会发布一条公开短文，并同时更新趋势观察卡片的简介、阶段和最近更新时间。</small>{error&&<p className="notice error" role="alert">{error}</p>}<div className="actions"><button className="button" type="submit" disabled={busy||!text.trim()}>{busy?'保存中…':sync?'发布并同步':'保存更新'}</button><button className="button secondary" type="button" onClick={close} disabled={busy}>取消</button></div></form></dialog>
  </div>;
 }
