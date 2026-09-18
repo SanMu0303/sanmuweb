@@ -37,3 +37,11 @@ test('sync success returns the persisted watch identity and conflicts do not ret
  const req=()=>new Request('https://site.test/api/admin/articles',{method:'PUT',headers:{origin:'https://site.test','Content-Type':'application/json'},body:JSON.stringify(doc)});
  const response=await api(req());assert.equal(response.status,200);assert.deepEqual((await response.json()).watchSyncResult,{symbol:'APP',revision:4,isWeeklyFocus:true});fail=true;assert.equal((await api(req())).status,409);
 });
+test('watch detail returns the current observation and complete update history',async()=>{
+ const item={symbol:'BTC',name:'比特币',market:'加密',stage:'运行',thesis:'结构仍在延续',invalidation:'跌破低点',createdAt:'2026-09-01T09:00:00.000Z',updatedAt:'2026-09-17',articleSlug:''};
+ const history=[{document:item,revision:2,recorded_at:'2026-09-17T02:00:00.000Z'}];
+ const repo={get:async(table,key)=>{assert.equal(table,'watch_items');assert.equal(key,'BTC');return item},history:async symbol=>{assert.equal(symbol,'BTC');return history}};
+ const api=createApi({memberships,env,repo,auth:{identify:async()=>({signedIn:false,isAdmin:false})}});
+ const response=await api(new Request('https://site.test/api/watchlist/BTC'));
+ assert.equal(response.status,200);assert.deepEqual(await response.json(),{item,history});
+});
