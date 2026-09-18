@@ -230,3 +230,8 @@ body:has(.home-feed) .sidebar,body:has(.home-feed) .mobile-header{background:#10
 .home-feed .research-search{flex:1 1 200px}
 .home-feed .research-filter-row>label{font-size:12px}
 @media(max-width:1050px){.home-feed>.pinned-brief{width:100%}.home-feed .research-rail{position:static}}
+
+/* Compact symbol chip for homepage short updates. */
+.home-feed .home-symbol-tag{display:inline-flex;align-items:center;border:1px solid #52624d;border-radius:3px;padding:2px 7px;color:#b9cba9;font:600 11px/1.35 monospace;letter-spacing:.25px;transition:border-color .15s,background .15s}.home-feed .home-symbol-tag:hover{border-color:#91a77c;background:#263126;color:#d2e0c6}
+
+.home-feed .record-bottom-meta>.home-symbol-tag{margin-left:10px}.home-feed .record-bottom-meta>.home-symbol-tag::before{content:none}.home-feed .record-footline:has(.watchlist-entry-button){display:flex;flex-basis:100%;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:10px}.home-feed .record-footline>.watchlist-entry-dialog{font-size:14px;text-align:left}.home-feed .watchlist-entry-form p{font-size:14px;line-height:1.7}
