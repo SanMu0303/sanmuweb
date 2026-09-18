@@ -68,6 +68,7 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
    if(path==='/api/articles'&&method==='GET')return json((await repo.list('articles',{publishedOnly:true})).map(a=>{const p=readerPost(a,user),{sections,...summary}=toArticleDocument(p);return {...summary,locked:p.locked}}).sort((a,b)=>Number(b.pinned)-Number(a.pinned)||b.publishedAt.localeCompare(a.publishedAt)));
    if(/^\/api\/watchlist\/[^/]+\/history$/.test(path)&&method==='GET'){const symbol=decodeURIComponent(path.split('/')[3]);const current=await repo.get('watch_items',symbol);if(!current||current.deletedAt&&!user.isAdmin)return json({error:'观察记录不存在或已删除'},404);return json(await repo.history(symbol));}
    if(path==='/api/watchlist'&&method==='GET')return json((await repo.list('watch_items')).filter(w=>!w.deletedAt));
+   if(/^\/api\/watchlist\/[^/]+$/.test(path)&&method==='GET'){const symbol=decodeURIComponent(path.split('/')[3]);const current=await repo.get('watch_items',symbol);if(!current||current.deletedAt&&!user.isAdmin)return json({error:'观察记录不存在或已删除'},404);return json({item:current,history:await repo.history(symbol)});}
    if(['/api/admin/articles','/api/admin/watchlist'].includes(path)){
     const isArticle=path.endsWith('/articles'),table=isArticle?'articles':'watch_items';
     if(method==='GET')return json(await repo.list(table));
