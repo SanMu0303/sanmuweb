@@ -37,6 +37,22 @@ test('sync success returns the persisted watch identity and conflicts do not ret
  const req=()=>new Request('https://site.test/api/admin/articles',{method:'PUT',headers:{origin:'https://site.test','Content-Type':'application/json'},body:JSON.stringify(doc)});
  const response=await api(req());assert.equal(response.status,200);assert.deepEqual((await response.json()).watchSyncResult,{symbol:'APP',revision:4,isWeeklyFocus:true});fail=true;assert.equal((await api(req())).status,409);
 });
+test('ending an observation is persistent, idempotent, keeps history, and blocks later writes or sync',async()=>{
+ const original={symbol:'CLOSED',name:'Closed observation',market:'跨市场',stage:'运行',thesis:'历史判断',invalidation:'风险条件',createdAt:'2026-09-01T09:00:00.000Z',updatedAt:'2026-09-17',articleSlug:'',images:[],isWeeklyFocus:true,revision:1};
+ let current=structuredClone(original),writes=0,syncWrites=0;
+ const repo={get:async()=>structuredClone(current),list:async()=>[structuredClone(current)],history:async()=>[{revision:1,document:structuredClone(original)}],save:async(_table,value,revision)=>{writes++;current={...value,revision:revision+1};return structuredClone(current)},saveWithWatch:async()=>{syncWrites++;throw new Error('should not reach synchronized storage')}};
+ const auth={identify:async()=>({id:'owner',signedIn:true,isAdmin:true}),requireRecent:async()=>{}};
+ const api=createApi({memberships,env,repo,auth});
+ const mutation=(method,path='/api/admin/watchlist',data)=>api(new Request('https://site.test'+path,{method,headers:{origin:'https://site.test','Content-Type':'application/json'},body:JSON.stringify(data)}));
+ let response=await mutation('PATCH','/api/admin/watchlist',{action:'end',symbol:'CLOSED',revision:1});assert.equal(response.status,200);const ended=await response.json();assert.equal(ended.observationStatus,'ended');assert.ok(ended.endedAt);assert.equal(ended.isWeeklyFocus,false);assert.equal(ended.thesis,original.thesis);assert.equal(writes,1);
+ response=await mutation('PATCH','/api/admin/watchlist',{action:'end',symbol:'CLOSED',revision:2});assert.equal(response.status,200);assert.equal(writes,1,'repeating end must not create a new revision');
+ response=await mutation('PUT','/api/admin/watchlist',{...ended,revision:2,thesis:'不能继续更新'});assert.equal(response.status,409);assert.equal(writes,1);
+ const syncPost={slug:'closed-sync',title:'closed',excerpt:'closed',category:'趋势观察',tags:[],publishedAt:'2026-09-18',pinned:false,access:'public',readMinutes:1,sections:[{heading:'',text:'new'}],status:'published',format:'short',symbol:'CLOSED',market:'跨市场',trendStage:'运行',images:[],revision:0,watchSync:{enabled:true,revision:2,summary:'new',invalidation:''}};
+ response=await mutation('PUT','/api/admin/articles',syncPost);assert.equal(response.status,409);assert.equal(syncWrites,0,'synchronizing a closed observation must not call storage');
+ const publicList=await api(new Request('https://site.test/api/watchlist'));assert.equal(publicList.status,200);assert.equal((await publicList.json())[0].observationStatus,'ended');
+ current={...original,revision:7,endedAt:'2026-09-18T00:00:00.000Z'};
+ response=await mutation('PUT','/api/admin/watchlist',{...current,thesis:'legacy closed write'});assert.equal(response.status,409,'legacy endedAt-only records must remain closed');
+});
 test('watch detail returns the current observation and complete update history',async()=>{
  const item={symbol:'BTC',name:'比特币',market:'加密',stage:'运行',thesis:'结构仍在延续',invalidation:'跌破低点',createdAt:'2026-09-01T09:00:00.000Z',updatedAt:'2026-09-17',articleSlug:''};
  const history=[{document:item,revision:2,recorded_at:'2026-09-17T02:00:00.000Z'}];
@@ -44,4 +60,16 @@ test('watch detail returns the current observation and complete update history',
  const api=createApi({memberships,env,repo,auth:{identify:async()=>({signedIn:false,isAdmin:false})}});
  const response=await api(new Request('https://site.test/api/watchlist/BTC'));
  assert.equal(response.status,200);assert.deepEqual(await response.json(),{item,history});
+});
+
+test('only active cycles block reuse; ended and recycled cycles can start a new one',async()=>{
+ const ended={id:'old-cycle',symbol:'BTC',name:'比特币',market:'加密',stage:'运行',thesis:'旧判断',invalidation:'旧条件',createdAt:'2026-09-01T09:00:00.000Z',updatedAt:'2026-09-17',articleSlug:'',images:[],observationStatus:'ended',endedAt:'2026-09-18T00:00:00.000Z',revision:3};
+ const active={...ended,id:'active-cycle',observationStatus:'active',endedAt:undefined,revision:4};let records=[ended];let syncCall;let watchCall;
+ const repo={list:async()=>records,get:async(_table,key)=>key==='BTC'?records.find(x=>x.symbol==='BTC')||null:records.find(x=>x.id===key)||null,saveWithWatch:async(...args)=>{syncCall=args;return {slug:'new-post',revision:1,watchSyncResult:{id:'new-cycle',symbol:'BTC',revision:1,isWeeklyFocus:false}}},save:async(_table,value)=>{watchCall=value;return {...value,revision:1}}};
+ const auth={identify:async()=>({id:'owner',signedIn:true,isAdmin:true}),requireRecent:async()=>{}};const api=createApi({memberships,env,repo,auth});
+ const mutate=(path,data)=>api(new Request('https://site.test'+path,{method:'PUT',headers:{origin:'https://site.test','Content-Type':'application/json'},body:JSON.stringify(data)}));
+ const post={slug:'new-btc-cycle',title:'新周期',excerpt:'新周期',category:'趋势观察',tags:[],publishedAt:'2026-09-19',pinned:false,access:'public',readMinutes:1,sections:[{heading:'',text:'重新观察'}],status:'published',format:'short',symbol:'BTC',market:'加密',trendStage:'启动',images:[],revision:0,watchSync:{enabled:true,revision:0}};
+ let response=await mutate('/api/admin/articles',post);assert.equal(response.status,200);assert.equal(syncCall[3].watchId,undefined);assert.equal((await response.json()).watchSyncResult.id,'new-cycle');
+ const fresh={symbol:'BTC',name:'比特币',market:'加密',stage:'准备',thesis:'新的观察',invalidation:'暂未设置',updatedAt:'2026-09-19',articleSlug:'',images:[],revision:0};response=await mutate('/api/admin/watchlist',fresh);assert.equal(response.status,200);assert.notEqual(watchCall.id,'old-cycle');
+ records=[active];response=await mutate('/api/admin/watchlist',{...fresh,revision:0});assert.equal(response.status,409,'an active cycle still prevents duplicate creation');
 });
