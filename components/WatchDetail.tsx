@@ -27,19 +27,19 @@ export default function WatchDetail({symbol}:{symbol:string}){
  useEffect(()=>{if(detail)setStage(detail.item.stage)},[detail?.item.stage]);
  function open(){if(!detail)return;setText('');setStage(detail.item.stage);setSync(true);setError('');setNotice('');uploads.reset();dialog.current?.showModal()}
  function close(){if(!busy)dialog.current?.close()}
- async function endObservation(){if(!detail||ending||busy||detail.item.observationStatus==='ended'||detail.item.endedAt)return;if(!window.confirm('结束这个观察周期？历史观点会保留，之后不会再接受同步更新。'))return;setEnding(true);setError('');setNotice('');try{await request<WatchItem>('/api/admin/watchlist',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'end',symbol:detail.item.symbol,revision:detail.item.revision??0})});router.push('/watchlist/');router.refresh()}catch(e){setError((e as Error).message);setEnding(false)}}
+ async function endObservation(){if(!detail||ending||busy||detail.item.observationStatus==='ended'||detail.item.endedAt)return;if(!window.confirm('结束这个观察周期？历史观点会保留，之后不会再接受同步更新。'))return;setEnding(true);setError('');setNotice('');try{await request<WatchItem>('/api/admin/watchlist',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'end',id:detail.item.id||detail.item.symbol,symbol:detail.item.symbol,revision:detail.item.revision??0})});router.push('/watchlist/');router.refresh()}catch(e){setError((e as Error).message);setEnding(false)}}
  async function publish(e:React.FormEvent){e.preventDefault();if(!detail||busy||!text.trim())return;if(uploads.blocked){setError(uploads.uploading?'图片上传中，请等待完成。':'请重试或删除上传失败的图片后再保存。');return}setBusy(true);setError('');setNotice('');const item=detail.item;try{
   if(sync){
    const hasImages=uploads.images.length>0;
-   const saved=await request<Post&{watchSyncResult?:{revision?:number}}>('/api/admin/articles',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:slug(item.symbol),title:text.trim().split(/[。！？\n]/)[0].slice(0,100),excerpt:text.trim().slice(0,600),category:'趋势观察',contentType:'观察更新',format:'short',symbol:item.symbol,market:item.market,sector:'',trendStage:stage,statusText:'',timeframe:'',tags:[],images:[],publishedAt:day(),pinned:false,access:'public',readMinutes:1,sections:[{heading:'',text:text.trim()}],status:'published',revision:0,isExample:false,...(hasImages?{}:{watchSync:{enabled:true,revision:item.revision??0,summary:text.trim(),invalidation:''}})})});
+   const saved=await request<Post&{watchSyncResult?:{revision?:number}}>('/api/admin/articles',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:slug(item.symbol),title:text.trim().split(/[。！？\n]/)[0].slice(0,100),excerpt:text.trim().slice(0,600),category:'趋势观察',contentType:'观察更新',format:'short',symbol:item.symbol,market:item.market,sector:'',trendStage:stage,statusText:'',timeframe:'',tags:[],images:[],publishedAt:day(),pinned:false,access:'public',readMinutes:1,sections:[{heading:'',text:text.trim()}],status:'published',revision:0,isExample:false,...(hasImages?{}:{watchSync:{enabled:true,watchId:item.id||item.symbol,revision:item.revision??0,summary:text.trim(),invalidation:''}})})});
    // The atomic article/watch sync cannot carry a second image set in the
    // current database function. When images are present, save the article
    // first and then save the observation once with the uploaded images so the
    // timeline gets one complete card rather than a duplicate revision.
-   if(hasImages) await request<WatchItem>('/api/admin/watchlist',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...item,stage,thesis:text.trim(),updatedAt:day(),revision:item.revision??0,articleSlug:saved.slug,images:uploads.images})});
+   if(hasImages) await request<WatchItem>('/api/admin/watchlist',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...item,id:item.id||item.symbol,stage,thesis:text.trim(),updatedAt:day(),revision:item.revision??0,articleSlug:saved.slug,images:uploads.images})});
    setNotice('更新已发布，并同步为首页短文。');
   }else{
-   await request<WatchItem>('/api/admin/watchlist',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...item,stage,thesis:text.trim(),updatedAt:day(),revision:item.revision??0,images:uploads.images})});
+   await request<WatchItem>('/api/admin/watchlist',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...item,id:item.id||item.symbol,stage,thesis:text.trim(),updatedAt:day(),revision:item.revision??0,images:uploads.images})});
    setNotice('观察内容已更新。');
   }
   uploads.reset();dialog.current?.close();resource.retry();

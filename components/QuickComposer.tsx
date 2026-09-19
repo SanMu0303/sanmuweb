@@ -64,12 +64,11 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
   try{
    const now=new Date();
    const date=now.toLocaleDateString('sv-SE',{timeZone:'Asia/Shanghai'});
-   let watchRevision=0;
+   let watchRevision=0;let watchId:string|undefined;
    if(syncWatch){
-    const records=await request<Array<{symbol:string;revision?:number;deletedAt?:string}>>('/api/admin/watchlist');
-    const current=records.find(item=>item.symbol.toUpperCase()===normalizedSymbol);
-    if(current?.deletedAt){setError('该标的已在观察池回收站，请先恢复后再同步。');return}
-    watchRevision=current?.revision??0;
+    const records=await request<Array<{id?:string;symbol:string;revision?:number;deletedAt?:string;observationStatus?:string;endedAt?:string}>>('/api/admin/watchlist');
+    const current=records.find(item=>item.symbol.trim().toUpperCase()===normalizedSymbol && !item.deletedAt && item.observationStatus!=='ended' && !item.endedAt);
+    watchRevision=current?.revision??0;watchId=current?(current.id||current.symbol):undefined;
    }
    await request('/api/admin/articles',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     slug,
@@ -95,7 +94,7 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
     status:'published',
     revision:0,
     isExample:false,
-    ...(syncWatch?{watchSync:{enabled:true,revision:watchRevision,weeklyFocus,summary:publicSummary,invalidation:syncInvalidation.trim()}}:{}),
+    ...(syncWatch?{watchSync:{enabled:true,revision:watchRevision,...(watchId?{watchId}:{}),weeklyFocus,summary:publicSummary,invalidation:syncInvalidation.trim()}}:{}),
    })});
    setText('');
    uploads.reset();

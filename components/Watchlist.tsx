@@ -9,7 +9,7 @@ export default function Watchlist({items}:{items:WatchItem[]}){
  const [market,setMarket]=useState('全部'),[stage,setStage]=useState('全部');
  const shown=items.filter(w=>(market==='全部'||w.market===market)&&(stage==='全部'||w.stage===stage));
  const active=shown.filter(w=>w.observationStatus!=='ended'&&!w.endedAt),ended=shown.filter(w=>w.observationStatus==='ended'||!!w.endedAt);
- const cards=(group:WatchItem[])=><div className="watch-observation-grid">{group.map(w=><Link href={'/watchlist/'+encodeURIComponent(w.symbol)+'/'} className={'watch-observation-card '+(w.observationStatus==='ended'||w.endedAt?'is-ended':'')} key={w.symbol}>
+ const cards=(group:WatchItem[])=><div className="watch-observation-grid">{group.map(w=><Link href={'/watchlist/'+encodeURIComponent(w.id||w.symbol)+'/'} className={'watch-observation-card '+(w.observationStatus==='ended'||w.endedAt?'is-ended':'')} key={w.id||w.symbol}>
    <div className="watch-observation-top"><span className="ticker">{w.symbol}</span></div>
    <h2>{w.name}</h2><p>{w.thesis}</p>
    <div className="watch-observation-times"><span>创建 {date(w.createdAt||w.updatedAt)}</span><span>{w.observationStatus==='ended'||w.endedAt?'结束':'最近更新'} {date(w.observationStatus==='ended'&&w.endedAt?w.endedAt:w.updatedAt)}</span><span className={'stage stage-'+w.stage}>{w.stage}</span></div>

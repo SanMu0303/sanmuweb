@@ -22,9 +22,11 @@ export default function AddToWatchlist({post,onSaved}:Props){
  const [stage,setStage]=useState<TrendStage>(post.trendStage||'准备');
  const [thesis,setThesis]=useState(''),[invalidation,setInvalidation]=useState('');
  const normalizedSymbol=symbol.trim().toUpperCase();
- const existing=items.find(item=>item.symbol.toUpperCase()===normalizedSymbol);
+ const matching=items.filter(item=>item.symbol.trim().toUpperCase()===normalizedSymbol);
+ const existing=matching.find(item=>item.observationStatus!=='ended'&&!item.endedAt&&!item.deletedAt);
+ const historical=matching.find(item=>item.deletedAt||item.observationStatus==='ended'||item.endedAt);
  function selectSymbol(value:string,records=items){
-  const next=value.toUpperCase();const item=records.find(row=>row.symbol.toUpperCase()===next.trim());
+  const next=value.toUpperCase();const item=records.find(row=>row.symbol.trim().toUpperCase()===next.trim()&&!row.deletedAt&&row.observationStatus!=='ended'&&!row.endedAt);
   setSymbol(next);setName(item?.name||next);setMarket(item?.market||post.market);
   setStage(post.trendStage||item?.stage||'准备');setInvalidation(item?.invalidation||'');
  }
@@ -39,16 +41,16 @@ export default function AddToWatchlist({post,onSaved}:Props){
  async function save(e:React.FormEvent){
   e.preventDefault();if(busy||!ready||savedSymbol)return;
   if(!/^[A-Z0-9.-]+$/.test(normalizedSymbol)){setError('请填写标的代码，例如 BTC、PONS1 或 NVDA。');return}
-  if(existing?.deletedAt){setError('该标的已在回收站，请先到内容管理恢复。');return}
+
   if(!name.trim()||!thesis.trim()){setError('请填写标的名称和本次观点。');return}
   setBusy(true);setError('');
   try{
    const saved=await request<WatchItem>('/api/admin/watchlist',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    ...(existing||{}),symbol:existing?.symbol||normalizedSymbol,name:name.trim(),market,stage,thesis:thesis.trim(),
+    ...(existing?{...existing,id:existing.id||existing.symbol}:{}),symbol:existing?.symbol||normalizedSymbol,name:name.trim(),market,stage,thesis:thesis.trim(),
     invalidation:invalidation.trim()||existing?.invalidation||'暂未设置',updatedAt:today(),createdAt:existing?.createdAt||new Date().toISOString(),
     articleSlug:post.slug,revision:existing?.revision??0,isWeeklyFocus:existing?.isWeeklyFocus===true,images:existing?.images||[]
    })});
-   setSavedSymbol(saved.symbol);setItems(records=>[saved,...records.filter(row=>row.symbol!==saved.symbol)]);onSaved?.();
+   setSavedSymbol(saved.id||saved.symbol);setItems(records=>[saved,...records.filter(row=>(row.id||row.symbol)!==(saved.id||saved.symbol))]);onSaved?.();
   }catch(e){setError((e as Error).message)}finally{setBusy(false)}
  }
  return <>
@@ -64,11 +66,11 @@ export default function AddToWatchlist({post,onSaved}:Props){
       <label>本次观点<textarea value={thesis} maxLength={2000} onChange={e=>setThesis(e.target.value)} placeholder="写下本次公开展示的观察观点" required/><small>{thesis.length} / 2000 字</small></label>
       <label>失效条件<textarea value={invalidation} maxLength={2000} onChange={e=>setInvalidation(e.target.value)} placeholder="可选，留空沿用已有条件"/></label>
       <small>{post.isMemberOnly?'原短文为会员内容，请单独填写可公开的观点；会员正文和图片不会复制。':'本次观点将在观察池公开展示，原短文保持不变。'}</small>
-      {existing?.deletedAt&&<p className="notice error">该标的在回收站，请先到内容管理恢复。</p>}
+      {historical&&!existing&&<p className="notice">这是新的观察周期，历史记录会保留。</p>}
      </fieldset>}
     </>}
     {error&&<p className="notice error" role="alert">{error}</p>}
-    <div className="actions">{!savedSymbol&&<button type="submit" className="button" disabled={busy||loading||!ready||!!existing?.deletedAt}>{busy?'保存中…':existing?'添加观点':'加入观察池'}</button>}<button type="button" className="button secondary" onClick={close} disabled={busy||loading}>关闭</button></div>
+    <div className="actions">{!savedSymbol&&<button type="submit" className="button" disabled={busy||loading||!ready}>{busy?'保存中…':existing?'添加观点':'加入观察池'}</button>}<button type="button" className="button secondary" onClick={close} disabled={busy||loading}>关闭</button></div>
    </form>
   </dialog>
  </>;
