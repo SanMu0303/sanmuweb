@@ -20,11 +20,22 @@ export default function WatchDetail({symbol}:{symbol:string}){
  const resource=useResource<Detail>('/api/watchlist/'+encodeURIComponent(symbol));
  const session=useResource<{isAdmin:boolean}>('/api/session');
  const router=useRouter();
+ const [linkedPosts,setLinkedPosts]=useState<Record<string,Post|null>>({});
  const dialog=useRef<HTMLDialogElement>(null);const [text,setText]=useState('');const [stage,setStage]=useState<WatchItem['stage']>('准备');const [sync,setSync]=useState(true);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [notice,setNotice]=useState('');
  const [ending,setEnding]=useState(false);
  const uploads=useImageUploads();
  const detail=resource.data;
  useEffect(()=>{if(detail)setStage(detail.item.stage)},[detail?.item.stage]);
+ useEffect(()=>{
+  let active=true;
+  const slugs=[...new Set((detail?.history||[]).map(entry=>entry.document.articleSlug).filter(Boolean))];
+  if(!slugs.length){setLinkedPosts({});return ()=>{active=false}}
+  Promise.all(slugs.map(async articleSlug=>{
+   try{return [articleSlug,await request<Post>('/api/posts/'+encodeURIComponent(articleSlug))] as const}
+   catch{return [articleSlug,null] as const}
+  })).then(entries=>{if(active)setLinkedPosts(Object.fromEntries(entries))});
+  return ()=>{active=false};
+ },[detail?.history]);
  function open(){if(!detail)return;setText('');setStage(detail.item.stage);setSync(true);setError('');setNotice('');uploads.reset();dialog.current?.showModal()}
  function close(){if(!busy)dialog.current?.close()}
  async function endObservation(){if(!detail||ending||busy||detail.item.observationStatus==='ended'||detail.item.endedAt)return;if(!window.confirm('结束这个观察周期？历史观点会保留，之后不会再接受同步更新。'))return;setEnding(true);setError('');setNotice('');try{await request<WatchItem>('/api/admin/watchlist',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'end',id:detail.item.id||detail.item.symbol,symbol:detail.item.symbol,revision:detail.item.revision??0})});router.push('/watchlist/');router.refresh()}catch(e){setError((e as Error).message);setEnding(false)}}
@@ -52,6 +63,11 @@ export default function WatchDetail({symbol}:{symbol:string}){
  if(!records.length||!records.some(h=>h.revision===item.revision))records.push({document:item,revision:item.revision??0,recorded_at:item.updatedAt});
  records.sort((a,b)=>a.revision-b.revision);
  const latestRevision=records.at(-1)?.revision;
+ const opinionText=(entry:HistoryEntry)=>{
+  const linked=entry.document.articleSlug?linkedPosts[entry.document.articleSlug]:null;
+  if(!linked?.content?.length)return null;
+  return linked.content.flatMap(block=>[block.heading?.trim(),block.text?.trim()]).filter(Boolean) as string[];
+ };
  return <div className="watch-detail">
   <Link className="breadcrumb" href="/watchlist/">← 返回趋势观察池</Link>
   <header className="watch-detail-header"><div><div className="eyebrow">TREND OBSERVATION · {item.symbol}</div><h1>{item.name}</h1><p>{item.symbol} · {item.market}</p></div><div className="watch-detail-stage"><small>当前趋势阶段</small><span className={'stage stage-'+item.stage}>{item.stage}</span>{ended&&<span className="watch-lifecycle-ended">已结束</span>}</div></header>
@@ -66,7 +82,7 @@ export default function WatchDetail({symbol}:{symbol:string}){
      <article className="watch-history-entry">
       <header><strong><span className="watch-map-index">{String(index+1).padStart(2,'0')}</span>{h.revision===latestRevision?'最新观点':index===0?'初始观点':'观点更新'}</strong><span className={'record-stage record-stage-'+h.document.stage}>{h.document.stage}</span></header>
       <time className="watch-map-date" dateTime={h.recorded_at}>{date(h.recorded_at)}</time>
-      <p><BoldText text={h.document.thesis}/></p>
+      {opinionText(h)?.map((text,textIndex)=><p key={textIndex}><BoldText text={text}/></p>)||<p><BoldText text={h.document.thesis}/></p>}
       {h.document.images?.length?<PostImages images={h.document.images}/>:null}
       {h.document.invalidation&&h.document.invalidation!=='暂未设置'&&<div className="watch-map-risk">失效条件：{h.document.invalidation}</div>}
       {h.document.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(h.document.articleSlug)}>查看对应短文 ↗</Link>}
