@@ -110,6 +110,18 @@ body:has(.home-feed){background:#0d1110}
 @media(max-width:1050px){.home-feed>.quick-composer{width:100%;max-width:840px}}
 @media(max-width:760px){.home-feed .focus-observation{height:88px;min-height:88px;padding:7px;gap:3px}.home-feed .focus-observation p{font-size:11px}.home-feed .stream-column .research-record{padding:14px;margin-bottom:16px}.home-feed .short-lead,.home-feed .record-title{font-size:15px}.home-feed .post-thumbnails.single{width:100%;max-width:100%}.home-feed .post-thumbnails.single img{height:auto;max-height:190px}.home-feed .record-body p,.home-feed .record-summary,.home-feed .record-preview p{font-size:14px}}
 
+/* Keep the public short-post section distinct from the composer and the first card. */
+.home-feed .stream-heading{margin-top:24px;padding-top:18px;border-top:1px solid #2a2e2c}
+.home-feed .home-feed-search{display:flex;align-items:center;gap:8px;min-height:36px;margin:0 0 12px;padding:0 10px;border:1px solid #2a2e2c;border-radius:3px;background:#101214;color:#8f9991}
+.home-feed .home-feed-search:focus-within{border-color:#5b685d}
+.home-feed .home-feed-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#e7e8e6;font:inherit;font-size:13px}
+.home-feed .home-feed-search input::placeholder{color:#777f79}
+.home-feed .home-feed-search button{border:0;background:none;color:#a9b99f;font-size:12px;white-space:nowrap;cursor:pointer}
+.home-feed .stream-column>.home-feed-search + div{border-top:1px solid #252827;padding-top:2px}
+.home-feed .short-post-text{font-size:15px;line-height:1.75;color:#e8eae7}
+.home-feed .short-post-body .toggle{color:#b9cc9e}
+@media(max-width:760px){.home-feed .stream-heading{margin-top:20px;padding-top:15px}.home-feed .home-feed-search{margin-bottom:10px}.home-feed .short-post-text{font-size:14px;line-height:1.75}}
+
 /* Neutral research shell: green is reserved for interaction and status accents. */
 body:has(.home-feed){background:#0b0c0d;color:#f2f3f1}
 body:has(.home-feed) .sidebar,body:has(.home-feed) .mobile-header{background:#101214;border-color:#252829}
