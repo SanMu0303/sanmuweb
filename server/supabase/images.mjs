@@ -57,7 +57,7 @@ export function createImages(client=createSupabase(),transport=fetch){
    if(path.startsWith('/api/images/')&&['GET','HEAD'].includes(request.method)){
     const current=await row(path.split('/')[3]);if(!current||!['temporary','attached'].includes(current.state))fail('图片不存在',404);
     let allowed=user.isAdmin&&current.owner===user.id,requiresMembership=false;
-    if(!allowed&&current.state==='attached'&&current.post_slug?.startsWith('watch:')){const watch=await repo.get('watch_items',current.post_slug.slice(6));allowed=!!watch?.images?.some(i=>i.url==='/api/images/'+current.id&&i.storagePath===current.storage_path);if(!allowed&&repo.history)allowed=(await repo.history(current.post_slug.slice(6))).some(h=>h.document.images?.some(i=>i.url==='/api/images/'+current.id&&i.storagePath===current.storage_path))}
+    if(!allowed&&current.state==='attached'&&current.post_slug?.startsWith('watch:')){const watch=await repo.get('watch_items',current.post_slug.slice(6),{preferId:true});allowed=!!watch?.images?.some(i=>i.url==='/api/images/'+current.id&&i.storagePath===current.storage_path);if(!allowed&&repo.history)allowed=(await repo.history(current.post_slug.slice(6))).some(h=>h.document.images?.some(i=>i.url==='/api/images/'+current.id&&i.storagePath===current.storage_path))}
     if(!allowed&&current.post_slug){const post=await repo.get('articles',current.post_slug,{publishedOnly:true});allowed=!!post&&projectPost(post,canReadMemberContent(user)).images.some(i=>i.storagePath===current.storage_path);requiresMembership=allowed&&post.access==='member'&&!projectPost(post,false).images.some(i=>i.storagePath===current.storage_path)}
     if(!allowed)fail('图片不存在或无权查看',404);
     const expiresIn=requiresMembership?memberAssetLifetime(user):60;
