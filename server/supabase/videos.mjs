@@ -36,6 +36,7 @@ export function createVideos(client=createSupabase(),transport=fetch,examples=[]
  if(input.category!==undefined&&typeof input.category!=='string')fail('分类格式不正确');
  const category=(input.category||'').trim();if(Array.from(category).length>80)fail('分类最多80个字符');
  let source=videoSource(input.videoUrl||'');let uploadId='';
+ if(input.isMemberOnly&&input.videoProvider!=='selfHosted')fail('会员视频必须使用本站私有上传，不能使用公开的第三方视频链接');
  if(input.videoProvider==='selfHosted'){
  const upload=await get(input.uploadId);if(!upload||upload.owner!==user.id)fail('请先上传视频');
  const response=await transport(await sign(upload.storage_path),{headers:{Range:'bytes=0-31'},signal:AbortSignal.timeout(30000)});if(!response.ok)fail('视频上传尚未完成');
