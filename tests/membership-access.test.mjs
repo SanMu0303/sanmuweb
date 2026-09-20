@@ -165,7 +165,7 @@ test('member images require current content access before any signed URL is issu
  for(const user of [guest,reader,{...reader,isMember:false}]){await assert.rejects(service.handle(request('/api/images/'+imageId),user,repo),{status:404});assert.equal(signed,0)}
  for(const user of [{...reader,isMember:true,membership:membership('active')},admin]){const response=await service.handle(request('/api/images/'+imageId),user,repo);assert.equal(response.status,302);assert.match(response.headers.get('location'),/token=short-lived/);assert.equal(response.headers.get('cache-control'),'private, no-store')}
  article={...doc,status:'draft'};const previous=signed;await assert.rejects(service.handle(request('/api/images/'+imageId),{...reader,isMember:true,membership:membership('active')},repo),{status:404});assert.equal(signed,previous);
- article=doc;image={...image,id:previewId,storage_path:'posts/'+previewId};assert.equal((await service.handle(request('/api/images/'+previewId),guest,repo)).status,302);
+ article=doc;image={...image,id:previewId,storage_path:'posts/'+previewId};await assert.rejects(service.handle(request('/api/images/'+previewId),guest,repo),{status:404});assert.equal(signed,previous);
  image={...image,state:'temporary'};await assert.rejects(service.handle(request('/api/images/'+previewId),{...reader,isMember:true,membership:membership('active')},{get:async()=>null}),{status:404});
 });
 
