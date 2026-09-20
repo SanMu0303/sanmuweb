@@ -45,7 +45,7 @@ test('member short posts are projected by server for guest, ordinary and expired
 });
 
 test('legacy excerpts are never reused as member execution previews',async()=>{
-  const legacy={...sensitivePost,slug:'legacy-excerpt',excerpt:'BTC81000做多，止损79000，仓位20%',sections:[{heading:'',text:'BTC81000做多，止损79000，仓位20%'}]};
+  const legacy={...sensitivePost,slug:'legacy-excerpt',title:'BTC81000做多',statusText:'止损79000',sector:'BTC 做多 81000',timeframe:'止损79000',tags:['仓位20%','执行层'],excerpt:'BTC81000做多，止损79000，仓位20%',sections:[{heading:'',text:'BTC81000做多，止损79000，仓位20%'}]};
   const repo={list:async table=>table==='videos'?[]:[legacy],get:async()=>legacy};
   const body=await (await buildApi('guest',repo)(getRequest('/api/posts/legacy-excerpt'))).json();
   assert.equal(body.locked,true);
@@ -53,10 +53,15 @@ test('legacy excerpts are never reused as member execution previews',async()=>{
   assert.equal(body.summary,'');
   assert.equal(JSON.stringify(body).includes('81000'),false);
   assert.equal(JSON.stringify(body).includes('止损'),false);
+  assert.equal(body.title,'BTC研究记录');
+  assert.equal(body.sector,'');
+  assert.equal(body.timeframe,'');
+  const searched=await (await buildApi('guest',repo)(getRequest('/api/feed?q=81000'))).json();
+  assert.deepEqual(searched,[]);
 });
 
 test('active observation details hide thesis, invalidation and update history from non-members',async()=>{
-  const active={id:'active-btc',symbol:'BTC',name:'比特币',market:'加密',stage:'运行',observationStatus:'active',createdAt:'2026-09-01T00:00:00.000Z',updatedAt:'2026-09-19T00:00:00.000Z',thesis:'SECRET_THESIS_ENTRY_81000',invalidation:'SECRET_INVALIDATION_STOP_79000',summary:'安全观察摘要',images:[]};
+  const active={id:'active-btc',symbol:'BTC',name:'BTC81000做多',market:'加密',stage:'运行',observationStatus:'active',createdAt:'2026-09-01T00:00:00.000Z',updatedAt:'2026-09-19T00:00:00.000Z',thesis:'SECRET_THESIS_ENTRY_81000',invalidation:'SECRET_INVALIDATION_STOP_79000',publicSummary:'BTC entry 81000',summary:'安全观察摘要',images:[]};
   const history=[{revision:1,recorded_at:'2026-09-01T00:00:00.000Z',document:{...active,thesis:'SECRET_HISTORY_ENTRY',invalidation:'SECRET_HISTORY_STOP'}}];
   const repo={list:async()=>[active],get:async(_table,key)=>key==='BTC'||key==='active-btc'?active:null,history:async()=>history};
   for(const actor of ['guest','ordinary','expired']){
@@ -76,6 +81,8 @@ test('active observation details hide thesis, invalidation and update history fr
     assert.equal(detailBody.includes('SECRET_HISTORY_ENTRY'),false,`${actor} history leaked update`);
     assert.equal(historyBody.includes('SECRET_HISTORY_ENTRY'),false,`${actor} direct history leaked update`);
     assert.match(detailBody,/active|正在观察|会员/,'active detail should retain status and access prompt');
+    assert.equal(detailBody.includes('BTC81000做多'),false);
+    assert.equal(detailBody.includes('BTC entry 81000'),false);
   }
   const memberList=await apiForMember(repo,'member','/api/watchlist');
   const memberListBody=await memberList.text();

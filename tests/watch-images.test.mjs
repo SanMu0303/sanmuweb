@@ -26,6 +26,12 @@ test('public watch image requires an attached matching image in the current watc
  await assert.rejects(service.handle(request,{isAdmin:false},{get:async()=>null}),{status:404});
  image.state='temporary';await assert.rejects(service.handle(request,{isAdmin:false},{get:async()=>null}),{status:404});
 });
+test('legacy ended watch states remain public for image access',async()=>{
+ const id='00000000-0000-4000-8000-000000000006',storage_path='posts/'+id;
+ const service=createImages({config:{url:'https://example.supabase.co',bucket:'research-images'},request:async(path)=>path.startsWith('/rest/')?[{id,owner:'admin',state:'attached',post_slug:'watch:BTC',storage_path}]:{signedURL:'/object/sign/research-images/'+storage_path+'?token=test'}});
+ const repo={get:async()=>({observationStatus:'已结束观察',images:[{url:'/api/images/'+id,storagePath:storage_path}]}),history:async()=>[]};
+ assert.equal((await service.handle(new Request('https://site.test/api/images/'+id),{isAdmin:false},repo)).status,302);
+});
 test('historical observation images remain readable after removal from current snapshot',async()=>{
  const id='00000000-0000-4000-8000-000000000001',storagePath='posts/'+id;
  const service=createImages({config:{url:'https://example.supabase.co',bucket:'research-images'},request:async(path)=>path.startsWith('/rest/')?[{id,owner:'admin',state:'attached',post_slug:'watch:BTC',storage_path:storagePath}]:{signedURL:'/object/sign/research-images/'+storagePath}});
