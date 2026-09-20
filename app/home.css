@@ -561,11 +561,50 @@ main:has(> .home-feed){max-width:1480px;padding:28px 28px 64px}
   .home-feed .stream-column .research-record,.home-feed .stream-column .research-record:hover{padding:16px}
 }
 
-/* Short posts have no hidden heading or empty metadata rows. Keep their
-   internal rhythm compact without changing the full research cards. */
+/* Short posts read from author and time to body, then tags. Keep the header
+   compact without changing the full research cards or media preview sizes. */
 .home-feed .stream-column .research-record.compact-short,
 .home-feed .stream-column .research-record.compact-short:hover{
   padding:14px 20px;
+}
+.home-feed .compact-short .record-author-header{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  min-width:0;
+  margin:0 0 12px;
+}
+.home-feed .compact-short .record-author-avatar{
+  display:grid;
+  place-items:center;
+  flex:0 0 34px;
+  width:34px;
+  height:34px;
+  border:1px solid #3b4b3d;
+  border-radius:50%;
+  background:#26382c;
+  color:#dce9d1;
+  font-size:15px;
+  font-weight:600;
+  line-height:1;
+}
+.home-feed .compact-short .record-author-meta{
+  display:grid;
+  gap:3px;
+  min-width:0;
+}
+.home-feed .compact-short .record-author-name{
+  color:var(--home-text,#edf1ec);
+  font-size:15px;
+  font-weight:650;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+.home-feed .compact-short .record-author-meta time{
+  color:var(--home-subtle,#747f77);
+  font-size:12px;
+  line-height:1.4;
+  font-variant-numeric:tabular-nums;
 }
 .home-feed .stream-column .research-record.compact-short .short-post-text{
   line-height:1.6;
@@ -582,9 +621,6 @@ main:has(> .home-feed){max-width:1480px;padding:28px 28px 64px}
   gap:8px;
   margin-top:12px;
   padding-top:10px;
-}
-@media (min-width:1201px){
-  .home-feed .stream-column .research-record.compact-short .record-footline{display:none}
 }
 @media (max-width:760px){
   .home-feed .stream-column .research-record.compact-short,
