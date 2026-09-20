@@ -666,3 +666,8 @@ main:has(> .home-feed){max-width:1480px;padding:28px 28px 64px}
   .home-feed .terminal-heading h1{font-size:28px;line-height:1.25}
   .home-feed .terminal-heading p{font-size:12px;line-height:1.5}
 }
+
+/* Keep the home page's final responsive container override within the shared
+   compact-header rhythm. */
+main:has(> .home-feed){padding-top:28px}
+@media(max-width:760px){main:has(> .home-feed){padding-top:18px}}
