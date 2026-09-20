@@ -7,7 +7,7 @@ export type TrendStage=typeof TREND_STAGES[number];
 export interface PostImage {id?:string;thumbnailUrl?:string;storagePath?:string;width?:number;height?:number;mimeType?:string;fileSize?:number;sortOrder?:number;url:string;alt:string;caption?:string;isPreview:boolean}
 export interface PostBlock {heading:string;text:string}
 export interface Post {
-  video?:Video;id:string;slug:string;title:string;summary:string;preview?:string;access?:'public'|'member'|'preview'|'member_required';content:PostBlock[];
+  video?:Video;id:string;slug:string;title:string;/** Public topic supplied separately from protected body content. */publicTitle?:string;summary:string;preview?:string;access?:'public'|'member'|'preview'|'member_required';content:PostBlock[];
   contentType:ContentType;format:'short'|'long';symbol:string;market:string;sector:string;
   trendStage:TrendStage|null;status:'draft'|'published';statusText:string;timeframe:string;
   tags:string[];images:PostImage[];isPinned:boolean;isMemberOnly:boolean;isPublic:boolean;
