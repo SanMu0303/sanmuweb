@@ -45,3 +45,9 @@ test('active observation images require a valid member before signing',async()=>
  await assert.rejects(service.handle(new Request('https://site.test/api/images/'+id),{isAdmin:false,signedIn:false},repo),{status:404});
  assert.equal((await service.handle(new Request('https://site.test/api/images/'+id),{isAdmin:false,signedIn:true,isMember:true,membership:{status:'active',expiresAt:'2099-01-01T00:00:00.000Z'}},repo)).status,302);
 });
+test('recycled observation images are revoked even for members',async()=>{
+ const id='00000000-0000-4000-8000-000000000007',storagePath='posts/'+id;
+ const service=createImages({config:{url:'https://example.supabase.co',bucket:'research-images'},request:async(path)=>path.startsWith('/rest/')?[{id,owner:'admin',state:'attached',post_slug:'watch:BTC',storage_path:storagePath}]:{signedURL:'/object/sign/research-images/'+storagePath}});
+ const repo={get:async()=>({deletedAt:'2026-09-20T00:00:00.000Z',observationStatus:'ended',images:[{url:'/api/images/'+id,storagePath}] }),history:async()=>[{document:{images:[{url:'/api/images/'+id,storagePath}]}}]};
+ await assert.rejects(service.handle(new Request('https://site.test/api/images/'+id),{isAdmin:false,isMember:true,membership:{status:'active',expiresAt:'2099-01-01T00:00:00.000Z'}},repo),{status:404});
+});
