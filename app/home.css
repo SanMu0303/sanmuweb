@@ -599,3 +599,19 @@ main:has(> .home-feed){max-width:1480px;padding:28px 28px 64px}
     padding-top:10px;
   }
 }
+
+/* Homepage access classification: compact tabs keep filtering in the stream toolbar. */
+.home-feed .home-content-tabs{display:flex;align-items:center;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.home-feed .home-content-tabs::-webkit-scrollbar{display:none}
+.home-feed .home-content-tabs button{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;min-height:30px;padding:4px 10px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--home-muted,#97a198);font:inherit;font-size:12px;line-height:1.4;cursor:pointer;white-space:nowrap}
+.home-feed .home-content-tabs button:hover{color:var(--home-text,#edf1ec);background:#1b251d}
+.home-feed .home-content-tabs button.selected{border-color:#3d4d3d;background:#202b21;color:var(--home-text,#edf1ec)}
+.home-feed .home-content-tabs button span{min-width:1.4em;color:var(--home-subtle,#747f77);font-size:11px;font-variant-numeric:tabular-nums}
+.home-feed .home-content-tabs button.selected span{color:var(--home-accent,#b9ce9b)}
+@media(min-width:1101px){
+  .home-feed .stream-toolbar .stream-heading{grid-column:1;grid-row:1}
+  .home-feed .stream-toolbar .home-content-tabs{grid-column:1;grid-row:2;align-self:start}
+  .home-feed .stream-toolbar .home-feed-search{grid-column:2;grid-row:1 / span 2;align-self:end}
+}
+@media(max-width:1100px){.home-feed .stream-toolbar .home-content-tabs{order:2}.home-feed .stream-toolbar .home-feed-search{order:3}}
+@media(max-width:760px){.home-feed .home-content-tabs{width:100%;padding-bottom:2px}.home-feed .home-content-tabs button{min-height:32px;padding:5px 10px}.home-feed .stream-toolbar{gap:8px}}
