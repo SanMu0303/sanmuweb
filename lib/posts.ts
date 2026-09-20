@@ -14,6 +14,9 @@ export interface Post {
   publishedAt:string;updatedAt:string;author:{id:string;name:string};readTime:number;
   tradeId:string|null;watchlistId:string|null;relatedPosts:string[];isExample:boolean;
   locked:boolean;revision:number;
+  /** Safe server-generated placeholders shown when member content is locked. */
+  maskedLines?:string[];
+  memberPrompt?:{label:string;title:string;description:string;cta:string};
 }
 export type PostFilters={query:string;contentType:string;market:string;stage:string;symbol:string;tag:string;month:string};
 export const EMPTY_FILTERS:PostFilters={query:'',contentType:'',market:'',stage:'',symbol:'',tag:'',month:''};
