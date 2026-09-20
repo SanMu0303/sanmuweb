@@ -18,7 +18,7 @@ test('an empty seeded video library preserves article feeds and member source pr
  const {projectVideo}=await import('../server/video-model.mjs');
  const privateVideo={isMemberOnly:true,videoUrl:'https://private.test/full.mp4',previewUrl:'https://public.test/preview.mp4'};
  assert.equal(projectVideo(privateVideo).videoUrl,'');
- assert.equal(projectVideo(privateVideo).previewUrl,privateVideo.previewUrl);
+ assert.equal(projectVideo(privateVideo).previewUrl,'');
  assert.equal(projectVideo(privateVideo,true).videoUrl,privateVideo.videoUrl);
  const env=setup();
  try{

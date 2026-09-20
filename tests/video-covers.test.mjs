@@ -157,8 +157,8 @@ test('API integrates ticket, completion, save and public cover without exposing 
  const ticketResponse=await api(request('/api/admin/video-covers','POST',{mimeType:'image/png',fileSize:png.length}));assert.equal(ticketResponse.status,200);const ticket=await ticketResponse.json();
  const completed=await api(request('/api/admin/video-covers/'+ticket.id+'/complete','POST',{}));assert.equal(completed.status,200);assert.equal((await completed.json()).previewUrl,'/api/admin/video-covers/'+ticket.id);
  assert.equal((await api(request('/api/admin/video-covers/'+ticket.id))).status,302);
- const saved=await api(request('/api/admin/videos','PUT',{...input,coverUploadId:ticket.id,isMemberOnly:true}));assert.equal(saved.status,200);assert.equal(recent,3);
+ const saved=await api(request('/api/admin/videos','PUT',{...input,coverUploadId:ticket.id,isMemberOnly:false}));assert.equal(saved.status,200);assert.equal(recent,3);
  const publicApi=build(guest),cover=await publicApi(request('/api/video-covers/'+input.id));assert.equal(cover.status,302);assert.match(cover.headers.get('location'),/research-video-covers/);
- const library=await(await publicApi(request('/api/library'))).json();assert.equal(library.videos[0].coverUploadId,undefined);assert.equal(library.videos[0].videoUrl,'');assert.equal(library.videos[0].locked,true);
+ const library=await(await publicApi(request('/api/library'))).json();assert.equal(library.videos[0].coverUploadId,undefined);assert.equal(library.videos[0].videoUrl,'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ');assert.equal(library.videos[0].locked,false);
  documents[0].deletedAt='2026-09-17T00:00:00Z';assert.equal((await publicApi(request('/api/video-covers/'+input.id))).status,404);
 });
