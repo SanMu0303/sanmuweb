@@ -556,3 +556,7 @@ main:has(> .home-feed){max-width:1480px;padding:28px 28px 64px}
 
 /* Keep the home stream single-column when the auxiliary rail is hidden. */
 @media (max-width:1350px){.home-feed .research-layout{grid-template-columns:minmax(0,1fr)}.home-feed .research-rail{display:none}}
+
+
+/* Keep the toolbar readable on tablet widths. */
+@media (max-width:1100px){.home-feed .stream-toolbar{grid-template-columns:minmax(0,1fr);gap:12px}.home-feed .stream-toolbar .home-feed-search{width:100%}}
