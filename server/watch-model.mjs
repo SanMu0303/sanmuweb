@@ -17,6 +17,10 @@ const safeLabel = (value, fallback) => {
   if (!text || /(?:做多|做空|买入|卖出|入场|止盈|止损|仓位|目标价|价格|突破|跌破|\b(?:long|short|entry|stop(?:loss)?|take\s*profit|position|leverage|buy|sell)\b|\d+(?:\.\d+)?\s*(?:%|倍|美元|USDT|USD|CNY|元|点)?)/i.test(text)) return fallback;
   return text.slice(0, 100);
 };
+const safeTicker = value => {
+  const ticker = typeof value === 'string' ? value.trim().toUpperCase() : '';
+  return /^[A-Z0-9._-]{1,20}$/.test(ticker) ? ticker : '';
+};
 // `summary` is often generated from a member post by the sync transaction and
 // must never be assumed safe. Only an explicitly labelled publicSummary can
 // cross the active-cycle boundary.
@@ -26,6 +30,22 @@ const safeActivePreview = value => {
     ? preview
     : '当前正在持续观察，完整判断和后续更新仅限会员查看。';
 };
+const memberPrompt = {
+  label: '会员内容',
+  title: '开通会员，查看完整内容',
+  description: '当前内容包含持续更新和完整判断',
+  cta: '开通会员 ↗',
+};
+// Fixed placeholder glyphs intentionally contain no source text or
+// source-derived lengths. They are safe to render as a blurred content body.
+const memberMaskedLines = [
+  '••••••••••••••••••••••',
+  '••••••••••••••••',
+  '••••••••••••••••••••••••',
+  '••••••••••••••••••',
+  '••••••••••••••••••••••',
+];
+
 const publicImages = images => Array.isArray(images)
   ? images.map(image => {
       if (!image || typeof image !== 'object') return null;
@@ -47,7 +67,7 @@ export function projectWatch(value, canReadMembers = false, lifecycleEnded = end
   const base = {...publicWatchBase(value), images: publicImages(value.images)};
   if (complete) return {...base, access: lifecycleEnded ? 'public' : 'member', locked: false, memberMessage: undefined, preview: previewText(value.thesis)};
   return {
-    id: value.id, symbol: value.symbol, name: safeLabel(value.name, `${value.symbol||'标的'}观察`),
+    id: value.id, symbol: safeTicker(value.symbol), name: safeLabel(value.name, `${safeTicker(value.symbol)||'标的'}观察`),
     market: value.market, stage: value.stage,
     createdAt: value.createdAt, updatedAt: value.updatedAt,
     revision: value.revision, isWeeklyFocus: value.isWeeklyFocus,
@@ -61,6 +81,8 @@ export function projectWatch(value, canReadMembers = false, lifecycleEnded = end
     preview: safeActivePreview(value),
     access: 'member_required',
     memberMessage: '正在观察 · 会员内容',
+    memberPrompt: {...memberPrompt, label: '正在观察 · 会员内容', title: '开通会员查看完整观察记录'},
+    maskedLines: [...memberMaskedLines],
   };
 }
 

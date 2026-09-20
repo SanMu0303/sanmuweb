@@ -11,6 +11,23 @@ const presentationImage=image=>{
   const {id,url,thumbnailUrl,width,height,mimeType,fileSize,sortOrder,alt,caption,isPreview}=image;
   return {id,url,thumbnailUrl,width,height,mimeType,fileSize,sortOrder,alt,caption,isPreview};
 };
+const memberPrompt = {
+  label: '会员内容',
+  title: '开通会员，查看完整内容',
+  description: '当前内容包含持续更新和完整判断',
+  cta: '开通会员 ↗',
+};
+// Deliberately fixed, non-semantic glyphs. These rows never derive their
+// length or characters from the protected body, so they cannot be used to
+// reconstruct member-only text from the response.
+const memberMaskedLines = [
+  '••••••••••••••••••••••',
+  '••••••••••••••••',
+  '••••••••••••••••••••••••',
+  '••••••••••••••••••',
+  '••••••••••••••••••••••',
+];
+
 const safePreview=value=>{
   if(typeof value!=='string')return '';
   const lines=value.replace(/\r/g,'').split(/\n|(?<=[。！？!?])/).map(v=>v.trim()).filter(Boolean);
@@ -48,6 +65,8 @@ export function projectPost(a,canReadMembers=false){
   p.images=p.images.filter(i=>i.isPreview===true&&!managedImageUrl(i.url)&&!managedImageUrl(i.thumbnailUrl)).slice(0,1).map(i=>({...presentationImage(i),alt:'公开预览图',caption:''}));
   p.locked=true;
   p.access='member_required';
+  p.memberPrompt={...memberPrompt};
+  p.maskedLines=[...memberMaskedLines];
  }
  p.images=p.images.map(presentationImage);
  return p;
@@ -55,4 +74,8 @@ export function projectPost(a,canReadMembers=false){
 export function filterPosts(posts,f={}){const query=(f.query||'').trim().toLowerCase();return posts.filter(p=>(!f.contentType||p.contentType===f.contentType)&&(!f.market||p.market===f.market)&&(!f.stage||p.trendStage===f.stage)&&(!f.symbol||p.symbol.toUpperCase()===f.symbol.toUpperCase())&&(!f.tag||p.tags.includes(f.tag))&&(!f.month||p.publishedAt.slice(0,7)===f.month)&&(!query||[p.title,p.summary,...p.content.map(b=>b.heading+' '+b.text),p.symbol,p.sector,...p.tags].join(' ').toLowerCase().includes(query)));}
 export function orderPosts(posts,chronological=false){return [...posts].sort((a,b)=>(chronological?Date.parse(a.publishedAt)-Date.parse(b.publishedAt):Date.parse(b.updatedAt)-Date.parse(a.updatedAt))||a.id.localeCompare(b.id));}
 
-export function toArticleDocument(p){return {id:p.id,slug:p.slug,title:p.title,excerpt:p.summary,preview:p.preview,sections:p.content,category:({'观察更新':'趋势观察','交易反馈':'趋势观察','交易计划':'交易计划','市场复盘':'市场复盘','教学内容':'趋势课程'}[p.contentType]),contentType:p.contentType,format:p.format,symbol:p.symbol,market:p.market,sector:p.sector,trendStage:p.trendStage,status:p.status,statusText:p.statusText,timeframe:p.timeframe,tags:p.tags,images:p.images,pinned:p.isPinned,access:p.access,publishedAt:p.publishedAt.slice(0,10),publishedAtTime:p.publishedAt,updatedAt:p.updatedAt,author:p.author,readMinutes:p.readTime,tradeId:p.tradeId,watchlistId:p.watchlistId,relatedPosts:p.relatedPosts,isExample:p.isExample};}
+export function toArticleDocument(p){
+ const document={id:p.id,slug:p.slug,title:p.title,excerpt:p.summary,preview:p.preview,sections:p.content,category:({'观察更新':'趋势观察','交易反馈':'趋势观察','交易计划':'交易计划','市场复盘':'市场复盘','教学内容':'趋势课程'}[p.contentType]),contentType:p.contentType,format:p.format,symbol:p.symbol,market:p.market,sector:p.sector,trendStage:p.trendStage,status:p.status,statusText:p.statusText,timeframe:p.timeframe,tags:p.tags,images:p.images,pinned:p.isPinned,access:p.access,publishedAt:p.publishedAt.slice(0,10),publishedAtTime:p.publishedAt,updatedAt:p.updatedAt,author:p.author,readMinutes:p.readTime,tradeId:p.tradeId,watchlistId:p.watchlistId,relatedPosts:p.relatedPosts,isExample:p.isExample};
+ if(p.locked){document.maskedLines=p.maskedLines;document.memberPrompt=p.memberPrompt;}
+ return document;
+}
