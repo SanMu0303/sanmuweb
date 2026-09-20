@@ -6,3 +6,23 @@ body:has(.learning-library){background:#0b0c0d;color:#f2f3f1}main:has(>.learning
 @media(max-width:350px){.archive-video-grid{grid-template-columns:minmax(0,1fr)}}
 
 .learning-layout.learning-without-course{grid-template-columns:minmax(0,1fr)}
+
+/* The library header is a page header with search controls, so keep the
+   controls on the same row without allowing the introduction to grow tall. */
+.learning-header{align-items:flex-start;gap:18px;margin-bottom:10px}
+.learning-header h1{font-size:clamp(26px,3vw,34px);line-height:1.25;margin:0 0 5px}
+.learning-header p{max-width:58ch;font-size:13px;line-height:1.5;margin:0}
+.learning-search{margin-top:2px}
+.learning-topics{margin-bottom:12px}
+@media(max-width:600px){
+ .learning-header{margin-bottom:8px}
+ .learning-header h1{font-size:26px;line-height:1.3;margin-bottom:4px}
+ .learning-header p{font-size:12px;line-height:1.5}
+ .learning-search{margin-top:9px}
+ .learning-topics{margin-bottom:10px}
+}
+
+main:has(>.learning-library){padding-top:20px}
+@media(max-width:600px){
+  main:has(>.learning-library){padding-top:16px}
+}
