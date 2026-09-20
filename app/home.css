@@ -515,3 +515,40 @@ main:has(> .home-feed){
   .home-feed .research-rail{display:none}
 }
 @media (prefers-reduced-motion:reduce){.home-feed .composer-prompt,.home-feed .stream-column .research-record{transition:none}}
+
+/* Final homepage proportion pass: the workspace owns the sidebar offset once. */
+main:has(> .home-feed){max-width:1480px;padding:28px 28px 64px}
+.home-feed{max-width:none}
+.home-feed>.terminal-heading{margin-bottom:16px;padding-bottom:16px}
+.home-feed>.quick-composer{width:100%;max-width:none;margin-bottom:18px}
+.home-feed>.pinned-brief{width:100%;max-width:none;margin-bottom:18px}
+.home-feed .stream-toolbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,420px);align-items:end;gap:20px;margin:0 0 16px;padding:0 0 12px;border-bottom:1px solid var(--home-line)}
+.home-feed .stream-toolbar .stream-heading{min-width:0;margin:0;padding:0;border:0}
+.home-feed .stream-toolbar .home-feed-search{width:100%;min-width:0;margin:0}
+.home-feed .research-layout{grid-template-columns:minmax(0,1fr) minmax(280px,300px);gap:32px}
+.home-feed .stream-column>div[aria-live]{gap:14px}
+.home-feed .stream-column .research-record,.home-feed .stream-column .research-record:hover{padding:20px}
+.home-feed .post-thumbnails{margin-top:12px;gap:8px}
+.home-feed .post-thumbnails.single{width:fit-content;max-width:100%}
+.home-feed .post-thumbnails.single button{width:fit-content;max-width:100%}
+.home-feed .post-thumbnails.single img{width:auto;max-width:220px;height:auto;max-height:180px}
+.home-feed .post-thumbnails.multiple{display:flex;flex-wrap:wrap;align-items:flex-start;width:fit-content;max-width:100%;grid-template-columns:none!important}
+.home-feed .post-thumbnails.multiple button{display:block;width:fit-content;min-width:0;min-height:0;max-width:220px}
+.home-feed .post-thumbnails.multiple img{width:auto;max-width:220px;height:auto;max-height:180px}
+.home-feed .post-thumbnails .image-fallback{min-width:150px;min-height:80px;width:150px;padding:12px}
+.home-feed .record-footer{margin-top:14px;padding-top:12px}
+@media (min-width:761px){
+  .home-feed>.quick-composer,.home-feed>.pinned-brief{width:calc(100% - 332px)}
+}
+@media (min-width:761px) and (max-width:1350px){
+  .home-feed>.quick-composer,.home-feed>.pinned-brief{width:100%}
+}
+@media (max-width:760px){
+  main:has(> .home-feed){padding:22px 16px 48px}
+  .home-feed .stream-toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-bottom:14px;padding-bottom:12px}
+  .home-feed .stream-toolbar .home-feed-search{min-height:42px}
+  .home-feed .post-thumbnails.single img,.home-feed .post-thumbnails.multiple img{max-width:180px;max-height:160px}
+  .home-feed .post-thumbnails.multiple button{max-width:180px}
+  .home-feed .post-thumbnails .image-fallback{min-width:120px;width:120px;min-height:70px}
+  .home-feed .stream-column .research-record,.home-feed .stream-column .research-record:hover{padding:16px}
+}
