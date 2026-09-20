@@ -3,7 +3,7 @@
 import {useRef,useState} from 'react';
 import {request} from '@/lib/live';
 import {MARKETS,TREND_STAGES,type Post,type TrendStage} from '@/lib/posts';
-import type {WatchItem} from '@/lib/types';
+import {isWatchEnded,type WatchItem} from '@/lib/types';
 
 type Observation=WatchItem&{deletedAt?:string};
 type Props={post:Post;onSaved?:()=>void};
@@ -23,10 +23,10 @@ export default function AddToWatchlist({post,onSaved}:Props){
  const [thesis,setThesis]=useState(''),[invalidation,setInvalidation]=useState('');
  const normalizedSymbol=symbol.trim().toUpperCase();
  const matching=items.filter(item=>item.symbol.trim().toUpperCase()===normalizedSymbol);
- const existing=matching.find(item=>item.observationStatus!=='ended'&&!item.endedAt&&!item.deletedAt);
- const historical=matching.find(item=>item.deletedAt||item.observationStatus==='ended'||item.endedAt);
+ const existing=matching.find(item=>!isWatchEnded(item)&&!item.deletedAt);
+ const historical=matching.find(item=>item.deletedAt||isWatchEnded(item));
  function selectSymbol(value:string,records=items){
-  const next=value.toUpperCase();const item=records.find(row=>row.symbol.trim().toUpperCase()===next.trim()&&!row.deletedAt&&row.observationStatus!=='ended'&&!row.endedAt);
+  const next=value.toUpperCase();const item=records.find(row=>row.symbol.trim().toUpperCase()===next.trim()&&!row.deletedAt&&!isWatchEnded(row));
   setSymbol(next);setName(item?.name||next);setMarket(item?.market||post.market);
   setStage(post.trendStage||item?.stage||'准备');setInvalidation(item?.invalidation||'');
  }

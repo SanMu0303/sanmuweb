@@ -41,7 +41,7 @@ export default function PostCard({post,full=false,timeline=false,compact=false,i
     </p>}
     {!inline&&post.locked&&post.content[0]&&(!compact||post.content[0].text!==post.summary)&&<div className="record-preview"><p>{post.content[0].text}</p></div>}
     <PostImages images={post.images}/>
-    {post.locked&&compact?<div className="compact-member-note">会员内容 · 公开预览 <a href="/membership/">了解会员 ↗</a></div>:post.locked&&<div className="member-preview-note"><span>会员研究 · 公开预览</span><p>这里展示部分研究记录。有效会员可阅读完整内容，请在会员中心查看状态或联系管理员开通。</p><a href="/membership/">了解会员空间 ↗</a></div>}
+    {post.locked&&compact?<div className="compact-member-note"><span>{post.access==='preview'?'公开摘要 · 全文需会员':'会员内容 · 公开预览'}</span><a href="/membership/">开通会员 ↗</a></div>:post.locked&&<div className="member-preview-note"><span>{post.access==='preview'?'公开摘要 · 全文需会员':'会员研究 · 公开预览'}</span><p>订阅会员后查看完整执行内容和持续更新。</p><a href="/membership/">查看会员权益 ↗</a></div>}
     <footer className="record-footer">
       <div className="record-bottom-meta">
         <time dateTime={post.updatedAt||post.publishedAt}>{formatPostTime(post.updatedAt,post.publishedAt,!compact)}</time>

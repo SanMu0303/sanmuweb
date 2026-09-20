@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {request,useResource} from '@/lib/live';
 import {TREND_STAGES,type Post} from '@/lib/posts';
-import type {WatchItem} from '@/lib/types';
+import {isWatchEnded,type WatchItem} from '@/lib/types';
 import PostImages from './PostImages';
 import BoldText from './BoldText';
 import ImageUploader from './ImageUploader';
@@ -38,11 +38,11 @@ export default function WatchDetail({symbol}:{symbol:string}){
  },[detail?.history]);
  function open(){if(!detail)return;setText('');setStage(detail.item.stage);setSync(true);setError('');setNotice('');uploads.reset();dialog.current?.showModal()}
  function close(){if(!busy)dialog.current?.close()}
- async function endObservation(){if(!detail||ending||busy||detail.item.observationStatus==='ended'||detail.item.endedAt)return;if(!window.confirm('结束这个观察周期？历史观点会保留，之后不会再接受同步更新。'))return;setEnding(true);setError('');setNotice('');try{await request<WatchItem>('/api/admin/watchlist',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'end',id:detail.item.id||detail.item.symbol,symbol:detail.item.symbol,revision:detail.item.revision??0})});router.push('/watchlist/');router.refresh()}catch(e){setError((e as Error).message);setEnding(false)}}
+ async function endObservation(){if(!detail||ending||busy||isWatchEnded(detail.item))return;if(!window.confirm('结束这个观察周期？历史观点会保留，之后不会再接受同步更新。'))return;setEnding(true);setError('');setNotice('');try{await request<WatchItem>('/api/admin/watchlist',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'end',id:detail.item.id||detail.item.symbol,symbol:detail.item.symbol,revision:detail.item.revision??0})});router.push('/watchlist/');router.refresh()}catch(e){setError((e as Error).message);setEnding(false)}}
  async function publish(e:React.FormEvent){e.preventDefault();if(!detail||busy||!text.trim())return;if(uploads.blocked){setError(uploads.uploading?'图片上传中，请等待完成。':'请重试或删除上传失败的图片后再保存。');return}setBusy(true);setError('');setNotice('');const item=detail.item;try{
   if(sync){
    const hasImages=uploads.images.length>0;
-   const saved=await request<Post&{watchSyncResult?:{revision?:number}}>('/api/admin/articles',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:slug(item.symbol),title:text.trim().split(/[。！？\n]/)[0].slice(0,100),excerpt:text.trim().slice(0,600),category:'趋势观察',contentType:'观察更新',format:'short',symbol:item.symbol,market:item.market,sector:'',trendStage:stage,statusText:'',timeframe:'',tags:[],images:[],publishedAt:day(),pinned:false,access:'public',readMinutes:1,sections:[{heading:'',text:text.trim()}],status:'published',revision:0,isExample:false,...(hasImages?{}:{watchSync:{enabled:true,watchId:item.id||item.symbol,revision:item.revision??0,summary:text.trim(),invalidation:''}})})});
+   const saved=await request<Post&{watchSyncResult?:{revision?:number}}>('/api/admin/articles',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:slug(item.symbol),title:text.trim().split(/[。！？\n]/)[0].slice(0,100),excerpt:text.trim().slice(0,600),category:'趋势观察',contentType:'观察更新',format:'short',symbol:item.symbol,market:item.market,sector:'',trendStage:stage,statusText:'',timeframe:'',tags:[],images:[],publishedAt:day(),pinned:false,access:'member',readMinutes:1,sections:[{heading:'',text:text.trim()}],status:'published',revision:0,isExample:false,...(hasImages?{}:{watchSync:{enabled:true,watchId:item.id||item.symbol,revision:item.revision??0,summary:text.trim(),invalidation:''}})})});
    // The atomic article/watch sync cannot carry a second image set in the
    // current database function. When images are present, save the article
    // first and then save the observation once with the uploaded images so the
@@ -58,7 +58,7 @@ export default function WatchDetail({symbol}:{symbol:string}){
  if(resource.error)return <div className="empty" role="alert"><p>{resource.error}</p><button className="button" onClick={resource.retry}>重新读取</button></div>;
  if(!detail)return <div className="empty" role="status">正在读取观察记录…</div>;
  const {item,history}=detail;
- const ended=item.observationStatus==='ended'||!!item.endedAt;
+ const ended=isWatchEnded(item);
  const records=[...history];
  if(!records.length||!records.some(h=>h.revision===item.revision))records.push({document:item,revision:item.revision??0,recorded_at:item.updatedAt});
  records.sort((a,b)=>a.revision-b.revision);
@@ -72,7 +72,7 @@ export default function WatchDetail({symbol}:{symbol:string}){
   <Link className="breadcrumb" href="/watchlist/">← 返回趋势观察池</Link>
   <header className="watch-detail-header"><div><div className="eyebrow">TREND OBSERVATION · {item.symbol}</div><h1>{item.name}</h1><p>{item.symbol} · {item.market}</p></div><div className="watch-detail-stage"><small>当前趋势阶段</small><span className={'stage stage-'+item.stage}>{item.stage}</span>{ended&&<span className="watch-lifecycle-ended">已结束</span>}</div></header>
   {notice&&<p className="notice" role="status">{notice}</p>}
-  <section className="watch-detail-summary"><div className="risk">当前失效条件：{item.invalidation||'暂未设置'}</div><div className="watch-detail-meta"><span>创建时间：{date(item.createdAt||item.updatedAt)}</span><span>最近更新时间：{date(item.updatedAt)}</span>{item.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(item.articleSlug)}>查看关联短文 ↗</Link>}</div></section>
+  <section className="watch-detail-summary">{item.locked?<div className="watch-member-preview"><strong>{item.memberMessage||'正在观察 · 会员内容'}</strong><p>{item.preview||'当前正在持续观察，完整判断和后续更新仅限会员查看。'}</p><small>开通会员查看完整观察记录</small><Link className="button secondary" href="/membership/subscribe/">开通会员</Link></div>:<div className="risk">当前失效条件：{item.invalidation||'暂未设置'}</div>}<div className="watch-detail-meta"><span>创建时间：{date(item.createdAt||item.updatedAt)}</span><span>最近更新时间：{date(item.updatedAt)}</span>{item.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(item.articleSlug)}>查看关联短文 ↗</Link>}</div></section>
   {session.data?.isAdmin&&<div className="watch-detail-actions"><button className="button secondary" onClick={endObservation} disabled={ending||busy||ended}>{ending?'结束中…':ended?'已结束观察':'结束观察'}</button>{!ended&&<button className="button watch-update-trigger" onClick={open}>＋ 添加观点</button>}</div>}
   <section className="watch-map-section" aria-labelledby="watch-map-heading">
    <div className="section-line"><h2 id="watch-map-heading">观点脉络 <span>{records.length} 条</span></h2><small className="watch-map-hint">从最初观察到最新判断</small></div>
@@ -82,10 +82,7 @@ export default function WatchDetail({symbol}:{symbol:string}){
      <article className="watch-history-entry">
       <header><strong><span className="watch-map-index">{String(index+1).padStart(2,'0')}</span>{h.revision===latestRevision?'最新观点':index===0?'初始观点':'观点更新'}</strong><span className={'record-stage record-stage-'+h.document.stage}>{h.document.stage}</span></header>
       <time className="watch-map-date" dateTime={h.recorded_at}>{date(h.recorded_at)}</time>
-      {opinionText(h)?.map((text,textIndex)=><p key={textIndex}><BoldText text={text}/></p>)||<p><BoldText text={h.document.thesis}/></p>}
-      {h.document.images?.length?<PostImages images={h.document.images}/>:null}
-      {h.document.invalidation&&h.document.invalidation!=='暂未设置'&&<div className="watch-map-risk">失效条件：{h.document.invalidation}</div>}
-      {h.document.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(h.document.articleSlug)}>查看对应短文 ↗</Link>}
+      {h.document.locked?<div className="watch-member-preview"><strong>{h.document.memberMessage||'正在观察 · 会员内容'}</strong><p>{h.document.preview||'完整判断和持续更新仅限会员查看。'}</p><small>开通会员查看完整观察记录</small></div>:<>{opinionText(h)?.map((text,textIndex)=><p key={textIndex}><BoldText text={text}/></p>)||<p><BoldText text={h.document.thesis}/></p>}{h.document.images?.length?<PostImages images={h.document.images}/>:null}{h.document.invalidation&&h.document.invalidation!=='暂未设置'&&<div className="watch-map-risk">失效条件：{h.document.invalidation}</div>}{h.document.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(h.document.articleSlug)}>查看对应短文 ↗</Link>}</>}
      </article>
     </li>)}
    </ol>

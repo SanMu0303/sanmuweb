@@ -6,6 +6,7 @@ import BoldTextarea from './BoldTextarea';
 import {useRef, useState} from 'react';
 import {request, useResource} from '@/lib/live';
 import {MARKETS, TREND_STAGES} from '@/lib/posts';
+import {isWatchEnded} from '@/lib/types';
 
 /** Compact homepage entry point; the editor opens in a native modal dialog. */
 export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
@@ -19,6 +20,7 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
  const [market,setMarket]=useState('跨市场');
  const [stage,setStage]=useState('');
  const [member,setMember]=useState(false);
+ const [previewSummary,setPreviewSummary]=useState('');
  const [syncWatch,setSyncWatch]=useState(false);
  const [syncSummary,setSyncSummary]=useState('');
  const [weeklyFocus,setWeeklyFocus]=useState(false);
@@ -37,6 +39,7 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
   setWeeklyFocus(false);
   setSyncInvalidation('');
   setSyncSummary('');
+  setPreviewSummary('');
   setOpen(true);
   requestAnimationFrame(()=>dialog.current?.showModal());
  }
@@ -57,8 +60,9 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
   const normalizedSymbol=symbol.trim().toUpperCase();
   if(syncWatch&&(!normalizedSymbol||!stage)){setError('同步到观察池前，请填写标的并选择趋势阶段。');return}
   const firstSentence=text.trim().replaceAll('**','').split(/[。！？\n]/).map(part=>part.trim()).find(Boolean)||text.trim().replaceAll('**','');
-  const publicSummary=syncSummary.trim()||(member?'':firstSentence.slice(0,500));
-  if(syncWatch&&member&&!publicSummary){setError('会员短文同步到观察池前，请填写可公开的摘要。');return}
+  const restricted=member||syncWatch;
+  const publicSummary=restricted?(previewSummary.trim()||syncSummary.trim()):firstSentence.slice(0,500);
+  if(restricted&&!publicSummary){setError('会员短文或同步观察必须填写可公开展示的摘要，正文中的执行条件不会自动公开。');return}
   submitting.current=true;
   setBusy(true);
   try{
@@ -67,13 +71,14 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
    let watchRevision=0;let watchId:string|undefined;
    if(syncWatch){
     const records=await request<Array<{id?:string;symbol:string;revision?:number;deletedAt?:string;observationStatus?:string;endedAt?:string}>>('/api/admin/watchlist');
-    const current=records.find(item=>item.symbol.trim().toUpperCase()===normalizedSymbol && !item.deletedAt && item.observationStatus!=='ended' && !item.endedAt);
+    const current=records.find(item=>item.symbol.trim().toUpperCase()===normalizedSymbol && !item.deletedAt && !isWatchEnded(item));
     watchRevision=current?.revision??0;watchId=current?(current.id||current.symbol):undefined;
    }
    await request('/api/admin/articles',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     slug,
     title:text.trim().replaceAll('**','').split('\n')[0].slice(0,100),
-    excerpt:text.trim().slice(0,600),
+    excerpt:restricted?publicSummary:text.trim().slice(0,600),
+    preview:restricted?publicSummary:'',
     sections:[{heading:'',text:text.trim()}],
     category:'趋势观察',
     contentType:'观察更新',
@@ -85,11 +90,11 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
     statusText:'',
     timeframe:timeframe.trim(),
     tags:tags.split(/[,，]/).map(t=>t.trim().replace(/^#/,'')).filter(Boolean),
-    images:uploads.images.map(image=>({...image,isPreview:!member})),
+    images:uploads.images.map(image=>({...image,isPreview:!restricted})),
     publishedAt:date,
     publishedAtTime:now.toISOString(),
     pinned:false,
-    access:member?'member':'public',
+    access:restricted?'member':'public',
     readMinutes:1,
     status:'published',
     revision:0,
@@ -103,6 +108,7 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
    setTags('');
    setStage('');
    setMember(false);
+   setPreviewSummary('');
    setSyncWatch(false);
    setWeeklyFocus(false);
    setSyncInvalidation('');
@@ -153,10 +159,11 @@ export default function QuickComposer({onPublished}:{onPublished?:()=>void}){
       <select aria-label="发布市场" value={market} onChange={e=>setMarket(e.target.value)}>{MARKETS.map(m=><option key={m}>{m}</option>)}</select>
       <select aria-label="发布阶段" value={stage} onChange={e=>setStage(e.target.value)}><option value="">阶段：不适用</option>{TREND_STAGES.map(s=><option key={s}>{s}</option>)}</select>
       <label><input type="checkbox" checked={member} onChange={e=>setMember(e.target.checked)}/>会员可见</label>
+      {member&&<label className="composer-member-summary">公开摘要（必填）<textarea rows={2} maxLength={600} value={previewSummary} onChange={e=>setPreviewSummary(e.target.value)} placeholder="填写允许未订阅用户看到的摘要，不要包含价格、入场条件或仓位建议。"/></label>}
      </div>
      <div className={'composer-sync-box'+(syncWatch?' selected':'')}>
       <label className="composer-sync-toggle"><input type="checkbox" checked={syncWatch} onChange={e=>setSyncWatch(e.target.checked)}/><span><strong>同步到观察池</strong><small>发布短文时，同时保存一条趋势观察记录并保留历史观点。</small></span></label>
-      {syncWatch&&<div className="composer-sync-fields"><small>需要填写标的和趋势阶段；观察池只保存这条摘要，不会复制会员正文。</small><label>公开摘要{member&&<span aria-hidden="true">（必填）</span>}<textarea rows={2} maxLength={500} value={syncSummary} onChange={e=>setSyncSummary(e.target.value)} placeholder={member?'填写允许公开展示的判断摘要':'留空则自动使用正文首句（最多 500 字）'}/></label><label><input type="checkbox" checked={weeklyFocus} onChange={e=>setWeeklyFocus(e.target.checked)}/>列为本周重点（最多 3 个）</label><label>失效条件（可选）<textarea rows={2} maxLength={2000} value={syncInvalidation} onChange={e=>setSyncInvalidation(e.target.value)} placeholder="例如：跌破关键支撑后停止跟踪"/></label></div>}
+      {syncWatch&&<div className="composer-sync-fields"><small>需要填写标的和趋势阶段；观察池只保存这条摘要，不会复制会员正文。</small><label>公开摘要<span aria-hidden="true">（必填）</span><textarea rows={2} maxLength={500} value={syncSummary} onChange={e=>setSyncSummary(e.target.value)} placeholder="填写允许公开展示的判断摘要，不要包含价格、入场条件或仓位建议。"/></label><label><input type="checkbox" checked={weeklyFocus} onChange={e=>setWeeklyFocus(e.target.checked)}/>列为本周重点（最多 3 个）</label><label>失效条件（可选）<textarea rows={2} maxLength={2000} value={syncInvalidation} onChange={e=>setSyncInvalidation(e.target.value)} placeholder="例如：跌破关键支撑后停止跟踪"/></label></div>}
      </div>
     </fieldset>
     {error&&<p role="alert" className="quick-composer-error">{error}</p>}
