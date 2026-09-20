@@ -21,8 +21,17 @@ export default function PostCard({post,full=false,timeline=false,compact=false,m
   const publicTopic=post.publicTitle?.trim()||`${post.symbol||'研究'} · 研究更新`;
   const title=post.locked?publicTopic:(post.statusText||post.title);
   const gateCompact=typeof memberGateCompact==='boolean'?memberGateCompact:compact;
+  const authorName=post.author?.name?.trim()||'三木';
+  const authorInitial=Array.from(authorName)[0];
   return <article className={'research-record '+(timeline?'timeline-record':'')+(short?' compact-short':compact?' compact-long':'')} id={'record-'+post.slug}>
-    {(hasSubject||hasBadges)&&<header className="record-heading">
+    {short&&<header className="record-author-header">
+      <span className="record-author-avatar" aria-hidden="true">{authorInitial}</span>
+      <div className="record-author-meta">
+        <strong className="record-author-name">{authorName}</strong>
+        <time dateTime={post.updatedAt||post.publishedAt}>{formatPostTime(post.updatedAt,post.publishedAt,false)}</time>
+      </div>
+    </header>}
+    {!short&&(hasSubject||hasBadges)&&<header className="record-heading">
       {hasSubject&&<div className="record-subject">
         {post.symbol&&<a className="symbol-chip" href={timelineHref(post.symbol,post.market)}>{post.symbol}</a>}
         {post.timeframe&&<span className="timeframe">· {post.timeframe}</span>}
@@ -47,18 +56,22 @@ export default function PostCard({post,full=false,timeline=false,compact=false,m
     <PostImages images={post.images}/>
     <footer className="record-footer">
       <div className="record-bottom-meta">
-        <time dateTime={post.updatedAt||post.publishedAt}>{formatPostTime(post.updatedAt,post.publishedAt,!compact)}</time>
+        {!short&&<time dateTime={post.updatedAt||post.publishedAt}>{formatPostTime(post.updatedAt,post.publishedAt,!compact)}</time>}
         <span>{post.market}</span>
         {post.sector&&<a href={filterHref('q',post.sector)}>{post.sector}</a>}
         {short&&post.symbol&&<a className="home-symbol-tag" href={timelineHref(post.symbol,post.market)}>{post.symbol}</a>}
         {short&&post.timeframe&&<span className="home-timeframe">{post.timeframe}</span>}
         {post.trendStage&&<span className={'record-stage record-stage-'+post.trendStage}>{post.trendStage}</span>}
+        {short&&showType&&<span className={'record-type type-'+tones[post.contentType]}>{post.contentType}</span>}
+        {short&&post.isPinned&&!timeline&&<span className="record-pin">置顶</span>}
+        {short&&post.isMemberOnly&&<span className="record-access">会员专属</span>}
+        {short&&post.isExample&&<span>教学示例</span>}
       </div>
       {hasTags&&<div className="record-tags">{post.tags.map(tag=><a key={tag} href={filterHref('tag',tag)}>#{tag}</a>)}</div>}
-      <div className="record-footline">
+      {!short&&<div className="record-footline">
         <span>{post.author.name} · {post.isMemberOnly?'会员内容':'公开记录'}{post.isExample?' · 教学示例':''}</span>
         {!compact&&!full&&post.format==='long'?<a href={'/article/?slug='+encodeURIComponent(post.slug)}>查看完整内容 <span>↗</span></a>:!compact&&!full&&post.symbol?<a href={timelineHref(post.symbol,post.market)}>查看标的历史 ↗</a>:null}
-      </div>
+      </div>}
     </footer>
   </article>;
 }
