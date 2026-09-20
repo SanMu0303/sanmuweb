@@ -22,10 +22,9 @@ export default function PostCard({post,full=false,timeline=false,compact=false,m
   const title=post.locked?publicTopic:(post.statusText||post.title);
   const gateCompact=typeof memberGateCompact==='boolean'?memberGateCompact:compact;
   const authorName=post.author?.name?.trim()||'三木';
-  const authorInitial=Array.from(authorName)[0];
   return <article className={'research-record '+(timeline?'timeline-record':'')+(short?' compact-short':compact?' compact-long':'')} id={'record-'+post.slug}>
     {short&&<header className="record-author-header">
-      <span className="record-author-avatar" aria-hidden="true">{authorInitial}</span>
+      <img className="record-author-avatar" src="/images/sanmu-avatar.jpg" alt="" aria-hidden="true" width="34" height="34" />
       <div className="record-author-meta">
         <strong className="record-author-name">{authorName}</strong>
         <time dateTime={post.updatedAt||post.publishedAt}>{formatPostTime(post.updatedAt,post.publishedAt,false)}</time>
