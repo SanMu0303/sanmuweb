@@ -6,6 +6,12 @@ export const STAGES=['准备','启动','运行','高潮','失效'];
 const mapping={'趋势观察':'观察更新','交易计划':'交易计划','市场复盘':'市场复盘','趋势课程':'教学内容'};
 const marketMap={'A 股':'A股','加密市场':'加密','全球市场':'黄金'};
 const managedImageUrl=value=>typeof value==='string'&&/^\/api\/images\/[a-f0-9-]{36}$/.test(value);
+const safePreview=value=>{
+  if(typeof value!=='string')return '';
+  const lines=value.replace(/\r/g,'').split(/\n|(?<=[。！？!?])/).map(v=>v.trim()).filter(Boolean);
+  const unsafe=/(?:做多|做空|买入|卖出|开仓|平仓|入场|进场|止盈|止损|仓位|目标价|价格|价位|突破|跌破|挂单|杠杆|合约|\d+(?:\.\d+)?\s*(?:%|倍|美元|USDT|USD|CNY|元|点)?)/i;
+  return lines.filter(line=>!unsafe.test(line)).join(' ').slice(0,320).trim();
+};
 export function normalizePost(a){
  const access=a.access==='member'||a.isMemberOnly===true?'member':a.access==='preview'?'preview':'public';
  const restricted=access!=='public';
@@ -21,7 +27,7 @@ export function projectPost(a,canReadMembers=false){
   // `preview`/`excerpt` are the editor's public-safe fields. Preserve the
   // legacy first block only when it is explicitly labelled 预览.
   const previewHeading=/^(?:公开)?预览$|^public\s+preview$/i.test((first?.heading||'').trim());
-  const preview=(p.preview||'').trim()||(previewHeading?first?.text||'':p.summary||'');
+  const preview=safePreview((p.preview||'').trim()||(previewHeading?first?.text||'':''));
   p.content=preview?[{heading:'',text:preview.slice(0,320)}]:[];
   p.summary=preview.slice(0,320);
   p.preview=preview.slice(0,320);
