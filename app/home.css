@@ -552,3 +552,7 @@ main:has(> .home-feed){max-width:1480px;padding:28px 28px 64px}
   .home-feed .post-thumbnails .image-fallback{min-width:120px;width:120px;min-height:70px}
   .home-feed .stream-column .research-record,.home-feed .stream-column .research-record:hover{padding:16px}
 }
+
+
+/* Keep the home stream single-column when the auxiliary rail is hidden. */
+@media (max-width:1350px){.home-feed .research-layout{grid-template-columns:minmax(0,1fr)}.home-feed .research-rail{display:none}}
