@@ -45,7 +45,7 @@ test('member short posts are projected by server for guest, ordinary and expired
 });
 
 test('legacy excerpts are never reused as member execution previews',async()=>{
-  const legacy={...sensitivePost,slug:'legacy-excerpt',title:'BTC81000做多',statusText:'止损79000',sector:'BTC 做多 81000',timeframe:'止损79000',tags:['仓位20%','执行层'],excerpt:'BTC81000做多，止损79000，仓位20%',sections:[{heading:'',text:'BTC81000做多，止损79000，仓位20%'}]};
+  const legacy={...sensitivePost,slug:'legacy-excerpt',title:'BTC81000做多',symbol:'BTC81000做多',statusText:'止损79000',sector:'BTC 做多 81000',timeframe:'止损79000',tags:['仓位20%','执行层'],excerpt:'BTC81000做多，止损79000，仓位20%',sections:[{heading:'',text:'BTC81000做多，止损79000，仓位20%'}]};
   const repo={list:async table=>table==='videos'?[]:[legacy],get:async()=>legacy};
   const body=await (await buildApi('guest',repo)(getRequest('/api/posts/legacy-excerpt'))).json();
   assert.equal(body.locked,true);
@@ -53,7 +53,8 @@ test('legacy excerpts are never reused as member execution previews',async()=>{
   assert.equal(body.summary,'');
   assert.equal(JSON.stringify(body).includes('81000'),false);
   assert.equal(JSON.stringify(body).includes('止损'),false);
-  assert.equal(body.title,'BTC研究记录');
+  assert.equal(body.title,'会员研究记录');
+  assert.equal(body.symbol,'');
   assert.equal(body.sector,'');
   assert.equal(body.timeframe,'');
   const searched=await (await buildApi('guest',repo)(getRequest('/api/feed?q=81000'))).json();
