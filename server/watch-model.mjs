@@ -12,13 +12,29 @@ const previewText = value => {
   const first = text.split(/[。！？!?\n]/)[0].trim();
   return (first || text).slice(0, 120);
 };
+const safeLabel = (value, fallback) => {
+  const text = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+  if (!text || /(?:做多|做空|买入|卖出|入场|止盈|止损|仓位|目标价|价格|突破|跌破|\b(?:long|short|entry|stop(?:loss)?|take\s*profit|position|leverage|buy|sell)\b|\d+(?:\.\d+)?\s*(?:%|倍|美元|USDT|USD|CNY|元|点)?)/i.test(text)) return fallback;
+  return text.slice(0, 100);
+};
 // `summary` is often generated from a member post by the sync transaction and
 // must never be assumed safe. Only an explicitly labelled publicSummary can
 // cross the active-cycle boundary.
-const safeActivePreview = value => previewText(value?.publicSummary) || '当前正在持续观察，完整判断和后续更新仅限会员查看。';
+const safeActivePreview = value => {
+  const preview = previewText(value?.publicSummary);
+  return preview && !/(?:做多|做空|买入|卖出|入场|止盈|止损|仓位|目标价|价格|突破|跌破|\b(?:long|short|entry|stop(?:loss)?|take\s*profit|position|leverage|buy|sell)\b|\d+(?:\.\d+)?\s*(?:%|倍|美元|USDT|USD|CNY|元|点)?)/i.test(preview)
+    ? preview
+    : '当前正在持续观察，完整判断和后续更新仅限会员查看。';
+};
 const publicImages = images => Array.isArray(images)
-  ? images.map(({storagePath, ...image}) => image)
+  ? images.map(image => {
+      if (!image || typeof image !== 'object') return null;
+      const {id,url,thumbnailUrl,width,height,mimeType,fileSize,sortOrder,alt,caption,isPreview}=image;
+      return {id,url,thumbnailUrl,width,height,mimeType,fileSize,sortOrder,alt,caption,isPreview};
+    }).filter(Boolean)
   : [];
+const publicWatchFields=['id','symbol','name','market','stage','thesis','invalidation','publicSummary','summary','createdAt','updatedAt','endedAt','articleSlug','observationStatus','isWeeklyFocus','revision'];
+const publicWatchBase=value=>Object.fromEntries(publicWatchFields.filter(key=>value[key]!==undefined).map(key=>[key,value[key]]));
 
 /**
  * Ended cycles are an archive and are intentionally public. Active cycles are
@@ -28,11 +44,14 @@ const publicImages = images => Array.isArray(images)
 export function projectWatch(value, canReadMembers = false, lifecycleEnded = ended(value)) {
   if (!value) return value;
   const complete = lifecycleEnded || canReadMembers;
-  const {summary: _summary, publicSummary: _publicSummary, excerpt: _excerpt, ...rest} = value;
-  const base = {...rest, ...(value.publicSummary ? {publicSummary: value.publicSummary} : {}), images: publicImages(value.images)};
+  const base = {...publicWatchBase(value), images: publicImages(value.images)};
   if (complete) return {...base, access: lifecycleEnded ? 'public' : 'member', locked: false, memberMessage: undefined, preview: previewText(value.thesis)};
   return {
-    ...base,
+    id: value.id, symbol: value.symbol, name: safeLabel(value.name, `${value.symbol||'标的'}观察`),
+    market: value.market, stage: value.stage,
+    createdAt: value.createdAt, updatedAt: value.updatedAt,
+    revision: value.revision, isWeeklyFocus: value.isWeeklyFocus,
+    observationStatus: 'active',
     thesis: '',
     invalidation: '',
     summary: safeActivePreview(value),
@@ -48,7 +67,9 @@ export function projectWatch(value, canReadMembers = false, lifecycleEnded = end
 export function projectWatchHistory(history, canReadMembers = false, lifecycleEnded = false) {
   if (!Array.isArray(history)) return [];
   return history.map(entry => ({
-    ...entry,
+    ...(entry.revision!==undefined?{revision:entry.revision}:{}),
+    ...(entry.recorded_at!==undefined?{recorded_at:entry.recorded_at}:{}),
+    ...(entry.recordedAt!==undefined?{recordedAt:entry.recordedAt}:{}),
     // The current cycle controls access for its whole timeline. A stale
     // endedAt flag on one historical snapshot must not unlock an active cycle.
     document: projectWatch(entry.document, canReadMembers, lifecycleEnded),

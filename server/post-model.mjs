@@ -6,10 +6,15 @@ export const STAGES=['准备','启动','运行','高潮','失效'];
 const mapping={'趋势观察':'观察更新','交易计划':'交易计划','市场复盘':'市场复盘','趋势课程':'教学内容'};
 const marketMap={'A 股':'A股','加密市场':'加密','全球市场':'黄金'};
 const managedImageUrl=value=>typeof value==='string'&&/^\/api\/images\/[a-f0-9-]{36}$/.test(value);
+const presentationImage=image=>{
+  if(!image||typeof image!=='object')return image;
+  const {id,url,thumbnailUrl,width,height,mimeType,fileSize,sortOrder,alt,caption,isPreview}=image;
+  return {id,url,thumbnailUrl,width,height,mimeType,fileSize,sortOrder,alt,caption,isPreview};
+};
 const safePreview=value=>{
   if(typeof value!=='string')return '';
   const lines=value.replace(/\r/g,'').split(/\n|(?<=[。！？!?])/).map(v=>v.trim()).filter(Boolean);
-  const unsafe=/(?:做多|做空|买入|卖出|开仓|平仓|入场|进场|止盈|止损|仓位|目标价|价格|价位|突破|跌破|挂单|杠杆|合约|\d+(?:\.\d+)?\s*(?:%|倍|美元|USDT|USD|CNY|元|点)?)/i;
+  const unsafe=/(?:做多|做空|买入|卖出|开仓|平仓|入场|进场|止盈|止损|仓位|目标价|价格|价位|突破|跌破|挂单|杠杆|合约|\b(?:long|short|entry|stop(?:loss)?|take\s*profit|position|leverage|buy|sell)\b|\d+(?:\.\d+)?\s*(?:%|倍|美元|USDT|USD|CNY|元|点)?)/i;
   return lines.filter(line=>!unsafe.test(line)).join(' ').slice(0,320).trim();
 };
 export function normalizePost(a){
@@ -28,13 +33,22 @@ export function projectPost(a,canReadMembers=false){
   // legacy first block only when it is explicitly labelled 预览.
   const previewHeading=/^(?:公开)?预览$|^public\s+preview$/i.test((first?.heading||'').trim());
   const preview=safePreview((p.preview||'').trim()||(previewHeading?first?.text||'':''));
+  // Short-post titles were historically copied from the first body line.
+  // Do not let titles, status notes or relationships bypass body projection.
+  p.title=safePreview(p.title)||`${p.symbol||'会员'}研究记录`;
+  p.statusText='';
+  p.sector='';
+  p.timeframe='';
+  p.tags=p.tags.filter(tag=>safePreview(tag)===tag);
+  p.tradeId=null;p.watchlistId=null;p.relatedPosts=[];
   p.content=preview?[{heading:'',text:preview.slice(0,320)}]:[];
   p.summary=preview.slice(0,320);
   p.preview=preview.slice(0,320);
-  p.images=p.images.filter(i=>i.isPreview===true&&!managedImageUrl(i.url)&&!managedImageUrl(i.thumbnailUrl)).slice(0,1);
+  p.images=p.images.filter(i=>i.isPreview===true&&!managedImageUrl(i.url)&&!managedImageUrl(i.thumbnailUrl)).slice(0,1).map(i=>({...presentationImage(i),alt:'公开预览图',caption:''}));
   p.locked=true;
   p.access='member_required';
  }
+ p.images=p.images.map(presentationImage);
  return p;
 }
 export function filterPosts(posts,f={}){const query=(f.query||'').trim().toLowerCase();return posts.filter(p=>(!f.contentType||p.contentType===f.contentType)&&(!f.market||p.market===f.market)&&(!f.stage||p.trendStage===f.stage)&&(!f.symbol||p.symbol.toUpperCase()===f.symbol.toUpperCase())&&(!f.tag||p.tags.includes(f.tag))&&(!f.month||p.publishedAt.slice(0,7)===f.month)&&(!query||[p.title,p.summary,...p.content.map(b=>b.heading+' '+b.text),p.symbol,p.sector,...p.tags].join(' ').toLowerCase().includes(query)));}
