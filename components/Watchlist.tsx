@@ -2,6 +2,7 @@
 import {useState} from 'react';
 import Link from 'next/link';
 import {isWatchEnded,type WatchItem} from '@/lib/types';
+import MemberContentMask from './MemberContentMask';
 
 function date(value:string|undefined){if(!value)return '—';const parsed=new Date(value);return Number.isNaN(parsed.getTime())?value.slice(0,10):parsed.toLocaleDateString('zh-CN',{timeZone:'Asia/Shanghai'});}
 
@@ -11,7 +12,7 @@ export default function Watchlist({items}:{items:WatchItem[]}){
  const active=shown.filter(w=>!isWatchEnded(w)),ended=shown.filter(isWatchEnded);
  const cards=(group:WatchItem[])=><div className="watch-observation-grid">{group.map(w=><Link href={'/watchlist/'+encodeURIComponent(w.id||w.symbol)+'/'} className={'watch-observation-card '+(isWatchEnded(w)?'is-ended':'')} key={w.id||w.symbol}>
    <div className="watch-observation-top"><span className="ticker">{w.symbol}</span></div>
-   <h2>{w.name}</h2>{w.locked?<div className="watch-member-preview"><p>{w.preview||'当前正在持续观察，完整判断和后续更新仅限会员查看。'}</p><strong>{w.memberMessage||'正在观察 · 会员内容'}</strong><small>开通会员查看完整观察记录</small></div>:<p>{w.thesis}</p>}
+   <h2>{w.name}</h2>{w.locked?<MemberContentMask preview={w.preview} maskedLines={w.maskedLines} kind="watch" compact nestedLink/>:<p>{w.thesis}</p>}
    <div className="watch-observation-times"><span>创建 {date(w.createdAt||w.updatedAt)}</span><span>{isWatchEnded(w)?'结束':'最近更新'} {date(isWatchEnded(w)&&w.endedAt?w.endedAt:w.updatedAt)}</span><span className={'stage stage-'+w.stage}>{w.stage}</span></div>
    <span className="watch-observation-more">{w.locked?'开通会员查看':'查看完整内容'} ↗</span>
   </Link>)}</div>;

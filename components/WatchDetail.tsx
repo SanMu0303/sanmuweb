@@ -9,6 +9,7 @@ import PostImages from './PostImages';
 import BoldText from './BoldText';
 import ImageUploader from './ImageUploader';
 import {useImageUploads} from '@/lib/useImageUploads';
+import MemberContentMask from './MemberContentMask';
 
 type HistoryEntry={document:WatchItem;revision:number;recorded_at:string};
 type Detail={item:WatchItem;history:HistoryEntry[]};
@@ -72,7 +73,7 @@ export default function WatchDetail({symbol}:{symbol:string}){
   <Link className="breadcrumb" href="/watchlist/">← 返回趋势观察池</Link>
   <header className="watch-detail-header"><div><div className="eyebrow">TREND OBSERVATION · {item.symbol}</div><h1>{item.name}</h1><p>{item.symbol} · {item.market}</p></div><div className="watch-detail-stage"><small>当前趋势阶段</small><span className={'stage stage-'+item.stage}>{item.stage}</span>{ended&&<span className="watch-lifecycle-ended">已结束</span>}</div></header>
   {notice&&<p className="notice" role="status">{notice}</p>}
-  <section className="watch-detail-summary">{item.locked?<div className="watch-member-preview"><strong>{item.memberMessage||'正在观察 · 会员内容'}</strong><p>{item.preview||'当前正在持续观察，完整判断和后续更新仅限会员查看。'}</p><small>开通会员查看完整观察记录</small><Link className="button secondary" href="/membership/subscribe/">开通会员</Link></div>:<div className="risk">当前失效条件：{item.invalidation||'暂未设置'}</div>}<div className="watch-detail-meta"><span>创建时间：{date(item.createdAt||item.updatedAt)}</span><span>最近更新时间：{date(item.updatedAt)}</span>{item.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(item.articleSlug)}>查看关联短文 ↗</Link>}</div></section>
+  <section className="watch-detail-summary">{item.locked?<MemberContentMask preview={item.preview} maskedLines={item.maskedLines} kind="watch"/>:<div className="risk">当前失效条件：{item.invalidation||'暂未设置'}</div>}<div className="watch-detail-meta"><span>创建时间：{date(item.createdAt||item.updatedAt)}</span><span>最近更新时间：{date(item.updatedAt)}</span>{item.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(item.articleSlug)}>查看关联短文 ↗</Link>}</div></section>
   {session.data?.isAdmin&&<div className="watch-detail-actions"><button className="button secondary" onClick={endObservation} disabled={ending||busy||ended}>{ending?'结束中…':ended?'已结束观察':'结束观察'}</button>{!ended&&<button className="button watch-update-trigger" onClick={open}>＋ 添加观点</button>}</div>}
   <section className="watch-map-section" aria-labelledby="watch-map-heading">
    <div className="section-line"><h2 id="watch-map-heading">观点脉络 <span>{records.length} 条</span></h2><small className="watch-map-hint">从最初观察到最新判断</small></div>
@@ -82,7 +83,7 @@ export default function WatchDetail({symbol}:{symbol:string}){
      <article className="watch-history-entry">
       <header><strong><span className="watch-map-index">{String(index+1).padStart(2,'0')}</span>{h.revision===latestRevision?'最新观点':index===0?'初始观点':'观点更新'}</strong><span className={'record-stage record-stage-'+h.document.stage}>{h.document.stage}</span></header>
       <time className="watch-map-date" dateTime={h.recorded_at}>{date(h.recorded_at)}</time>
-      {h.document.locked?<div className="watch-member-preview"><strong>{h.document.memberMessage||'正在观察 · 会员内容'}</strong><p>{h.document.preview||'完整判断和持续更新仅限会员查看。'}</p><small>开通会员查看完整观察记录</small></div>:<>{opinionText(h)?.map((text,textIndex)=><p key={textIndex}><BoldText text={text}/></p>)||<p><BoldText text={h.document.thesis}/></p>}{h.document.images?.length?<PostImages images={h.document.images}/>:null}{h.document.invalidation&&h.document.invalidation!=='暂未设置'&&<div className="watch-map-risk">失效条件：{h.document.invalidation}</div>}{h.document.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(h.document.articleSlug)}>查看对应短文 ↗</Link>}</>}
+      {h.document.locked?<MemberContentMask preview={h.document.preview} maskedLines={h.document.maskedLines} kind="watch"/>:<>{opinionText(h)?.map((text,textIndex)=><p key={textIndex}><BoldText text={text}/></p>)||<p><BoldText text={h.document.thesis}/></p>}{h.document.images?.length?<PostImages images={h.document.images}/>:null}{h.document.invalidation&&h.document.invalidation!=='暂未设置'&&<div className="watch-map-risk">失效条件：{h.document.invalidation}</div>}{h.document.articleSlug&&<Link href={'/article/?slug='+encodeURIComponent(h.document.articleSlug)}>查看对应短文 ↗</Link>}</>}
      </article>
     </li>)}
    </ol>
