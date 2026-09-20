@@ -1,6 +1,7 @@
 import {createSupabase} from './client.mjs';
 import {IMAGE_CONFIG} from '../../config/images.mjs';
 import {projectPost} from '../post-model.mjs';
+import {isEndedWatch} from '../watch-model.mjs';
 import {canReadMemberContent,memberAssetLifetime} from '../member-access.mjs';
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status})};
 const json=(value,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'private, no-store'}});
@@ -61,7 +62,7 @@ export function createImages(client=createSupabase(),transport=fetch){
       const watch=await repo.get('watch_items',current.post_slug.slice(6),{preferId:true});
       const attached=!!watch?.images?.some(i=>i.url==='/api/images/'+current.id&&i.storagePath===current.storage_path);
       if(attached){
-        const ended=watch.observationStatus==='ended'||!!watch.endedAt;
+        const ended=isEndedWatch(watch);
         allowed=ended||canReadMemberContent(user);
         requiresMembership=!ended;
       }
@@ -71,7 +72,7 @@ export function createImages(client=createSupabase(),transport=fetch){
         const history=await repo.history(current.post_slug.slice(6));
         const found=history.find(h=>h.document?.images?.some(i=>i.url==='/api/images/'+current.id&&i.storagePath===current.storage_path));
         if(found){
-          const ended=watch?.observationStatus==='ended'||!!watch?.endedAt;
+          const ended=isEndedWatch(watch);
           allowed=ended||canReadMemberContent(user);
           requiresMembership=!ended;
         }
@@ -79,7 +80,14 @@ export function createImages(client=createSupabase(),transport=fetch){
     }
     // Watch images are authorized against the watch cycle above. Do not
     // reinterpret a `watch:` storage key as an article in legacy adapters.
-    if(!allowed&&current.post_slug&&!current.post_slug.startsWith('watch:')){const post=await repo.get('articles',current.post_slug,{publishedOnly:true});allowed=!!post&&projectPost(post,canReadMemberContent(user)).images.some(i=>i.storagePath===current.storage_path);requiresMembership=allowed&&post.access!=='public'&&!projectPost(post,false).images.some(i=>i.storagePath===current.storage_path)}
+    if(!allowed&&current.post_slug&&!current.post_slug.startsWith('watch:')){
+      const post=await repo.get('articles',current.post_slug,{publishedOnly:true});
+      const imageUrl='/api/images/'+current.id;
+      const memberImages=post?projectPost(post,canReadMemberContent(user)).images:[];
+      const publicImages=post?projectPost(post,false).images:[];
+      allowed=!!post&&memberImages.some(i=>i.url===imageUrl||i.id===current.id);
+      requiresMembership=allowed&&post.access!=='public'&&!publicImages.some(i=>i.url===imageUrl||i.id===current.id);
+    }
     if(!allowed)fail('图片不存在或无权查看',404);
     const expiresIn=requiresMembership?memberAssetLifetime(user):60;
     if(!expiresIn)fail('图片不存在或无权查看',404);
