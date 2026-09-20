@@ -10,7 +10,7 @@ import MemberContentMask from './MemberContentMask';
 import type {Post} from '@/lib/posts';
 import {timelineHref,filterHref} from '@/lib/posts';
 const tones={'观察更新':'observe','交易计划':'plan','交易反馈':'feedback','市场复盘':'review','教学内容':'lesson',video:'lesson'};
-export default function PostCard({post,full=false,timeline=false,compact=false,isAdmin=false,onWatchSaved}:{post:Post;full?:boolean;timeline?:boolean;compact?:boolean;isAdmin?:boolean;onWatchSaved?:()=>void}) {
+export default function PostCard({post,full=false,timeline=false,compact=false,memberGateCompact,signedIn,isAdmin=false,onWatchSaved}:{post:Post;full?:boolean;timeline?:boolean;compact?:boolean;/** Compact only repeated locked cards; the first locked result remains expanded. */memberGateCompact?:boolean;signedIn?:boolean;isAdmin?:boolean;onWatchSaved?:()=>void}) {
   if (post.video) return <article className="research-record" id={'record-'+post.slug}><VideoCard video={post.video} feed/></article>;
   const inline=post.format==='short'||full;
   const short=compact&&post.format==='short'&&!full;
@@ -18,6 +18,9 @@ export default function PostCard({post,full=false,timeline=false,compact=false,i
   const hasSubject=!short&&Boolean(post.symbol||post.timeframe);
   const hasBadges=showType||Boolean(post.isPinned&&!timeline);
   const hasTags=post.tags.length>0;
+  const publicTopic=post.publicTitle?.trim()||`${post.symbol||'研究'} · 研究更新`;
+  const title=post.locked?publicTopic:(post.statusText||post.title);
+  const gateCompact=typeof memberGateCompact==='boolean'?memberGateCompact:compact;
   return <article className={'research-record '+(timeline?'timeline-record':'')+(short?' compact-short':compact?' compact-long':'')} id={'record-'+post.slug}>
     {(hasSubject||hasBadges)&&<header className="record-heading">
       {hasSubject&&<div className="record-subject">
@@ -29,11 +32,12 @@ export default function PostCard({post,full=false,timeline=false,compact=false,i
         {post.isPinned&&!timeline&&<span className="record-pin">置顶</span>}
       </div>}
     </header>}
+    {post.locked&&(compact||post.format==='short')&&<h3 className="record-title member-content-topic">{publicTopic}</h3>}
     {!compact&&post.format!=='short'&&<>
-      <h3 className="record-title">{post.statusText||post.title}</h3>
-      {post.statusText&&post.statusText!==post.title&&<p className="record-deck">{post.title}</p>}
+      <h3 className="record-title">{title}</h3>
+      {post.statusText&&post.statusText!==post.title&&!post.locked&&<p className="record-deck">{post.title}</p>}
     </>}
-    {post.locked?<MemberContentMask preview={post.preview||post.summary} maskedLines={post.maskedLines} kind="post" compact={compact}/>:short&&!timeline?<ShortPostBody blocks={post.content}/>:inline?<div className="record-body">{post.content.map((b,i)=><section key={i}>
+    {post.locked?<MemberContentMask publicTitle={post.publicTitle} symbol={post.symbol} signedIn={signedIn} preview={post.preview||post.summary} maskedLines={post.maskedLines} kind="post" compact={gateCompact}/>:short&&!timeline?<ShortPostBody blocks={post.content}/>:inline?<div className="record-body">{post.content.map((b,i)=><section key={i}>
       {b.heading&&(post.format==='short'?<p>{b.heading}</p>:<h4>{b.heading}</h4>)}
       <p>{post.format==='short'?<BoldText text={b.text}/>:b.text}</p>
     </section>)}</div>:<p className="record-summary">

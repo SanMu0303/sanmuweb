@@ -37,7 +37,9 @@ export default function AdminLogin({register=false,resetPassword=false}:{registe
    const path=resetPassword?'/api/auth/password/reset/':register?'/api/auth/register/':'/api/auth/login/';
    const result=await request<{isAdmin?:boolean;passwordReset?:boolean}>(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:address,password,...(needsCode?{code}:{})})});
    setPassword('');setCode('');
-   window.location.assign(resetPassword?'/login/?reset=1':result.isAdmin?'/admin/':'/profile/');
+   const requested=new URLSearchParams(location.search).get('returnTo')||'';
+   const returnTo=requested.startsWith('/')&&!requested.startsWith('//')?requested:'';
+   window.location.assign(resetPassword?'/login/?reset=1':returnTo||(result.isAdmin?'/admin/':'/profile/'));
   }catch(e){setError((e as Error).message);setBusy(null)}
  }
 
