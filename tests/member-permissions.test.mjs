@@ -44,6 +44,17 @@ test('member short posts are projected by server for guest, ordinary and expired
   }
 });
 
+test('legacy excerpts are never reused as member execution previews',async()=>{
+  const legacy={...sensitivePost,slug:'legacy-excerpt',excerpt:'BTC81000做多，止损79000，仓位20%',sections:[{heading:'',text:'BTC81000做多，止损79000，仓位20%'}]};
+  const repo={list:async table=>table==='videos'?[]:[legacy],get:async()=>legacy};
+  const body=await (await buildApi('guest',repo)(getRequest('/api/posts/legacy-excerpt'))).json();
+  assert.equal(body.locked,true);
+  assert.equal(body.content.length,0);
+  assert.equal(body.summary,'');
+  assert.equal(JSON.stringify(body).includes('81000'),false);
+  assert.equal(JSON.stringify(body).includes('止损'),false);
+});
+
 test('active observation details hide thesis, invalidation and update history from non-members',async()=>{
   const active={id:'active-btc',symbol:'BTC',name:'比特币',market:'加密',stage:'运行',observationStatus:'active',createdAt:'2026-09-01T00:00:00.000Z',updatedAt:'2026-09-19T00:00:00.000Z',thesis:'SECRET_THESIS_ENTRY_81000',invalidation:'SECRET_INVALIDATION_STOP_79000',summary:'安全观察摘要',images:[]};
   const history=[{revision:1,recorded_at:'2026-09-01T00:00:00.000Z',document:{...active,thesis:'SECRET_HISTORY_ENTRY',invalidation:'SECRET_HISTORY_STOP'}}];
