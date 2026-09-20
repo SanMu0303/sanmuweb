@@ -21,7 +21,7 @@ test('public watch image requires an attached matching image in the current watc
  const image={id,owner:'admin',state:'attached',post_slug:'watch:BTC',storage_path};
  const service=createImages({config:{url:'https://example.supabase.co',bucket:'research-images'},request:async(path)=>path.startsWith('/rest/')?[image]:{signedURL:'/object/sign/research-images/'+storage_path+'?token=test'}});
  const request=new Request('https://site.test/api/images/'+id);
- const repo={get:async(table,key)=>{assert.equal(table,'watch_items');assert.equal(key,'BTC');return {images:[{url:'/api/images/'+id,storagePath:storage_path}]}}};
+ const repo={get:async(table,key)=>{assert.equal(table,'watch_items');assert.equal(key,'BTC');return {observationStatus:'ended',images:[{url:'/api/images/'+id,storagePath:storage_path}]}}};
  assert.equal((await service.handle(request,{isAdmin:false},repo)).status,302);
  await assert.rejects(service.handle(request,{isAdmin:false},{get:async()=>null}),{status:404});
  image.state='temporary';await assert.rejects(service.handle(request,{isAdmin:false},{get:async()=>null}),{status:404});
@@ -29,6 +29,13 @@ test('public watch image requires an attached matching image in the current watc
 test('historical observation images remain readable after removal from current snapshot',async()=>{
  const id='00000000-0000-4000-8000-000000000001',storagePath='posts/'+id;
  const service=createImages({config:{url:'https://example.supabase.co',bucket:'research-images'},request:async(path)=>path.startsWith('/rest/')?[{id,owner:'admin',state:'attached',post_slug:'watch:BTC',storage_path:storagePath}]:{signedURL:'/object/sign/research-images/'+storagePath}});
- const repo={get:async()=>({images:[]}),history:async()=>[{document:{images:[{url:'/api/images/'+id,storagePath}]}}]};
+ const repo={get:async()=>({observationStatus:'ended',images:[]}),history:async()=>[{document:{images:[{url:'/api/images/'+id,storagePath}]}}]};
  assert.equal((await service.handle(new Request('https://site.test/api/images/'+id),{isAdmin:false},repo)).status,302);
+});
+test('active observation images require a valid member before signing',async()=>{
+ const id='00000000-0000-4000-8000-000000000001',storagePath='posts/'+id;
+ const service=createImages({config:{url:'https://example.supabase.co',bucket:'research-images'},request:async(path)=>path.startsWith('/rest/')?[{id,owner:'admin',state:'attached',post_slug:'watch:BTC',storage_path:storagePath}]:{signedURL:'/object/sign/research-images/'+storagePath}});
+ const repo={get:async()=>({observationStatus:'active',images:[{url:'/api/images/'+id,storagePath}]}),history:async()=>[]};
+ await assert.rejects(service.handle(new Request('https://site.test/api/images/'+id),{isAdmin:false,signedIn:false},repo),{status:404});
+ assert.equal((await service.handle(new Request('https://site.test/api/images/'+id),{isAdmin:false,signedIn:true,isMember:true,membership:{status:'active',expiresAt:'2099-01-01T00:00:00.000Z'}},repo)).status,302);
 });

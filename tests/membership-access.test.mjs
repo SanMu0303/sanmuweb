@@ -106,6 +106,15 @@ test('automatic short-post excerpts and searches cannot bypass the same preview 
  assert.equal((await(await active.api(request('/api/posts/member-research'))).text()).includes(secret),true);
 });
 
+test('preview access level keeps an explicit safe summary while gating the full short post',async()=>{
+ const preview={...doc,access:'preview',format:'short',preview:'公开摘要，不包含执行条件',excerpt:'公开摘要，不包含执行条件',sections:[{heading:'',text:'执行价格 PRIVATE_PREVIEW_BODY'}]};
+ const anonymous=fixture({user:guest,state:none,repo:{list:async table=>table==='videos'?[]:[preview],get:async()=>preview}});
+ const body=await (await anonymous.api(request('/api/posts/member-research'))).json();
+ assert.ok(['preview','member_required'].includes(body.access));assert.equal(body.locked,true);assert.equal(body.content[0].text,'公开摘要，不包含执行条件');assert.equal(JSON.stringify(body).includes('PRIVATE_PREVIEW_BODY'),false);
+ const active=fixture({state:membership('active'),repo:{get:async()=>preview}});
+ const full=await (await active.api(request('/api/posts/member-research'))).json();assert.equal(full.access,'preview');assert.equal(full.locked,false);assert.equal(JSON.stringify(full).includes('PRIVATE_PREVIEW_BODY'),true);
+});
+
 test('automatic member watch summaries stop at the public preview boundary while explicit public summaries remain supported',()=>{
  const value={...doc,status:'published',format:'short',symbol:'BTC',trendStage:'准备',sections:[{heading:'',text:'预'.repeat(320)+secret}]};
  const generated=watchSync({enabled:true,revision:0},value);assert.equal(generated.summary.length,320);assert.equal(generated.summary.includes(secret),false);

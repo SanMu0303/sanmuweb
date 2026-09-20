@@ -54,12 +54,12 @@ test('ending an observation is persistent, idempotent, keeps history, and blocks
  response=await mutation('PUT','/api/admin/watchlist',{...current,thesis:'legacy closed write'});assert.equal(response.status,409,'legacy endedAt-only records must remain closed');
 });
 test('watch detail returns the current observation and complete update history',async()=>{
- const item={symbol:'BTC',name:'比特币',market:'加密',stage:'运行',thesis:'结构仍在延续',invalidation:'跌破低点',createdAt:'2026-09-01T09:00:00.000Z',updatedAt:'2026-09-17',articleSlug:''};
+ const item={symbol:'BTC',name:'比特币',market:'加密',stage:'运行',thesis:'结构仍在延续',invalidation:'跌破低点',createdAt:'2026-09-01T09:00:00.000Z',updatedAt:'2026-09-17',articleSlug:'',observationStatus:'ended',endedAt:'2026-09-18T00:00:00.000Z'};
  const history=[{document:item,revision:2,recorded_at:'2026-09-17T02:00:00.000Z'}];
  const repo={get:async(table,key)=>{assert.equal(table,'watch_items');assert.equal(key,'BTC');return item},history:async symbol=>{assert.equal(symbol,'BTC');return history}};
  const api=createApi({memberships,env,repo,auth:{identify:async()=>({signedIn:false,isAdmin:false})}});
  const response=await api(new Request('https://site.test/api/watchlist/BTC'));
- assert.equal(response.status,200);assert.deepEqual(await response.json(),{item,history});
+ assert.equal(response.status,200);const body=await response.json();assert.equal(body.item.thesis,item.thesis);assert.equal(body.item.locked,false);assert.equal(body.history[0].document.invalidation,item.invalidation);
 });
 
 test('only active cycles block reuse; ended and recycled cycles can start a new one',async()=>{
