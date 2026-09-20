@@ -10,11 +10,12 @@ import {checkMutation,publicOrigin} from './request-security.mjs';
 import {article,watch,watchSync} from '../content-validation.mjs';
 import {projectPost,toArticleDocument,filterPosts,orderPosts} from '../post-model.mjs';
 import {projectVideo,videoPost} from '../video-model.mjs';
+import {projectWatch,projectWatchHistory,isEndedWatch} from '../watch-model.mjs';
 import {randomUUID} from 'node:crypto';
 const json=(data,status=200,headers={})=>Response.json(data,{status,headers:{'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff',...headers}});
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status})};
 const watchTicker=value=>typeof value?.symbol==='string'?value.symbol.trim().toUpperCase():'';
-const activeWatch=value=>!!value&&!value.deletedAt&&value.observationStatus!=='ended'&&!value.endedAt;
+const activeWatch=value=>!!value&&!value.deletedAt&&!isEndedWatch(value);
 const watchIdentity=value=>typeof value?.id==='string'&&value.id.trim()?value.id.trim():typeof value?.symbol==='string'?value.symbol.trim():'';
 async function body(request){if(Number(request.headers.get('content-length'))>250000)fail('内容过大',413);const raw=await request.text();if(raw.length>250000)fail('内容过大',413);try{const value=JSON.parse(raw);if(!value||typeof value!=='object'||Array.isArray(value))fail('内容格式不正确');return value}catch{fail('内容格式不正确')}}
 /** @param {{env?: NodeJS.ProcessEnv, repo?: ReturnType<typeof createRepository>, auth?: ReturnType<typeof createAuth>, memberships?: ReturnType<typeof createMemberships>, videos?: object[], courses?: object[]}} options */
@@ -83,9 +84,9 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
     const p=readerPost(a,user);return json(path.startsWith('/api/posts/')?p:{...toArticleDocument(p),locked:p.locked});
    }
    if(path==='/api/articles'&&method==='GET')return json((await repo.list('articles',{publishedOnly:true})).map(a=>{const p=readerPost(a,user),{sections,...summary}=toArticleDocument(p);return {...summary,locked:p.locked}}).sort((a,b)=>Number(b.pinned)-Number(a.pinned)||b.publishedAt.localeCompare(a.publishedAt)));
-   if(/^\/api\/watchlist\/[^/]+\/history$/.test(path)&&method==='GET'){const symbol=decodeURIComponent(path.split('/')[3]);const current=await repo.get('watch_items',symbol,{preferId:true});if(!current||current.deletedAt&&!user.isAdmin)return json({error:'观察记录不存在或已删除'},404);return json(await repo.history(symbol));}
-   if(path==='/api/watchlist'&&method==='GET')return json((await repo.list('watch_items')).filter(w=>!w.deletedAt));
-   if(/^\/api\/watchlist\/[^/]+$/.test(path)&&method==='GET'){const symbol=decodeURIComponent(path.split('/')[3]);const current=await repo.get('watch_items',symbol,{preferId:true});if(!current||current.deletedAt&&!user.isAdmin)return json({error:'观察记录不存在或已删除'},404);return json({item:current,history:await repo.history(symbol)});}
+   if(/^\/api\/watchlist\/[^/]+\/history$/.test(path)&&method==='GET'){const symbol=decodeURIComponent(path.split('/')[3]);const current=await repo.get('watch_items',symbol,{preferId:true});if(!current||current.deletedAt&&!user.isAdmin)return json({error:'观察记录不存在或已删除'},404);return json(projectWatchHistory(await repo.history(symbol),canReadMemberContent(user),isEndedWatch(current)));}
+   if(path==='/api/watchlist'&&method==='GET')return json((await repo.list('watch_items')).filter(w=>!w.deletedAt).map(w=>projectWatch(w,canReadMemberContent(user))));
+   if(/^\/api\/watchlist\/[^/]+$/.test(path)&&method==='GET'){const symbol=decodeURIComponent(path.split('/')[3]);const current=await repo.get('watch_items',symbol,{preferId:true});if(!current||current.deletedAt&&!user.isAdmin)return json({error:'观察记录不存在或已删除'},404);return json({item:projectWatch(current,canReadMemberContent(user)),history:projectWatchHistory(await repo.history(symbol),canReadMemberContent(user),isEndedWatch(current))});}
    if(['/api/admin/articles','/api/admin/watchlist'].includes(path)){
     const isArticle=path.endsWith('/articles'),table=isArticle?'articles':'watch_items';
     if(method==='GET')return json(await repo.list(table));
@@ -93,7 +94,7 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
      const input=await body(request),key=typeof input.id==='string'&&input.id.trim()?input.id.trim():input.symbol;
      if(typeof key!=='string'||!key.trim()||!Number.isInteger(input.revision))fail('缺少观察周期标识或版本号');
      if(method==='PATCH'&&input.action==='end'){
-      const current=await repo.get(table,key,{preferId:typeof input.id==='string'&&!!input.id.trim()});if(!current)fail('记录不存在',404);if(current.deletedAt)fail('该观察已在回收站',409);if(current.revision!==input.revision)fail('记录已更新，请重新载入',409);if(current.observationStatus==='ended'||current.endedAt)return json(current);
+      const current=await repo.get(table,key,{preferId:typeof input.id==='string'&&!!input.id.trim()});if(!current)fail('记录不存在',404);if(current.deletedAt)fail('该观察已在回收站',409);if(current.revision!==input.revision)fail('记录已更新，请重新载入',409);if(isEndedWatch(current))return json(current);
       return json(await repo.save(table,{...current,id:current.id||key,observationStatus:'ended',endedAt:new Date().toISOString(),isWeeklyFocus:false,updatedAt:new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Shanghai'})},input.revision,user.id));
      }
      return json(await repo.archive(table,key,input.revision,method==='PATCH'))
@@ -119,7 +120,7 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
      }
      if(!isArticle){
       const explicitId=!!value.id,key=value.id||value.symbol,existing=await repo.get('watch_items',key,{preferId:explicitId}),active=await activeWatchFor(value.symbol);
-      if((explicitId&&existing&&!activeWatch(existing))||(!explicitId&&existing&&(existing.observationStatus==='ended'||existing.endedAt)&&Number(input.revision)>0))fail('该观察周期已结束或已在回收站，不能继续更新',409);
+      if((explicitId&&existing&&!activeWatch(existing))||(!explicitId&&existing&&isEndedWatch(existing)&&Number(input.revision)>0))fail('该观察周期已结束或已在回收站，不能继续更新',409);
       if(active&&(!existing||watchIdentity(active)!==watchIdentity(existing)||(!explicitId&&Number(input.revision)===0&&(active.revision||0)>0)))fail('该标的已有正在观察的周期，请先结束当前观察',409);
       const prepared=withWatchId(value,active||(existing&&activeWatch(existing)?existing:null));
       if(prepared.articleSlug&&!await repo.get('articles',prepared.articleSlug,{publishedOnly:true}))fail('请关联已发布文章，或清空关联文章');
