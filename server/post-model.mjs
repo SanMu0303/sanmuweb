@@ -6,9 +6,32 @@ export const STAGES=['准备','启动','运行','高潮','失效'];
 const mapping={'趋势观察':'观察更新','交易计划':'交易计划','市场复盘':'市场复盘','趋势课程':'教学内容'};
 const marketMap={'A 股':'A股','加密市场':'加密','全球市场':'黄金'};
 const managedImageUrl=value=>typeof value==='string'&&/^\/api\/images\/[a-f0-9-]{36}$/.test(value);
-export function normalizePost(a){const member=a.access==='member'||a.isMemberOnly===true;const sections=Array.isArray(a.sections)?a.sections:Array.isArray(a.content)?a.content:[];return {id:a.id||a.slug,slug:a.slug,title:a.title,summary:a.excerpt??a.summary??'',content:sections,contentType:a.contentType||mapping[a.category]||'观察更新',format:a.format||'long',symbol:(a.symbol||'').trim().toUpperCase(),market:marketMap[a.market]||a.market||'跨市场',sector:a.sector||'',trendStage:a.trendStage||null,status:a.status||'published',statusText:a.statusText||'',timeframe:a.timeframe||'',tags:a.tags||[],images:normalizeImages(a),isPinned:!!a.pinned,isMemberOnly:member,isPublic:!member,publishedAt:a.publishedAtTime||(a.publishedAt.length===10?a.publishedAt+'T10:00:00+08:00':a.publishedAt),updatedAt:a.updatedAt||a.publishedAtTime||(a.publishedAt.length===10?a.publishedAt+'T10:00:00+08:00':a.publishedAt),author:a.author||{id:'sanmu',name:'三木'},readTime:a.readMinutes||3,tradeId:a.tradeId||null,watchlistId:a.watchlistId||null,relatedPosts:a.relatedPosts||[],isExample:a.isExample===true,locked:false,revision:a.revision||1};}
-export function projectPost(a,canReadMembers=false){const p=normalizePost(a);if(p.isMemberOnly&&!canReadMembers){p.content=p.content.slice(0,1).map(b=>({...b,text:b.text.slice(0,320)}));p.images=p.images.filter(i=>i.isPreview===true&&!managedImageUrl(i.url)&&!managedImageUrl(i.thumbnailUrl)).slice(0,1);if(p.format==='short')p.summary=p.content[0]?.text.replaceAll('**','')||'';p.locked=true;}return p;}
+export function normalizePost(a){
+ const access=a.access==='member'||a.isMemberOnly===true?'member':a.access==='preview'?'preview':'public';
+ const restricted=access!=='public';
+ const sections=Array.isArray(a.sections)?a.sections:Array.isArray(a.content)?a.content:[];
+ return {id:a.id||a.slug,slug:a.slug,title:a.title,summary:a.excerpt??a.summary??'',preview:a.preview??a.publicSummary??'',content:sections,contentType:a.contentType||mapping[a.category]||'观察更新',format:a.format||'long',symbol:(a.symbol||'').trim().toUpperCase(),market:marketMap[a.market]||a.market||'跨市场',sector:a.sector||'',trendStage:a.trendStage||null,status:a.status||'published',statusText:a.statusText||'',timeframe:a.timeframe||'',tags:a.tags||[],images:normalizeImages(a),access,isMemberOnly:restricted,isPublic:!restricted,publishedAt:a.publishedAtTime||(a.publishedAt.length===10?a.publishedAt+'T10:00:00+08:00':a.publishedAt),updatedAt:a.updatedAt||a.publishedAtTime||(a.publishedAt.length===10?a.publishedAt+'T10:00:00+08:00':a.publishedAt),author:a.author||{id:'sanmu',name:'三木'},readTime:a.readMinutes||3,tradeId:a.tradeId||null,watchlistId:a.watchlistId||null,relatedPosts:a.relatedPosts||[],isExample:a.isExample===true,locked:false,revision:a.revision||1};
+}
+export function projectPost(a,canReadMembers=false){
+ const p=normalizePost(a);
+ if(p.isMemberOnly&&!canReadMembers){
+  // Only the explicitly public preview block is projected. Never send later
+  // sections, private storage metadata, or a member original image.
+  const first=p.content[0];
+  // `preview`/`excerpt` are the editor's public-safe fields. Preserve the
+  // legacy first block only when it is explicitly labelled 预览.
+  const previewHeading=/^(?:公开)?预览$|^public\s+preview$/i.test((first?.heading||'').trim());
+  const preview=(p.preview||'').trim()||(previewHeading?first?.text||'':p.summary||'');
+  p.content=preview?[{heading:'',text:preview.slice(0,320)}]:[];
+  p.summary=preview.slice(0,320);
+  p.preview=preview.slice(0,320);
+  p.images=p.images.filter(i=>i.isPreview===true&&!managedImageUrl(i.url)&&!managedImageUrl(i.thumbnailUrl)).slice(0,1);
+  p.locked=true;
+  p.access='member_required';
+ }
+ return p;
+}
 export function filterPosts(posts,f={}){const query=(f.query||'').trim().toLowerCase();return posts.filter(p=>(!f.contentType||p.contentType===f.contentType)&&(!f.market||p.market===f.market)&&(!f.stage||p.trendStage===f.stage)&&(!f.symbol||p.symbol.toUpperCase()===f.symbol.toUpperCase())&&(!f.tag||p.tags.includes(f.tag))&&(!f.month||p.publishedAt.slice(0,7)===f.month)&&(!query||[p.title,p.summary,...p.content.map(b=>b.heading+' '+b.text),p.symbol,p.sector,...p.tags].join(' ').toLowerCase().includes(query)));}
 export function orderPosts(posts,chronological=false){return [...posts].sort((a,b)=>(chronological?Date.parse(a.publishedAt)-Date.parse(b.publishedAt):Date.parse(b.updatedAt)-Date.parse(a.updatedAt))||a.id.localeCompare(b.id));}
 
-export function toArticleDocument(p){return {id:p.id,slug:p.slug,title:p.title,excerpt:p.summary,sections:p.content,category:({'观察更新':'趋势观察','交易反馈':'趋势观察','交易计划':'交易计划','市场复盘':'市场复盘','教学内容':'趋势课程'}[p.contentType]),contentType:p.contentType,format:p.format,symbol:p.symbol,market:p.market,sector:p.sector,trendStage:p.trendStage,status:p.status,statusText:p.statusText,timeframe:p.timeframe,tags:p.tags,images:p.images,pinned:p.isPinned,access:p.isMemberOnly?'member':'public',publishedAt:p.publishedAt.slice(0,10),publishedAtTime:p.publishedAt,updatedAt:p.updatedAt,author:p.author,readMinutes:p.readTime,tradeId:p.tradeId,watchlistId:p.watchlistId,relatedPosts:p.relatedPosts,isExample:p.isExample};}
+export function toArticleDocument(p){return {id:p.id,slug:p.slug,title:p.title,excerpt:p.summary,preview:p.preview,sections:p.content,category:({'观察更新':'趋势观察','交易反馈':'趋势观察','交易计划':'交易计划','市场复盘':'市场复盘','教学内容':'趋势课程'}[p.contentType]),contentType:p.contentType,format:p.format,symbol:p.symbol,market:p.market,sector:p.sector,trendStage:p.trendStage,status:p.status,statusText:p.statusText,timeframe:p.timeframe,tags:p.tags,images:p.images,pinned:p.isPinned,access:p.access,publishedAt:p.publishedAt.slice(0,10),publishedAtTime:p.publishedAt,updatedAt:p.updatedAt,author:p.author,readMinutes:p.readTime,tradeId:p.tradeId,watchlistId:p.watchlistId,relatedPosts:p.relatedPosts,isExample:p.isExample};}
