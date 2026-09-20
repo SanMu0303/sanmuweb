@@ -35,6 +35,7 @@ export function projectPost(a,canReadMembers=false){
   const preview=safePreview((p.preview||'').trim()||(previewHeading?first?.text||'':''));
   // Short-post titles were historically copied from the first body line.
   // Do not let titles, status notes or relationships bypass body projection.
+  p.symbol=/^[A-Z0-9._-]{1,20}$/.test(p.symbol)?p.symbol:'';
   p.title=safePreview(p.title)||`${p.symbol||'会员'}研究记录`;
   p.statusText='';
   p.sector='';
