@@ -646,3 +646,23 @@ main:has(> .home-feed){max-width:1480px;padding:28px 28px 64px}
 }
 @media(max-width:1100px){.home-feed .stream-toolbar .home-content-tabs{order:2}.home-feed .stream-toolbar .home-feed-search{order:3}}
 @media(max-width:760px){.home-feed .home-content-tabs{width:100%;padding-bottom:2px}.home-feed .home-content-tabs button{min-height:32px;padding:5px 10px}.home-feed .stream-toolbar{gap:8px}}
+
+/* Keep the homepage identity compact without changing its category tabs or
+   writing entry. */
+.home-feed>.terminal-heading{
+  align-items:flex-start;
+  gap:16px;
+  margin-bottom:12px;
+  padding-bottom:12px;
+  min-height:0;
+}
+.home-feed .terminal-heading>div{gap:5px}
+.home-feed .terminal-heading h1{font-size:clamp(30px,3vw,36px);line-height:1.2}
+.home-feed .terminal-heading p{max-width:620px;font-size:13px;line-height:1.5}
+.home-feed .terminal-caption{font-size:11px;line-height:1.45}
+.home-feed .terminal-caption small{margin-top:3px;font-size:10px}
+@media(max-width:760px){
+  .home-feed>.terminal-heading{gap:8px;margin-bottom:12px;padding-bottom:10px}
+  .home-feed .terminal-heading h1{font-size:28px;line-height:1.25}
+  .home-feed .terminal-heading p{font-size:12px;line-height:1.5}
+}
