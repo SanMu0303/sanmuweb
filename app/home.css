@@ -575,18 +575,13 @@ main:has(> .home-feed){max-width:1480px;padding:28px 28px 64px}
   margin:0 0 12px;
 }
 .home-feed .compact-short .record-author-avatar{
-  display:grid;
-  place-items:center;
   flex:0 0 34px;
   width:34px;
   height:34px;
   border:1px solid #3b4b3d;
   border-radius:50%;
   background:#26382c;
-  color:#dce9d1;
-  font-size:15px;
-  font-weight:600;
-  line-height:1;
+  object-fit:cover;
 }
 .home-feed .compact-short .record-author-meta{
   display:grid;
@@ -594,7 +589,7 @@ main:has(> .home-feed){max-width:1480px;padding:28px 28px 64px}
   min-width:0;
 }
 .home-feed .compact-short .record-author-name{
-  color:var(--home-text,#edf1ec);
+  color:#e0b85c;
   font-size:15px;
   font-weight:650;
   line-height:1.4;
