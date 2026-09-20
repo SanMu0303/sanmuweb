@@ -78,8 +78,49 @@ main{max-width:1280px}.terminal-heading{margin-bottom:40px}.terminal-heading h1{
 /* Shared member gate: only neutral placeholder glyphs are rendered behind the
    prompt. Private article/watch text is projected away by the server before
    this component runs. */
-.member-content-mask{position:relative;isolation:isolate;display:grid;gap:12px;margin:14px 0 4px;padding:16px 18px 18px;border:1px solid #39483b;border-radius:7px;overflow:hidden;background:#131a16;min-height:206px}.member-content-mask.is-compact{min-height:158px;padding:13px 14px 14px;gap:9px}.member-content-mask-body{display:grid;gap:9px;opacity:.62;filter:blur(2px);user-select:none;pointer-events:none}.member-content-mask-body span{display:block;max-width:100%;overflow:hidden;white-space:nowrap;color:#9aaa96;font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:1px}.member-content-mask:after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0e1411a8 0%,#0e1411d9 52%,#0b100de8 100%);pointer-events:none}.member-content-mask-panel{position:absolute;inset:30% 0 0;display:grid;place-content:center;justify-items:center;gap:6px;padding:16px 22px 22px;text-align:center;background:linear-gradient(180deg,#10171144,#101711b8 38%,#101711e8);z-index:1}.member-content-mask-label{display:inline-flex;align-items:center;padding:3px 9px;border:1px solid #627451;border-radius:999px;color:#c3d1b2;background:#1b261c;font-size:11px;letter-spacing:.08em}.member-content-mask-panel strong{color:#e1e8dd;font-size:15px;font-weight:600;line-height:1.5}.member-content-mask-panel small{max-width:34em;color:#a7b4a2;font-size:12px;line-height:1.65}.member-content-mask-cta{min-height:36px;margin-top:5px;padding:7px 14px;font-size:12px}.member-content-safe-preview{position:relative;z-index:2;margin:0;color:#cbd8c7;font-size:14px;line-height:1.75;white-space:pre-line;overflow-wrap:anywhere}.member-content-mask.is-compact .member-content-safe-preview{font-size:13px;line-height:1.65;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}.watch-observation-card .member-content-mask{margin:0 0 16px;padding:11px 12px;min-height:160px}.watch-observation-card .member-content-mask-panel{padding:14px}.watch-observation-card .member-content-mask-panel strong{font-size:13px}.watch-observation-card .member-content-mask-panel small{font-size:11px}.watch-observation-card .member-content-mask-cta{min-height:34px}.watch-detail-summary .member-content-mask{margin:0 0 16px}.watch-map-node .member-content-mask{margin:14px 0 2px}.watch-map-node .member-content-mask-panel{padding:18px}.watch-map-node .member-content-mask-panel strong{font-size:14px}.watch-map-node .member-content-mask-panel small{font-size:12px}.watch-history-entry .member-content-mask{margin:14px 0 2px}
-@media(max-width:760px){.member-content-mask{min-height:192px;padding:14px 14px 16px}.member-content-mask.is-compact{min-height:146px}.member-content-mask-panel{padding:16px}.member-content-mask-panel strong{font-size:14px}.member-content-mask-panel small{font-size:11px}.member-content-mask-cta{min-height:42px;padding:8px 15px}.watch-observation-card .member-content-mask{min-height:146px}.watch-map-node .member-content-mask{margin-top:12px}}
+.member-content-mask{position:relative;isolation:isolate;display:grid;gap:10px;margin:12px 0 4px;padding:16px 18px 18px;border:1px solid #39483b;border-radius:7px;overflow:hidden;background:#131a16;min-height:164px}
+.member-content-mask.is-compact{min-height:132px;padding:13px 14px 14px;gap:8px}
+.member-content-mask-body{display:grid;gap:7px;align-content:start;max-height:92px;overflow:hidden;opacity:.5;filter:blur(2.5px);user-select:none;pointer-events:none}
+.member-content-mask-body span{display:block;max-width:100%;overflow:hidden;white-space:nowrap;color:#a8b99f;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em}
+/* The server may send a fixed safe placeholder set. Keep the visual texture to
+   four rows (three for compact list cards) so short posts stay compact. */
+.member-content-mask-body span:nth-child(n+5){display:none}
+.member-content-mask.is-compact .member-content-mask-body span:nth-child(n+4){display:none}
+.member-content-mask:after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0e141190 0%,#0e1411cf 53%,#0b100de8 100%);pointer-events:none}
+.member-content-mask-panel{position:absolute;inset:27% 0 0;display:grid;place-content:center;justify-items:center;gap:5px;padding:14px 20px 18px;text-align:center;background:linear-gradient(180deg,#10171122 0%,#101711a8 42%,#101711ec 100%);z-index:1}
+.member-content-mask-label{display:inline-flex;align-items:center;padding:3px 9px;border:1px solid #627451;border-radius:999px;color:#c3d1b2;background:#1b261c;font-size:11px;letter-spacing:.04em}
+.member-content-mask-panel strong{color:#e1e8dd;font-size:14px;font-weight:600;line-height:1.45}
+.member-content-mask-panel small{max-width:34em;color:#a7b4a2;font-size:11px;line-height:1.5}
+.member-content-mask-cta{min-height:34px;margin-top:5px;padding:6px 14px;font-size:12px}
+.member-content-mask-compact-entry{display:inline-flex;align-items:center;justify-content:center;gap:6px;color:#b5c9a2;font-size:12px;line-height:1.5}
+.member-content-mask-topic{display:grid;gap:4px;position:relative;z-index:2;margin:0;color:#d6e2d1;font-size:15px;line-height:1.5}
+.member-content-mask-topic strong{font-weight:600}
+.member-content-mask-login{color:#8f9d90;font-size:11px;line-height:1.5;text-decoration:underline;text-underline-offset:3px}
+.member-content-safe-preview{position:relative;z-index:2;margin:0;color:#cbd8c7;font-size:14px;line-height:1.7;white-space:pre-line;overflow-wrap:anywhere}
+.member-content-mask.is-compact .member-content-safe-preview{font-size:13px;line-height:1.6;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.watch-observation-card .member-content-mask{margin:0 0 12px;padding:11px 12px;min-height:148px}
+.watch-observation-card .member-content-mask-panel{padding:12px 14px 14px}
+.watch-observation-card .member-content-mask-panel strong{font-size:13px}
+.watch-observation-card .member-content-mask-panel small{font-size:11px}
+.watch-observation-card .member-content-mask-cta{min-height:34px}
+.watch-detail-summary .member-content-mask{margin:0 0 16px}
+.watch-map-node .member-content-mask{margin:12px 0 2px}
+.watch-map-node .member-content-mask-panel{padding:15px 18px 18px}
+.watch-map-node .member-content-mask-panel strong{font-size:14px}
+.watch-map-node .member-content-mask-panel small{font-size:11px}
+.watch-history-entry .member-content-mask{margin:12px 0 2px}
+@media(max-width:760px){
+ .member-content-mask{min-height:142px;padding:13px 14px 15px;gap:8px}
+ .member-content-mask.is-compact{min-height:124px;padding:12px 13px 14px}
+ .member-content-mask-body{gap:6px;max-height:76px}
+ .member-content-mask-panel{inset:24% 0 0;padding:14px 15px 16px}
+ .member-content-mask-panel strong{font-size:13px}
+ .member-content-mask-panel small{font-size:11px}
+ .member-content-mask-cta{min-height:40px;padding:8px 15px}
+ .member-content-mask-login{font-size:11px}
+ .watch-observation-card .member-content-mask{min-height:132px}
+ .watch-map-node .member-content-mask{margin-top:10px}
+}
 
 /* Membership gate: the server only provides a safe preview. The texture below
    is deliberately generated from placeholder text, so it never mirrors the
