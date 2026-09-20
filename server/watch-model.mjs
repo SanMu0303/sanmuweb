@@ -31,10 +31,10 @@ const safeActivePreview = value => {
     : '当前正在持续观察，完整判断和后续更新仅限会员查看。';
 };
 const memberPrompt = {
-  label: '会员内容',
-  title: '开通会员，查看完整内容',
-  description: '当前内容包含持续更新和完整判断',
-  cta: '开通会员 ↗',
+  label: '会员专享',
+  title: '会员专享 · 完整观察记录',
+  description: '观察结束后免费公开',
+  cta: '开通会员',
 };
 // Fixed placeholder glyphs intentionally contain no source text or
 // source-derived lengths. They are safe to render as a blurred content body.
@@ -80,8 +80,8 @@ export function projectWatch(value, canReadMembers = false, lifecycleEnded = end
     locked: true,
     preview: safeActivePreview(value),
     access: 'member_required',
-    memberMessage: '正在观察 · 会员内容',
-    memberPrompt: {...memberPrompt, label: '正在观察 · 会员内容', title: '开通会员查看完整观察记录'},
+    memberMessage: '会员专享 · 完整观察记录',
+    memberPrompt: {...memberPrompt},
     maskedLines: [...memberMaskedLines],
   };
 }
