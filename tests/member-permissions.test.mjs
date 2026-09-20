@@ -113,3 +113,25 @@ test('ended observation is readable in full by every audience, including guests'
     assert.equal(historyBody.includes('ENDED_HISTORY_FULL_TEXT'),true,`${actor} should read ended history endpoint`);
   }
 });
+
+test('locked projections expose only fixed safe placeholder rows for the member mask',async()=>{
+  const {projectPost}=await import('../server/post-model.mjs');
+  const {projectWatch}=await import('../server/watch-model.mjs');
+  const secret='SHOULD_NEVER_APPEAR_IN_MASK';
+  const post=projectPost({slug:'masked',title:'公开标题',excerpt:'公开摘要',publishedAt:'2026-09-20',sections:[{heading:'正文',text:secret}],access:'member',images:[]},false);
+  assert.equal(post.locked,true);
+  assert.equal(post.access,'member_required');
+  assert.deepEqual(post.maskedLines,['••••••••••••••••••••••','••••••••••••••••','••••••••••••••••••••••••','••••••••••••••••••','••••••••••••••••••••••']);
+  assert.equal(JSON.stringify(post).includes(secret),false);
+  assert.deepEqual(post.memberPrompt,{label:'会员内容',title:'开通会员，查看完整内容',description:'当前内容包含持续更新和完整判断',cta:'开通会员 ↗'});
+  const active=projectWatch({symbol:'BTC',name:'比特币',market:'加密',stage:'运行',observationStatus:'active',thesis:secret,invalidation:'STOP_SECRET',updatedAt:'2026-09-20',images:[]},false,false);
+  assert.equal(active.locked,true);
+  assert.equal(active.access,'member_required');
+  assert.equal(active.maskedLines.length,5);
+  assert.equal(JSON.stringify(active).includes(secret),false);
+  assert.equal(JSON.stringify(active).includes('STOP_SECRET'),false);
+  assert.equal(active.memberPrompt.label,'正在观察 · 会员内容');
+  const ended=projectWatch({symbol:'BTC',name:'比特币',market:'加密',stage:'失效',observationStatus:'ended',thesis:secret,updatedAt:'2026-09-20',images:[]},false,true);
+  assert.equal('maskedLines' in ended,false);
+  assert.equal('memberPrompt' in ended,false);
+});
