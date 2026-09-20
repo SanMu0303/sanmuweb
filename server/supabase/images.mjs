@@ -60,7 +60,7 @@ export function createImages(client=createSupabase(),transport=fetch){
     let allowed=user.isAdmin&&current.owner===user.id,requiresMembership=false;
     if(!allowed&&current.state==='attached'&&current.post_slug?.startsWith('watch:')){
       const watch=await repo.get('watch_items',current.post_slug.slice(6),{preferId:true});
-      const attached=!!watch?.images?.some(i=>i.url==='/api/images/'+current.id&&i.storagePath===current.storage_path);
+      const attached=!watch?.deletedAt&&!!watch?.images?.some(i=>i.url==='/api/images/'+current.id&&i.storagePath===current.storage_path);
       if(attached){
         const ended=isEndedWatch(watch);
         allowed=ended||canReadMemberContent(user);
@@ -68,7 +68,7 @@ export function createImages(client=createSupabase(),transport=fetch){
       }
       // A historical image remains available for a public ended cycle, but
       // must not become a backdoor while that cycle is still active.
-      if(!allowed&&repo.history){
+      if(!allowed&&!watch?.deletedAt&&repo.history){
         const history=await repo.history(current.post_slug.slice(6));
         const found=history.find(h=>h.document?.images?.some(i=>i.url==='/api/images/'+current.id&&i.storagePath===current.storage_path));
         if(found){
