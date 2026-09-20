@@ -63,7 +63,10 @@ export default function PostCard({post,full=false,timeline=false,compact=false,m
         {post.trendStage&&<span className={'record-stage record-stage-'+post.trendStage}>{post.trendStage}</span>}
         {short&&showType&&<span className={'record-type type-'+tones[post.contentType]}>{post.contentType}</span>}
         {short&&post.isPinned&&!timeline&&<span className="record-pin">置顶</span>}
-        {short&&post.isMemberOnly&&<span className="record-access">会员专属</span>}
+        {/* Locked cards already carry the member label inside the mask. Keep the
+            footer marker for unlocked member views without repeating the CTA
+            label on the compact guest card. */}
+        {short&&post.isMemberOnly&&!post.locked&&<span className="record-access">会员专属</span>}
         {short&&post.isExample&&<span>教学示例</span>}
       </div>
       {hasTags&&<div className="record-tags">{post.tags.map(tag=><a key={tag} href={filterHref('tag',tag)}>#{tag}</a>)}</div>}
