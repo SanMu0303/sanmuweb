@@ -106,6 +106,15 @@ export function createAuth(env=process.env,transport=fetch,{sessions=createWebSe
  }
  return {
   async identify(request){return (await context(request))?.user||anonymous},
+  // Terminal and other server-side user preference stores may need to call
+  // Supabase with the already validated session token. Keep this separate
+  // from identify() so existing callers continue to receive the public user
+  // projection and never gain access to bearer credentials accidentally.
+  async session(request){
+   const current=await context(request);
+   if(!current)return anonymous;
+   return {...current.user,accessToken:current.token};
+  },
   async login(email,password){
    const address=emailAddress(email);
    if(typeof password!=='string'||!password.length||password.length>1024)fail('请填写邮箱和密码');
