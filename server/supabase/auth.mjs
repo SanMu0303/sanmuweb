@@ -1,6 +1,6 @@
 import {configuration} from './client.mjs';
 import {randomUUID} from 'node:crypto';
-import {createWebSessions,newSessionToken,sessionHash,sessionToken,SESSION_SECONDS,REAUTH_SECONDS} from './web-sessions.mjs';
+import {createWebSessions,newSessionToken,sessionHash,sessionToken,SESSION_SECONDS} from './web-sessions.mjs';
 const anonymous={id:null,email:null,signedIn:false,isAdmin:false,role:'guest',nickname:'',avatarUrl:''};
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status})};
 export function administrators(env){return (env.ADMIN_EMAILS||'').split(',').map(v=>v.trim().toLowerCase()).filter(Boolean)}
@@ -88,7 +88,7 @@ export function createAuth(env=process.env,transport=fetch,{sessions=createWebSe
    if(!confirmed(raw)||raw.id!==row.user_id||sessionId(token,raw.id)!==row.auth_session_id){await sessions.revoke(hash);cookieStates.set(request,{clear:true});return null}
    const user=refreshed?.user||await withNickname(raw);
    cookieStates.set(request,{token:opaque});
-   return {hash,opaque,token,raw,user,reauthenticatedAt:row.reauthenticated_at};
+   return {hash,opaque,token,raw,user};
   }
   throw Object.assign(new Error('登录正在续期，请稍后重试。'),{status:503,publicMessage:'登录正在续期，请稍后重试。'});
  }
@@ -147,20 +147,6 @@ export function createAuth(env=process.env,transport=fetch,{sessions=createWebSe
    if(all&&!current)fail('当前登录已过期，请重新登录后再退出所有设备。',401);
    if(current){if(all)await sessions.revokeAll(current.user.id);else await sessions.revoke(current.hash);await retire(current.token,all?'global':'local')}
    cookieStates.set(request,{clear:true});
-  },
-  async requireRecent(request){
-   const current=await requiredContext(request),at=Date.parse(current.reauthenticatedAt);
-   if(!Number.isFinite(at)||at>now()+60000||now()-at>=REAUTH_SECONDS*1000)throw Object.assign(new Error('为保护账号，请再次输入密码后继续操作。'),{status:428,code:'reauthentication_required'});
-  },
-  async reauthenticate(request,password){
-   const current=await requiredContext(request);
-   if(typeof password!=='string'||!password.length||password.length>1024)fail('请输入当前账号的密码');
-   const verified=await checkedSession(await call('/token?grant_type=password',{email:current.user.email,password}),current.user.email.toLowerCase());
-   try{
-    if(verified.user.id!==current.user.id)fail('账号状态已变化，请重新登录。',401);
-    if(!await sessions.reauthenticate(current.hash,current.user.id))fail('登录已过期，请重新登录。',401);
-    return {verified:true,reauthenticatedUntil:new Date(now()+REAUTH_SECONDS*1000).toISOString()};
-   }finally{await retire(verified.token)}
   },
   applyCookies(request,response,secure=true){
    const state=cookieStates.get(request);

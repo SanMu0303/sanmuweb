@@ -3,7 +3,6 @@ import {createHash,randomBytes} from 'node:crypto';
 import {configuration} from './client.mjs';
 
 export const SESSION_SECONDS=30*24*60*60;
-export const REAUTH_SECONDS=15*60;
 export const sessionHash=token=>createHash('sha256').update(token).digest('hex');
 export const newSessionToken=()=>randomBytes(32).toString('hex');
 export function sessionToken(request){
@@ -31,6 +30,5 @@ export function createWebSessions(env=process.env,transport=fetch){
   release:(hash,owner,version)=>rpc('release_web_session_refresh',{p_token_hash:hash,p_refresh_owner:owner,p_version:version}),
   revoke:hash=>rpc('revoke_web_session',{p_token_hash:hash}),
   revokeAll:userId=>rpc('revoke_user_web_sessions',{p_user_id:userId}),
-  reauthenticate:(hash,userId)=>rpc('mark_web_session_reauthenticated',{p_token_hash:hash,p_user_id:userId}),
  };
 }
