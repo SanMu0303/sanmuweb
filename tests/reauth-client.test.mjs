@@ -4,14 +4,11 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import ts from 'typescript';
 
-// Execute the actual browser request helper. React hooks are never called in
-// these request-only tests; no browser, network connection or new dependency is needed.
+// Execute the actual browser request helper without a network connection.
 const clientCode=ts.transpileModule(readFileSync(new URL('../lib/live.ts',import.meta.url),'utf8'),{
  compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020},
 }).outputText;
-function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no});return {promise,resolve,reject}}
 function response(status,data){return {status,ok:status>=200&&status<300,json:async()=>data}}
-const challenge=()=>response(428,{error:'请再次验证管理员密码',code:'reauthentication_required'});
 function harness(transport){
  const exports={},calls=[];
  runInNewContext(clientCode,{
@@ -22,103 +19,61 @@ function harness(transport){
  },{filename:'lib/live.ts'});
  return {...exports,calls};
 }
-function assertPayload(calls,path,init,count){
+function assertPayload(calls,path,init,count=1){
  const matching=calls.filter(call=>call.path===path);
  assert.equal(matching.length,count,'unexpected fetch count for '+path);
- for(const call of matching){assert.equal(call.method,init.method);assert.equal(call.body,init.body);assert.deepEqual(call.headers,init.headers)}
+ for(const call of matching){assert.equal(call.method,init.method);assert.equal(call.body,init.body);assert.deepEqual(call.headers,init.headers);assert.equal(call.cache,'no-store');assert.ok(call.signal instanceof AbortSignal)}
 }
 const write={method:'PUT',headers:{'Content-Type':'application/json','X-Test':'original-request'},body:JSON.stringify({title:'尚未保存的研究正文',revision:7})};
 
-test('concurrent challenged writes share one verification and each replay the unchanged request once',async()=>{
- const counts=new Map(),opened=deferred();let prompts=0;
- const api=harness(call=>{const count=(counts.get(call.path)||0)+1;counts.set(call.path,count);return count===1?challenge():response(200,{saved:true})});
- api.registerReauthentication(attempt=>{prompts++;opened.resolve(attempt)});
- const first=api.request('/api/admin/articles',write),second=api.request('/api/admin/watchlist',write);
- const attempt=await opened.promise;
- assert.equal(prompts,1);assert.equal(api.calls.length,2);
- attempt.complete();
- assert.deepEqual(await Promise.all([first,second]),[{saved:true},{saved:true}]);
- assert.equal(prompts,1);
- assertPayload(api.calls,'/api/admin/articles',write,2);
- assertPayload(api.calls,'/api/admin/watchlist',write,2);
+test('administrator writes submit directly once without a password-verification UI',async()=>{
+ const api=harness(()=>response(200,{saved:true}));
+ assert.equal(api.registerReauthentication,undefined);
+ assert.doesNotMatch(readFileSync(new URL('../app/layout.tsx',import.meta.url),'utf8'),/Reauthentication/);
+ assert.deepEqual(await Promise.all([api.request('/api/admin/articles',write),api.request('/api/admin/watchlist',write)]),[{saved:true},{saved:true}]);
+ assertPayload(api.calls,'/api/admin/articles',write);
+ assertPayload(api.calls,'/api/admin/watchlist',write);
 });
 
-test('an earlier in-flight request whose 428 arrives after verification does not open a second dialog',async()=>{
- const slowResponse=deferred(),opened=deferred(),counts=new Map();let prompts=0;
- const api=harness(call=>{const count=(counts.get(call.path)||0)+1;counts.set(call.path,count);if(call.path.endsWith('/slow')&&count===1)return slowResponse.promise;return count===1?challenge():response(200,{saved:true})});
- api.registerReauthentication(attempt=>{prompts++;opened.resolve(attempt)});
- const slow=api.request('/api/admin/slow',write),fast=api.request('/api/admin/fast',write);
- (await opened.promise).complete();
- assert.deepEqual(await fast,{saved:true});
- slowResponse.resolve(challenge());
- assert.deepEqual(await slow,{saved:true});
- assert.equal(prompts,1);
- assertPayload(api.calls,'/api/admin/slow',write,2);
- assertPayload(api.calls,'/api/admin/fast',write,2);
+test('explicit abort signal and original payload are preserved, with no cached response',async()=>{
+ const controller=new AbortController(),api=harness(()=>response(200,{saved:true}));
+ await api.request('/api/admin/articles',{...write,signal:controller.signal,cache:'force-cache'});
+ assertPayload(api.calls,'/api/admin/articles',write);
+ assert.equal(api.calls[0].signal,controller.signal);
 });
 
-test('a second 428 terminates after one replay without another dialog or an infinite retry',async()=>{
- let prompts=0;
- const api=harness((_call,calls)=>{assert.ok(calls.length<=2,'write was replayed more than once');return challenge()});
- api.registerReauthentication(attempt=>{prompts++;attempt.complete()});
- await assert.rejects(api.request('/api/admin/articles',write),error=>error.status===428&&error.code==='reauthentication_required'&&/未执行/.test(error.message));
- assert.equal(prompts,1);assertPayload(api.calls,'/api/admin/articles',write,2);
-});
-
-test('cancel rejects all waiting writes; even late verification success cannot replay them',async()=>{
- const opened=deferred();let prompts=0;
- const api=harness(()=>challenge());api.registerReauthentication(attempt=>{prompts++;opened.resolve(attempt)});
- const results=Promise.allSettled([api.request('/api/admin/articles',write),api.request('/api/admin/watchlist',write)]);
- const attempt=await opened.promise;attempt.cancel();attempt.complete();
- for(const result of await results){assert.equal(result.status,'rejected');assert.equal(result.reason.status,428);assert.equal(result.reason.code,'reauthentication_cancelled');assert.match(result.reason.message,/编辑内容仍保留/)}
- assert.equal(prompts,1);
- assertPayload(api.calls,'/api/admin/articles',write,1);
- assertPayload(api.calls,'/api/admin/watchlist',write,1);
-});
-
-test('a late 428 from a request started before cancellation shares that cancellation',async()=>{
- const delayed=deferred(),opened=deferred();let prompts=0;
- const api=harness(call=>call.path.endsWith('/slow')?delayed.promise:challenge());
- api.registerReauthentication(attempt=>{prompts++;opened.resolve(attempt)});
- const results=Promise.allSettled([api.request('/api/admin/slow',write),api.request('/api/admin/fast',write)]);
- (await opened.promise).cancel();delayed.resolve(challenge());
- for(const result of await results){assert.equal(result.status,'rejected');assert.equal(result.reason.code,'reauthentication_cancelled')}
- assert.equal(prompts,1);assert.equal(api.calls.length,2);
-});
-
-for(const status of [401,500])test('HTTP '+status+' does not prompt or replay an administrator write',async()=>{
- let prompts=0;const api=harness(()=>response(status,{error:'原请求失败'}));api.registerReauthentication(()=>{prompts++});
+for(const status of [401,403,428,500])test('HTTP '+status+' surfaces its error and never replays an administrator write',async()=>{
+ const api=harness(()=>response(status,{error:'原请求失败',code:status===428?'reauthentication_required':'test_error'}));
  await assert.rejects(api.request('/api/admin/articles',write),error=>error.status===status&&error.message==='原请求失败');
- assert.equal(prompts,0);assertPayload(api.calls,'/api/admin/articles',write,1);
+ assertPayload(api.calls,'/api/admin/articles',write);
 });
 
-test('a network failure does not replay a write or open password verification',async()=>{
- let prompts=0;const api=harness(()=>{throw new TypeError('offline')});api.registerReauthentication(()=>{prompts++});
- await assert.rejects(api.request('/api/admin/articles',write),/网络连接中断/);
- assert.equal(prompts,0);assertPayload(api.calls,'/api/admin/articles',write,1);
+test('an expired session keeps a clear login error without automatically retrying',async()=>{
+ const api=harness(()=>response(401,{}));
+ await assert.rejects(api.request('/api/admin/articles',write),error=>error.status===401&&/登录已过期/.test(error.message));
+ assertPayload(api.calls,'/api/admin/articles',write);
 });
 
-test('a timed-out membership write keeps its unknown-result warning and is not replayed',async()=>{
- let prompts=0;const api=harness(()=>{throw new DOMException('timed out','TimeoutError')});api.registerReauthentication(()=>{prompts++});
+test('a network failure does not replay a write and warns that its result is unknown',async()=>{
+ const api=harness(()=>{throw new TypeError('offline')});
+ await assert.rejects(api.request('/api/admin/articles',write),/网络连接中断，保存结果尚未确认/);
+ assertPayload(api.calls,'/api/admin/articles',write);
+});
+
+for(const errorName of ['TimeoutError','AbortError'])test(errorName+' preserves the membership unknown-result warning and never replays',async()=>{
+ const api=harness(()=>{throw new DOMException('timed out',errorName)});
  await assert.rejects(api.request('/api/admin/members/test-user',write),/保存结果尚未确认，请刷新会员列表核对/);
- assert.equal(prompts,0);assertPayload(api.calls,'/api/admin/members/test-user',write,1);
+ assertPayload(api.calls,'/api/admin/members/test-user',write);
 });
 
-test('a 428 without the precise reauthentication code is not replayed',async()=>{
- let prompts=0;const api=harness(()=>response(428,{error:'其他前置条件',code:'another_requirement'}));api.registerReauthentication(()=>{prompts++});
- await assert.rejects(api.request('/api/admin/articles',write),error=>error.status===428&&error.code==='another_requirement');
- assert.equal(prompts,0);assertPayload(api.calls,'/api/admin/articles',write,1);
+test('an invalid JSON response warns about a potentially completed save and does not replay',async()=>{
+ const api=harness(()=>({status:200,ok:true,json:async()=>{throw new SyntaxError('invalid JSON')}}));
+ await assert.rejects(api.request('/api/admin/articles',write),/请先检查内容是否已保存/);
+ assertPayload(api.calls,'/api/admin/articles',write);
 });
 
-test('the reauthentication endpoint never recursively requests reauthentication',async()=>{
- let prompts=0;const api=harness(()=>challenge());api.registerReauthentication(()=>{prompts++});
- const verification={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:'test-only-password'})};
- await assert.rejects(api.request('/api/auth/reauth',verification),error=>error.status===428);
- assert.equal(prompts,0);assertPayload(api.calls,'/api/auth/reauth',verification,1);
-});
-
-test('read requests never open a write-verification dialog or replay',async()=>{
- let prompts=0;const api=harness(()=>challenge());api.registerReauthentication(()=>{prompts++});
- await assert.rejects(api.request('/api/admin/articles'),error=>error.status===428);
- assert.equal(prompts,0);assert.equal(api.calls.length,1);
+test('read requests report an unexpected challenge without opening a password UI or replaying',async()=>{
+ const api=harness(()=>response(428,{error:'其他前置条件',code:'another_requirement'}));
+ await assert.rejects(api.request('/api/admin/articles'),error=>error.status===428&&error.code==='another_requirement');
+ assert.equal(api.calls.length,1);
 });

@@ -60,10 +60,11 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
    if(['/api/auth/otp/send','/api/auth/otp/verify'].includes(path)&&method==='POST')return json({error:'已改为邮箱密码登录，请刷新页面。未设置密码可点击忘记密码。'},410);
    if(path==='/api/auth/logout'&&method==='POST'){await auth.logout(request);return json({signedOut:true},200,{'Set-Cookie':sessionCookie('',0,publicOrigin(request,env).startsWith('https:'))})}
    if(path==='/api/auth/logout-all'&&method==='POST'){await auth.logout(request,true);return json({signedOut:true},200,{'Set-Cookie':sessionCookie('',0,publicOrigin(request,env).startsWith('https:'))})}
-   if(path==='/api/auth/reauth'&&method==='POST'){const input=await body(request);return json(await auth.reauthenticate(request,input.password))}
+   if(path==='/api/auth/reauth'&&method==='POST')return json({error:'操作已不再需要密码二次确认，请刷新页面后重试。'},410);
    const identity=await auth.identify(request);
    if(path.startsWith('/api/admin/')&&!identity.isAdmin)return json({error:identity.signedIn?'当前账号没有管理权限':'请先登录管理员账号'},identity.signedIn?403:401);
-   if(path.startsWith('/api/admin/')&&!['GET','HEAD'].includes(method))await auth.requireRecent(request);
+   // Every admin operation still uses the verified session identity above.
+   // No additional password-age check is needed while that session is valid.
    if(path==='/api/admin/members'&&method==='GET')return json(await memberService().list({query:url.searchParams.get('q')||'',page:url.searchParams.has('page')?Number(url.searchParams.get('page')):1,status:url.searchParams.get('status')||'all'}));
    if(/^\/api\/admin\/members\/[^/]+$/.test(path)&&method==='PUT')return json(await memberService().save(identity,decodeURIComponent(path.split('/')[4]),await body(request)));
    const user=await withMembership(identity);
@@ -130,7 +131,7 @@ export function createApi({env=process.env,repo=createRepository(),auth=createAu
     }
    }
    return json({error:'接口不存在'},404);
-  }catch(error){const status=error.status||503;return json({error:status>=500?(error.publicMessage||'服务暂时不可用，请稍后重试'):error.message,...(status===428&&error.code==='reauthentication_required'?{code:error.code}:{})},status)}
+  }catch(error){const status=error.status||503;return json({error:status>=500?(error.publicMessage||'服务暂时不可用，请稍后重试'):error.message},status)}
  };
  return async request=>{const response=await handle(request);return auth.applyCookies?auth.applyCookies(request,response,publicOrigin(request,env).startsWith('https:')):response};
 }

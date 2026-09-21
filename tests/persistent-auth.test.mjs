@@ -85,12 +85,12 @@ test('valid requests slide the cookie and resolve identity only once per request
  const response=f.auth.applyCookies(request,Response.json({}));assert.match(response.headers.get('set-cookie'),new RegExp('Max-Age='+SESSION_SECONDS));
 });
 
-test('expired access tokens refresh server-side without extending recent-password verification',async()=>{
+test('expired access tokens refresh server-side without another password grant',async()=>{
  const f=fixture({row:{state:'refresh',reauthenticated_at:new Date(instant-900000).toISOString()}});
  const request=req();assert.equal((await f.auth.identify(request)).signedIn,true);
  assert.deepEqual(f.calls.find(c=>c.path.includes('grant_type=refresh_token')).body,{refresh_token:'server-refresh-initial'});
  assert.equal(f.storage.filter(c=>c[0]==='finish').length,1);
- await assert.rejects(f.auth.requireRecent(request),{status:428,code:'reauthentication_required'});
+ assert.ok(!f.calls.some(c=>c.path.includes('grant_type=password')));
  assert.ok(!f.storage.some(c=>c[0]==='reauthenticate'));
 });
 
@@ -134,33 +134,30 @@ test('a changed upstream user or auth session never inherits the opaque session 
  }
 });
 
-test('admin mutation is rejected before storage after 15 minutes; read-only requests remain available',async()=>{
- const f=fixture({row:{reauthenticated_at:new Date(instant-900000).toISOString()}});
- const get=await f.api(req('/api/admin/members'));assert.equal(get.status,200);
- const write=new Request('https://site.test/api/admin/members/'+id,{method:'PUT',headers:{cookie:'research_session='+opaque,origin:'https://site.test','Content-Type':'application/json'},body:'{}'});
- const denied=await f.api(write);assert.equal(denied.status,428);assert.equal((await denied.json()).code,'reauthentication_required');
+test('valid admin sessions can write without a recent password timestamp',async()=>{
+ for(const timestamp of [new Date(instant-900000).toISOString(),new Date(instant-86400000).toISOString(),null,'invalid']){
+  const f=fixture({row:{reauthenticated_at:timestamp}});let saved=0;
+  f.members.save=async(actor,target,input)=>{saved++;assert.equal(actor.id,id);assert.equal(target,id);assert.deepEqual(input,{action:'revoke',revision:1});return {status:'revoked'}};
+  assert.equal((await f.api(req('/api/admin/members'))).status,200);
+  const write=new Request('https://site.test/api/admin/members/'+id,{method:'PUT',headers:{cookie:'research_session='+opaque,origin:'https://site.test','Content-Type':'application/json'},body:JSON.stringify({action:'revoke',revision:1})});
+  const result=await f.api(write);assert.equal(result.status,200);assert.deepEqual(await result.json(),{status:'revoked'});assert.equal(saved,1);
+  assert.ok(!f.calls.some(c=>c.path.includes('grant_type=password')));assert.ok(!f.storage.some(c=>c[0]==='reauthenticate'));
+ }
 });
 
-test('reauthentication binds to the current account and never returns password or token data',async()=>{
- const f=fixture({row:{reauthenticated_at:new Date(instant-900000).toISOString()}});
- const response=await f.api(req('/api/auth/reauth',{password:'current-password',email:'attacker@example.com'}));
- assert.deepEqual(await response.json(),{verified:true,reauthenticatedUntil:new Date(instant+900000).toISOString()});
- assert.deepEqual(f.calls.find(c=>c.path.includes('grant_type=password')).body,{email:user.email,password:'current-password'});
- assert.deepEqual(f.storage.find(c=>c[0]==='reauthenticate'),['reauthenticate',hash,id]);
- assert.equal(f.calls.at(-1).path,'/auth/v1/logout?scope=local');
- assert.equal(f.calls.at(-1).authorization,'Bearer '+jwt(id,grantSid,'password'));
- assert.equal((await f.auth.identify(req())).signedIn,true);
- await f.auth.requireRecent(req());
+test('expired, logged-out and ordinary sessions still cannot mutate admin data',async()=>{
+ for(const mode of ['expired','logged-out','ordinary']){
+  const f=fixture({...(mode==='expired'?{row:null}:{}),...(mode==='ordinary'?{transport:call=>call.path==='/auth/v1/user'?Response.json({...user,email:'reader@example.com'}):undefined}:{})});
+  if(mode==='logged-out')assert.equal((await f.api(req('/api/auth/logout',{}))).status,200);
+  const write=new Request('https://site.test/api/admin/members/'+id,{method:'PUT',headers:{cookie:'research_session='+opaque,origin:'https://site.test','Content-Type':'application/json'},body:'{}'});
+  assert.equal((await f.api(write)).status,mode==='ordinary'?403:401);
+  assert.ok(!f.calls.some(c=>c.path.includes('grant_type=password')));
+ }
 });
 
-test('incorrect passwords do not grant recent verification',async()=>{
- const f=fixture({transport:call=>call.path.includes('grant_type=password')?Response.json({code:'invalid_credentials'},{status:400}):undefined});
- const response=await f.api(req('/api/auth/reauth',{password:'wrong'}));assert.equal(response.status,400);assert.ok(!f.storage.some(c=>c[0]==='reauthenticate'));
-});
-
-test('sign-out during reauthentication cannot restore the deleted session',async()=>{
- const f=fixture({transport:async(call,{sessions})=>{if(call.path.includes('grant_type=password')){await sessions.revoke(hash);return Response.json(pair('reauth'))}}});
- const response=await f.api(req('/api/auth/reauth',{password:'current-password'}));assert.equal(response.status,401);assert.ok(!f.storage.some(c=>c[0]==='create'));
+test('retired reauthentication endpoint never consumes passwords or contacts Auth',async()=>{
+ const f=fixture();const response=await f.api(req('/api/auth/reauth',{password:'unused-password'}));
+ assert.equal(response.status,410);assert.equal(f.calls.length,0);assert.equal(f.storage.length,0);
 });
 
 test('local logout and all-device logout use distinct revocation scopes',async()=>{
