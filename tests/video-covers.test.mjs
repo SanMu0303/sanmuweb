@@ -133,13 +133,13 @@ test('custom categories trim, preserve 80 Unicode characters, reject oversize an
  assert.deepEqual((await save(f,{category:'   '})).saved.topics,[]);
  for(const category of ['自'.repeat(81),'a'.repeat(81),{},123])await assert.rejects(save(f,{category}),{status:400});
 });
-test('cover APIs inherit admin, recent-password and same-origin guards before any storage calls',async()=>{
+test('cover APIs retain admin and same-origin guards without a password-age check',async()=>{
  let lookups=0,reauth=0;
- const build=user=>createApi({env:{},repo:{},memberships:{get:async()=>{lookups++;return {status:'none',expiresAt:null,revision:0}}},auth:{identify:async()=>user,requireRecent:async()=>{reauth++;throw Object.assign(new Error('请重新验证密码'),{status:428,code:'reauthentication_required'})}}});
+ const build=user=>createApi({env:{},repo:{},memberships:{get:async()=>{lookups++;return {status:'none',expiresAt:null,revision:0}}},auth:{identify:async()=>user,requireRecent:async()=>{reauth++;throw new Error('obsolete password check')}}});
  const paths=[['/api/admin/video-covers','POST'],['/api/admin/video-covers/'+id+'/complete','POST'],['/api/admin/video-covers/'+id,'GET']];
  for(const user of [guest,{...admin,isAdmin:false}])for(const [path,method] of paths)assert.equal((await build(user)(request(path,method,method==='POST'?{}:undefined))).status,user.signedIn?403:401);
- const api=build(admin);for(const [path,method] of paths.filter(p=>p[1]==='POST')){const response=await api(request(path,method,{}));assert.equal(response.status,428);assert.equal((await response.json()).code,'reauthentication_required');assert.equal((await api(request(path,method,{}, {origin:'https://attacker.test'}))).status,403)}
- assert.equal(lookups,0);assert.equal(reauth,2);
+ const api=build(admin);for(const [path,method] of paths.filter(p=>p[1]==='POST'))assert.equal((await api(request(path,method,{}, {origin:'https://attacker.test'}))).status,403);
+ assert.equal(lookups,0);assert.equal(reauth,0);
 });
 test('API integrates ticket, completion, save and public cover without exposing registry fields or unlocking playback',async t=>{
  const oldUrl=process.env.SUPABASE_URL,oldKey=process.env.SUPABASE_SECRET_KEY;
@@ -157,7 +157,7 @@ test('API integrates ticket, completion, save and public cover without exposing 
  const ticketResponse=await api(request('/api/admin/video-covers','POST',{mimeType:'image/png',fileSize:png.length}));assert.equal(ticketResponse.status,200);const ticket=await ticketResponse.json();
  const completed=await api(request('/api/admin/video-covers/'+ticket.id+'/complete','POST',{}));assert.equal(completed.status,200);assert.equal((await completed.json()).previewUrl,'/api/admin/video-covers/'+ticket.id);
  assert.equal((await api(request('/api/admin/video-covers/'+ticket.id))).status,302);
- const saved=await api(request('/api/admin/videos','PUT',{...input,coverUploadId:ticket.id,isMemberOnly:false}));assert.equal(saved.status,200);assert.equal(recent,3);
+ const saved=await api(request('/api/admin/videos','PUT',{...input,coverUploadId:ticket.id,isMemberOnly:false}));assert.equal(saved.status,200);assert.equal(recent,0);
  const publicApi=build(guest),cover=await publicApi(request('/api/video-covers/'+input.id));assert.equal(cover.status,302);assert.match(cover.headers.get('location'),/research-video-covers/);
  const library=await(await publicApi(request('/api/library'))).json();assert.equal(library.videos[0].coverUploadId,undefined);assert.equal(library.videos[0].videoUrl,'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ');assert.equal(library.videos[0].locked,false);
  documents[0].deletedAt='2026-09-17T00:00:00Z';assert.equal((await publicApi(request('/api/video-covers/'+input.id))).status,404);

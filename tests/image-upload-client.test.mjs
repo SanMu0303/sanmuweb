@@ -5,8 +5,7 @@ import {runInNewContext} from 'node:vm';
 import ts from 'typescript';
 import {IMAGE_CONFIG} from '../config/images.mjs';
 
-// Run both real client modules: mocking request() itself would miss an upload
-// accidentally bypassing the shared password-verification handler again.
+// Run the real client request and upload modules so accidental retries are visible.
 const compile=path=>ts.transpileModule(readFileSync(new URL(path,import.meta.url),'utf8'),{
  compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020},
 }).outputText;
@@ -17,12 +16,9 @@ const storageUrl='https://storage.example.test/object/upload/sign/test-image?tok
 const file=Object.freeze({type:'image/png',size:1234});
 const image=Object.freeze({id,url:'/api/images/'+id,mimeType:file.type,fileSize:file.size,alt:'研究配图',isPreview:false});
 const response=(status,data)=>({status,ok:status>=200&&status<300,json:async()=>data});
-const challenge=()=>response(428,{error:'请再次验证管理员密码',code:'reauthentication_required'});
-const nextTurn=()=>new Promise(resolve=>setImmediate(resolve));
-const outcome=promise=>promise.then(value=>({value}),error=>({error}));
 
 function harness(transport){
- const calls=[],prompts=[],blobs=[],revoked=[];
+ const calls=[],blobs=[],revoked=[];
  const globals={
   async fetch(path,init){const call={path,...init};calls.push(call);return transport(call,calls)},
   AbortSignal,DOMException,Error,TypeError,Promise,setTimeout,clearTimeout,
@@ -36,73 +32,60 @@ function harness(transport){
   URL:{createObjectURL(value){blobs.push(value);return 'blob:test-image'},revokeObjectURL(url){revoked.push(url)}},
   Image:class {naturalWidth=900;naturalHeight=600;set src(_url){queueMicrotask(()=>this.onload())}},
  },{filename:'lib/imageStorage.ts'});
- live.registerReauthentication(attempt=>prompts.push(attempt));
- return {...storage,calls,prompts,blobs,revoked};
+ assert.equal(live.registerReauthentication,undefined);
+ return {...storage,calls,blobs,revoked};
 }
 function ticketPayload(call){
  assert.equal(call.method,'POST');assert.equal(call.headers['Content-Type'],'application/json');
  assert.deepEqual(JSON.parse(call.body),{id,mimeType:file.type,fileSize:file.size,width:900,height:600});
+ assert.equal(call.cache,'no-store');
 }
 function storagePayload(call){
  assert.equal(call.method,'PUT');assert.equal(call.headers['Content-Type'],file.type);assert.equal(call.body,file);
 }
+function successfulTransport(call){
+ if(call.path===ticketPath)return response(200,{uploadUrl:storageUrl});
+ if(call.path===storageUrl)return response(200,{});
+ assert.equal(call.path,completePath);return response(200,image);
+}
 
-test('image ticket waits for administrator verification, then uploads the original file once',async()=>{
- let tickets=0;
- const api=harness(call=>{
-  if(call.path===ticketPath)return ++tickets===1?challenge():response(200,{uploadUrl:storageUrl});
-  if(call.path===storageUrl)return response(200,{});
-  assert.equal(call.path,completePath);return response(200,image);
- });
- const pending=outcome(api.uploadImage(file,id));await nextTurn();
- assert.equal(api.prompts.length,1);
- assert.deepEqual(api.calls.map(call=>call.path),[ticketPath],'no storage write is allowed before verification');
- ticketPayload(api.calls[0]);
- api.prompts[0].complete();
- assert.deepEqual(await pending,{value:image});
- assert.deepEqual(api.calls.map(call=>call.path),[ticketPath,ticketPath,storageUrl,completePath]);
- ticketPayload(api.calls[1]);storagePayload(api.calls[2]);
- assert.equal(api.calls[3].method,'POST');assert.equal(api.calls[3].body,'{}');
- assert.equal(api.prompts.length,1);assert.deepEqual(api.blobs,[file]);assert.deepEqual(api.revoked,['blob:test-image']);
+test('an image is ticketed, uploaded and confirmed once without password verification',async()=>{
+ const api=harness(successfulTransport);
+ assert.deepEqual(await api.uploadImage(file,id),image);
+ assert.deepEqual(api.calls.map(call=>call.path),[ticketPath,storageUrl,completePath]);
+ ticketPayload(api.calls[0]);storagePayload(api.calls[1]);
+ assert.equal(api.calls[2].method,'POST');assert.equal(api.calls[2].body,'{}');
+ assert.deepEqual(api.blobs,[file]);assert.deepEqual(api.revoked,['blob:test-image']);
 });
 
-test('image completion reauthenticates and retries confirmation without uploading the bytes again',async()=>{
- let completions=0;
- const api=harness(call=>{
-  if(call.path===ticketPath)return response(200,{uploadUrl:storageUrl});
-  if(call.path===storageUrl)return response(200,{});
-  assert.equal(call.path,completePath);return ++completions===1?challenge():response(200,image);
- });
- const pending=outcome(api.uploadImage(file,id));await nextTurn();
- assert.equal(api.prompts.length,1);assert.equal(api.calls.filter(call=>call.path===storageUrl).length,1);
- api.prompts[0].complete();assert.deepEqual(await pending,{value:image});
- assert.deepEqual(api.calls.map(call=>call.path),[ticketPath,storageUrl,completePath,completePath]);
- for(const call of api.calls.filter(call=>call.path===completePath)){assert.equal(call.method,'POST');assert.equal(call.body,'{}')}
+test('a previously completed image is returned without uploading the bytes again',async()=>{
+ const api=harness(call=>{assert.equal(call.path,ticketPath);return response(200,{image})});
+ assert.deepEqual(await api.uploadImage(file,id),image);
+ assert.deepEqual(api.calls.map(call=>call.path),[ticketPath]);
 });
 
-test('temporary image deletion uses the same verification and preserves the delete request on retry',async()=>{
- const api=harness((call,calls)=>{assert.equal(call.path,deletePath);return calls.length===1?challenge():response(200,{deleted:true})});
- const pending=outcome(api.deleteImage(id));await nextTurn();
- assert.equal(api.prompts.length,1);assert.equal(api.calls.length,1);
- api.prompts[0].complete();assert.deepEqual(await pending,{value:undefined});
- assert.equal(api.calls.length,2);
- for(const call of api.calls){assert.equal(call.path,deletePath);assert.equal(call.method,'DELETE');assert.equal(call.body,'{}');assert.equal(call.headers['Content-Type'],'application/json')}
+test('temporary image deletion submits one unchanged delete request',async()=>{
+ const api=harness(call=>{assert.equal(call.path,deletePath);return response(200,{deleted:true})});
+ assert.equal(await api.deleteImage(id),undefined);
+ assert.equal(api.calls.length,1);
+ const [call]=api.calls;
+ assert.equal(call.method,'DELETE');assert.equal(call.body,'{}');assert.equal(call.headers['Content-Type'],'application/json');
 });
 
-for(const stage of ['ticket','complete','delete'])test('cancelling image '+stage+' verification never continues or replays the operation',async()=>{
- const challengedPath=stage==='ticket'?ticketPath:stage==='complete'?completePath:deletePath;
- const api=harness(call=>{
-  if(call.path===challengedPath)return challenge();
-  if(call.path===ticketPath)return response(200,{uploadUrl:storageUrl});
-  assert.equal(call.path,storageUrl);return response(200,{});
- });
- const pending=outcome(stage==='delete'?api.deleteImage(id):api.uploadImage(file,id));await nextTurn();
- assert.equal(api.prompts.length,1);
- const callCount=api.calls.length;
- api.prompts[0].cancel();api.prompts[0].complete();
- const result=await pending;
- assert.equal(result.error?.code,'reauthentication_cancelled');assert.equal(result.error?.status,428);
- assert.equal(api.calls.length,callCount,'cancelled requests must not replay');
+for(const stage of ['ticket','complete','delete'])for(const status of [401,403,428,500])test('image '+stage+' HTTP '+status+' fails once without replay or duplicate bytes',async()=>{
+ const failedPath=stage==='ticket'?ticketPath:stage==='complete'?completePath:deletePath;
+ const api=harness(call=>call.path===failedPath?response(status,{error:'本次操作失败',code:status===428?'reauthentication_required':'upload_error'}):successfulTransport(call));
+ await assert.rejects(stage==='delete'?api.deleteImage(id):api.uploadImage(file,id),error=>error.status===status&&error.message==='本次操作失败');
+ assert.equal(api.calls.filter(call=>call.path===failedPath).length,1);
  assert.equal(api.calls.filter(call=>call.path===storageUrl).length,stage==='complete'?1:0);
- assert.equal(api.calls.filter(call=>call.path===challengedPath).length,1);
+});
+
+for(const stage of ['ticket','storage','complete'])test('image '+stage+' network failure is never automatically retried',async()=>{
+ const failedPath=stage==='ticket'?ticketPath:stage==='storage'?storageUrl:completePath;
+ const api=harness(call=>{if(call.path===failedPath)throw new TypeError('offline');return successfulTransport(call)});
+ await assert.rejects(api.uploadImage(file,id));
+ assert.equal(api.calls.filter(call=>call.path===failedPath).length,1);
+ assert.equal(api.calls.filter(call=>call.path===storageUrl).length,stage==='ticket'?0:1);
+ assert.equal(api.calls.filter(call=>call.path===completePath).length,stage==='complete'?1:0);
+ assert.deepEqual(api.revoked,['blob:test-image']);
 });

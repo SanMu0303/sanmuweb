@@ -142,7 +142,7 @@ test('member administration requires an authenticated admin and records the trus
  const data={action:'set',expiresAt:'2099-01-01T00:00:00.000Z',revision:4,actor:'forged-id',userId:ownerId};
  const changed=await api(request('/api/admin/members/'+readerId,'PUT',data));assert.equal(changed.status,200);assert.equal((await changed.json()).status,'active');assert.equal(calls.save.length,1);assert.equal(calls.save[0][0]?.id||calls.save[0][0],ownerId);assert.equal(calls.save[0][1],readerId);
  const revoked=await api(request('/api/admin/members/'+readerId,'PUT',{action:'revoke',revision:5}));assert.equal(revoked.status,200);assert.equal((await revoked.json()).status,'revoked');
- assert.deepEqual(calls.reauth,[origin+'/api/admin/members/'+readerId,origin+'/api/admin/members/'+readerId]);
+ assert.equal(calls.reauth.length,0);
 });
 
 test('member mutations reject cross-origin and non-JSON requests before calling the service',async()=>{
