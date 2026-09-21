@@ -25,7 +25,8 @@ const ALLOWED_INTERVALS = new Set([
   "M",
 ]);
 
-type ChartStatus = "loading" | "mounted" | "timeout" | "error";
+export type TerminalChartStatus = "loading" | "ready" | "error";
+type ChartStatus = TerminalChartStatus | "timeout";
 
 export interface TerminalChartProps {
   /** TradingView symbol, e.g. BINANCE:BTCUSDT. Bare symbols use BINANCE. */
@@ -33,6 +34,8 @@ export interface TerminalChartProps {
   /** TradingView interval (minutes, D, W or M). */
   interval?: string;
   className?: string;
+  /** "ready" means the embedded frame loaded, not that its market feed is live. */
+  onStatusChange?: (status: TerminalChartStatus) => void;
 }
 
 function normalizeSymbol(value?: string) {
@@ -52,15 +55,17 @@ function normalizeInterval(value?: string) {
 
 /**
  * Embeds TradingView's public Advanced Chart widget. This is intentionally the
- * public widget (with TradingView attribution), rather than the paid Charting
- * Library, so market availability follows TradingView's widget entitlements.
+ * public widget with its attribution. Symbol search, intervals, indicators and
+ * drawing tools stay inside TradingView; this embed has no public feed API.
  */
 export default function TerminalChart({
   symbol = DEFAULT_SYMBOL,
   interval = DEFAULT_INTERVAL,
   className,
+  onStatusChange,
 }: TerminalChartProps) {
   const widgetRef = useRef<HTMLDivElement>(null);
+  const statusCallbackRef = useRef(onStatusChange);
   const [retryToken, setRetryToken] = useState(0);
   const [status, setStatus] = useState<ChartStatus>("loading");
   const widgetId = useId().replace(/:/g, "");
@@ -68,26 +73,34 @@ export default function TerminalChart({
   const tvInterval = normalizeInterval(interval);
 
   useEffect(() => {
+    statusCallbackRef.current = onStatusChange;
+  }, [onStatusChange]);
+
+  useEffect(() => {
+    statusCallbackRef.current?.(status === "timeout" ? "error" : status);
+  }, [status]);
+
+  useEffect(() => {
     const host = widgetRef.current;
     if (!host) return;
 
     let cancelled = false;
     let timeoutId: number | undefined;
-    let pollId: number | undefined;
+    let frame: HTMLIFrameElement | null = null;
     setStatus("loading");
     host.replaceChildren();
 
     const widget = document.createElement("div");
-    widget.className = styles.widget;
+    widget.className = `tradingview-widget-container__widget ${styles.widget}`;
 
     const attribution = document.createElement("div");
-    attribution.className = styles.attribution;
+    attribution.className = `tradingview-widget-copyright ${styles.attribution}`;
     const attributionLink = document.createElement("a");
-    attributionLink.href = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSymbol)}`;
+    attributionLink.href = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSymbol)}&utm_source=sanmuqushi.com&utm_medium=widget_new&utm_campaign=advanced-chart`;
     attributionLink.target = "_blank";
     attributionLink.rel = "noopener noreferrer nofollow";
-    attributionLink.textContent = `${tvSymbol} 图表`;
-    attribution.append(attributionLink, document.createTextNode(" · TradingView"));
+    attributionLink.textContent = "市场图表";
+    attribution.append(attributionLink, document.createTextNode(" by TradingView"));
 
     const script = document.createElement("script");
     script.type = "text/javascript";
@@ -99,7 +112,7 @@ export default function TerminalChart({
       interval: tvInterval,
       timezone: "Asia/Shanghai",
       theme: "dark",
-      backgroundColor: "#101214",
+      backgroundColor: "#101419",
       gridColor: "rgba(119, 136, 122, 0.14)",
       style: "1",
       locale: "zh_CN",
@@ -116,40 +129,47 @@ export default function TerminalChart({
       support_host: "https://www.tradingview.com",
     });
 
-    const clearTimers = () => {
+    const clearTimer = () => {
       if (timeoutId !== undefined) window.clearTimeout(timeoutId);
-      if (pollId !== undefined) window.clearInterval(pollId);
     };
 
     const fail = (nextStatus: "error" | "timeout") => {
       if (cancelled) return;
-      clearTimers();
+      clearTimer();
       setStatus(nextStatus);
     };
 
-    script.addEventListener("load", () => {
+    const onFrameLoad = () => {
       if (cancelled) return;
-      // The embed script being loaded does not guarantee that market data has
-      // arrived; the live widget remains responsible for its own data state.
-      setStatus("mounted");
-      // The public script may append its iframe asynchronously. Keep the
-      // timeout alive until an embed is present so a blocked widget still has
-      // an actionable fallback, without claiming that the iframe means data
-      // has loaded.
-      pollId = window.setInterval(() => {
-        if (cancelled) return;
-        if (widget.querySelector("iframe")) clearTimers();
-      }, 250);
-    });
-    script.addEventListener("error", () => fail("error"));
+      // Cross-origin iframe load is observable; market connectivity is not.
+      // TradingView itself displays unavailable symbols and feed errors.
+      clearTimer();
+      setStatus("ready");
+    };
+    const observeFrame = () => {
+      const nextFrame = host.querySelector("iframe");
+      if (!nextFrame || nextFrame === frame) return;
+      frame?.removeEventListener("load", onFrameLoad);
+      frame = nextFrame;
+      if (!frame.title) frame.title = "TradingView 市场图表";
+      frame.addEventListener("load", onFrameLoad);
+    };
+    const observer = new MutationObserver(observeFrame);
+    observer.observe(host, { childList: true, subtree: true });
+    const onScriptError = () => fail("error");
+    script.addEventListener("error", onScriptError);
 
-    widget.append(script);
-    host.append(widget, attribution);
+    // Keep TradingView's official sibling structure: widget, copyright, script.
+    // The copyright has its own 32px row instead of covering the chart toolbar.
+    host.append(widget, attribution, script);
     timeoutId = window.setTimeout(() => fail("timeout"), WIDGET_TIMEOUT_MS);
 
     return () => {
       cancelled = true;
-      clearTimers();
+      clearTimer();
+      observer.disconnect();
+      frame?.removeEventListener("load", onFrameLoad);
+      script.removeEventListener("error", onScriptError);
       host.replaceChildren();
     };
   }, [tvInterval, tvSymbol, retryToken]);
@@ -162,7 +182,7 @@ export default function TerminalChart({
         ? "图表加载超时，请重试或在 TradingView 中打开。"
         : status === "error"
           ? "TradingView 图表暂时无法加载，请重试。"
-          : "TradingView 图表组件已加载，行情数据由 TradingView 提供。";
+          : "TradingView 图表窗口已加载，行情连接和数据可用性以图表内状态为准。";
 
   return (
     <section
@@ -172,14 +192,14 @@ export default function TerminalChart({
       data-chart-status={status}
       data-chart-id={widgetId}
     >
-      <div ref={widgetRef} className={styles.embed} />
+      <div ref={widgetRef} className={`tradingview-widget-container ${styles.embed}`} />
       <p className={styles.status} aria-live="polite">
         {statusText}
       </p>
       {status === "loading" && (
         <div className={styles.loading} role="status" aria-live="polite">
           <span className={styles.spinner} aria-hidden="true" />
-          <span>正在连接 TradingView…</span>
+          <span>正在加载 TradingView…</span>
         </div>
       )}
       {(status === "timeout" || status === "error") && (

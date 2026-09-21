@@ -1,28 +1,27 @@
 .chart {
   position: relative;
   display: flex;
-  min-height: 420px;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
   width: 100%;
   overflow: hidden;
   flex-direction: column;
-  border: 1px solid rgba(127, 153, 130, 0.24);
-  border-radius: 12px;
-  background: #101214;
+  background: #101419;
   color: #b7c4b9;
 }
 
 .embed {
   position: relative;
   z-index: 1;
-  min-height: 420px;
-  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
   width: 100%;
 }
 
 .widget {
-  position: absolute;
-  inset: 0;
-  height: 100%;
+  height: calc(100% - 32px);
+  min-height: 0;
   width: 100%;
 }
 
@@ -34,25 +33,27 @@
 }
 
 .attribution {
-  position: relative;
-  z-index: 2;
-  min-height: 27px;
-  padding: 5px 12px;
-  background: rgba(16, 18, 20, 0.96);
-  color: #76847a;
-  font-size: 11px;
-  line-height: 1.45;
-  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  height: 32px;
+  padding-inline: 8px;
+  background: #101419;
+  color: #909baa;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .attribution a {
-  color: #91b378;
+  color: #90b5ed;
   text-decoration: none;
 }
 
 .attribution a:hover,
 .attribution a:focus-visible {
-  color: #b8d59e;
+  color: #b4d0f6;
   text-decoration: underline;
 }
 
@@ -70,14 +71,15 @@
 .fallback {
   position: absolute;
   z-index: 4;
-  inset: 0;
+  inset: 0 0 32px;
   display: grid;
   place-content: center;
   gap: 12px;
   padding: 24px;
-  background: rgba(16, 18, 20, 0.94);
+  background: rgba(16, 20, 25, 0.96);
   color: #c7d4c7;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.6;
   text-align: center;
 }
 
@@ -101,7 +103,7 @@
 .fallbackActions a {
   min-height: 36px;
   border: 1px solid rgba(141, 177, 121, 0.58);
-  border-radius: 7px;
+  border-radius: 4px;
   padding: 7px 13px;
   background: rgba(119, 157, 97, 0.16);
   color: #c8dda9;
@@ -136,14 +138,8 @@
 }
 
 @media (max-width: 700px) {
-  .chart,
-  .embed {
-    min-height: 340px;
-  }
-
   .attribution {
-    padding-inline: 9px;
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .fallback {
