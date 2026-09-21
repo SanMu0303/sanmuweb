@@ -35,6 +35,42 @@ test('config store merges only terminal metadata and isolates malformed identiti
   await assert.rejects(() => store.read({signedIn:true,id:'not-an-id'}), /登录/);
 });
 
+test('config uses the verified user token without requiring the Supabase Admin API', async () => {
+  const userId = '00000000-0000-0000-0000-000000000001';
+  const identity = {signedIn:true,id:userId,accessToken:'verified-user-token'};
+  const calls = [];
+  const client = {config:{url:'https://project.supabase.co',key:'sb_secret_server'},request:async()=>{throw new Error('Admin API must not be used');}};
+  const store = createTerminalConfig({env:{},client,now:()=> '2026-09-22T00:00:00.000Z',transport:async (url,options)=>{
+    calls.push({url,options});
+    return Response.json({id:userId,user_metadata:{nickname:'保留昵称',terminal_workspace_v2:{preferences:{volume:0.6},updatedAt:'saved'}}});
+  }});
+  assert.equal((await store.read(identity)).config.preferences.volume, 0.6);
+  const result = await store.write(identity,{sources:[],wallets:[],preferences:{volume:0.4},user_metadata:{nickname:'覆盖'},app_metadata:{admin:true}});
+  assert.equal(result.config.preferences.volume, 0.4);
+  assert.equal(calls.length, 3);
+  for (const call of calls) {
+    assert.equal(call.url, 'https://project.supabase.co/auth/v1/user');
+    assert.equal(call.options.headers.Authorization, 'Bearer verified-user-token');
+    assert.equal(call.options.cache, 'no-store');
+    assert.equal(call.options.redirect, 'error');
+  }
+  const body = JSON.parse(calls[2].options.body);
+  assert.deepEqual(Object.keys(body), ['data']);
+  assert.deepEqual(Object.keys(body.data), ['terminal_workspace_v2']);
+  assert.equal(body.data.terminal_workspace_v2.updatedAt, '2026-09-22T00:00:00.000Z');
+});
+
+test('config rejects mismatched and expired user tokens without elevating to Admin API', async () => {
+  const userId = '00000000-0000-0000-0000-000000000001';
+  let adminCalls = 0;
+  const client = {config:{url:'https://project.supabase.co',key:'server-key'},request:async()=>{adminCalls++;}};
+  for (const response of [Response.json({id:'00000000-0000-0000-0000-000000000002'}),Response.json({error:'expired'},{status:401})]) {
+    const store = createTerminalConfig({env:{},client,transport:async()=>response});
+    await assert.rejects(()=>store.write({signedIn:true,id:userId,accessToken:'wrong-token'},{}),error=>[401,502].includes(error.status));
+  }
+  assert.equal(adminCalls, 0);
+});
+
 test('smart-money adapter never fabricates trades and reports unconfigured platforms', () => {
   const result = querySmartMoney({wallets:[{id:'x',platform:'hyperliquid',name:'H',address:'0x0000000000000000000000000000000000000001',enabled:false}]});
   assert.deepEqual(result.items, []);

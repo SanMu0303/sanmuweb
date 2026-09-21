@@ -85,6 +85,18 @@ test('valid requests slide the cookie and resolve identity only once per request
  const response=f.auth.applyCookies(request,Response.json({}));assert.match(response.headers.get('set-cookie'),new RegExp('Max-Age='+SESSION_SECONDS));
 });
 
+test('server session preferences can reuse the validated token without exposing it in identity or session JSON',async()=>{
+ const f=fixture(),request=req();
+ const identity=await f.auth.identify(request),session=await f.auth.session(request);
+ assert.equal(session.id,identity.id);assert.equal(session.accessToken,jwt());
+ assert.equal(identity.accessToken,undefined);assert.equal(session.refreshToken,undefined);assert.equal(session.raw,undefined);
+ assert.equal(f.storage.filter(c=>c[0]==='resolve').length,1);
+ const publicResponse=await f.api(req());
+ assert.ok(!JSON.stringify(await publicResponse.json()).includes(jwt()));
+ const guest=await fixture({row:null}).auth.session(req());
+ assert.equal(guest.signedIn,false);assert.equal(guest.accessToken,undefined);
+});
+
 test('expired access tokens refresh server-side without another password grant',async()=>{
  const f=fixture({row:{state:'refresh',reauthenticated_at:new Date(instant-900000).toISOString()}});
  const request=req();assert.equal((await f.auth.identify(request)).signedIn,true);
