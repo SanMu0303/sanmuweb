@@ -3,8 +3,8 @@ import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import {useEffect,useRef,useState} from 'react';
 import {useResource} from '@/lib/live';
-import {Activity,Layers3,BookOpen,Compass,NotebookPen,ArrowUpRight,UserRound,Menu,X} from 'lucide-react';
-const nav=[['/','最新内容',Compass],['/watchlist/','趋势观察池',Activity],['/reviews/','市场复盘',NotebookPen],['/knowledge/','知识库 / 课程',BookOpen]] as const;
+import {Activity,Layers3,BookOpen,Compass,NotebookPen,ArrowUpRight,UserRound,Menu,X,LineChart} from 'lucide-react';
+const nav=[['/','最新内容',Compass],['/watchlist/','趋势观察池',Activity],['/terminal/','交易终端',LineChart],['/reviews/','市场复盘',NotebookPen],['/knowledge/','知识库 / 课程',BookOpen]] as const;
 function NavigationContent({path}:{path:string}){const session=useResource<{isAdmin:boolean;signedIn:boolean;nickname:string;avatarUrl:string}>('/api/session');return <><Link href="/" className="brand"><span className="logo"><Layers3 size={24}/></span><span>趋势交易观察室<small>TREND OBSERVATORY</small></span></Link><div className="nav-label">研究空间</div><nav aria-label="研究栏目">{nav.map(([href,label,Icon])=><Link key={href} href={href} className={path===href?'active':''} aria-current={path===href?'page':undefined}><Icon size={18}/>{label}</Link>)}</nav><div className="side-note"><span className="eyebrow">THE PROCESS MATTERS</span><p>观察。等待。执行。<br/>让每一次判断都有迹可循。</p><div className="rule"/><small>专注趋势，保持耐心。</small></div><Link className="member-nav" href="/membership/"><UserRound size={18}/>会员中心<ArrowUpRight size={15}/></Link>{session.data?.signedIn&&<Link href="/profile/" className="admin-entry">个人中心</Link>}{session.data?.isAdmin&&<Link href="/admin/" className="admin-entry">✎ 内容管理</Link>}<div className="side-bottom">SANMU / 三木的研究空间</div></>}
 export default function Shell({children}:{children:React.ReactNode}){
  const path=usePathname();const session=useResource<{isAdmin:boolean;signedIn:boolean;nickname:string;avatarUrl:string}>('/api/session');const drawer=useRef<HTMLDialogElement>(null);const [open,setOpen]=useState(false);
