@@ -44,8 +44,21 @@ export function normalizeTerminalConfig(input, env = process.env) {
     const requestedEnabled = item.requestedEnabled !== false && item.enabled !== false;
     return {id: id(item.id), platform, name: clean(item.name, 80) || `${platform} 账户`, address, requestedEnabled, enabled: requestedEnabled && capability[platform] === true};
   }));
-  const preferences = record(value.preferences), panelSound = record(preferences.panelSound);
-  return {version: 2, sources, wallets, preferences: {splitRatio: bounded(preferences.splitRatio, 0.28, 0.55, 0.38), volume: bounded(preferences.volume, 0, 1, 0.35), sound: preferences.sound === true, panelSound: {market: panelSound.market !== false, selected: panelSound.selected !== false, smart: panelSound.smart !== false}}};
+  const preferences = record(value.preferences), panelSound = record(preferences.panelSound), panelSizes = record(preferences.panelSizes);
+  return {version: 2, sources, wallets, preferences: {
+    splitRatio: bounded(preferences.splitRatio, 0.28, 0.55, 0.38),
+    volume: bounded(preferences.volume, 0, 1, 0.35),
+    sound: preferences.sound === true,
+    panelSound: {market: panelSound.market !== false, selected: panelSound.selected !== false, smart: panelSound.smart !== false},
+    // Relative grid weights. CSS enforces a 160px minimum for each window;
+    // keeping the persisted values bounded prevents an accidental drag from
+    // making a panel effectively disappear.
+    panelSizes: {
+      market: bounded(panelSizes.market, 0.2, 0.6, 1 / 3),
+      selected: bounded(panelSizes.selected, 0.2, 0.6, 1 / 3),
+      smart: bounded(panelSizes.smart, 0.2, 0.6, 1 / 3)
+    }
+  }};
 }
 
 /** User metadata is preferences only. It is never used for membership/admin authorization. */
