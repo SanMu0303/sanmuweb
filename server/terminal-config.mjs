@@ -1,4 +1,4 @@
-import {createSupabase} from './supabase/client.mjs';
+import {configuration, createSupabase} from './supabase/client.mjs';
 import {validFeedAddress} from './terminal-news.mjs';
 
 const META_KEY = 'terminal_workspace_v2';
@@ -67,11 +67,33 @@ export function createTerminalConfig({env = process.env, transport = fetch, clie
     if (!identity?.signedIn || typeof identity.id !== 'string' || !/^[a-f0-9-]{36}$/i.test(identity.id)) fail('请登录后管理监听配置', 401);
     return identity.id;
   }
+  async function userRequest(identity, options = {}) {
+    const {url, key} = client.config || configuration(env);
+    const response = await transport(`${url}/auth/v1/user`, {
+      ...options,
+      headers: {apikey: key, Authorization: `Bearer ${identity.accessToken}`, ...(options.body ? {'Content-Type': 'application/json'} : {})},
+      cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(15000)
+    });
+    if (!response.ok) {
+      // A failed/expired user token must not silently fall back to elevated
+      // credentials. The next website request will revalidate the session.
+      const status = [401, 403, 429].includes(response.status) ? response.status : 503;
+      fail(status === 401 ? '登录已过期，请重新登录' : '监听配置服务暂时不可用', status);
+    }
+    return response.json();
+  }
+  const hasUserToken = identity => typeof identity.accessToken === 'string' && identity.accessToken.length > 0;
+  async function loadUser(identity, userId) {
+    const result = hasUserToken(identity)
+      ? await userRequest(identity)
+      : await client.request(`/auth/v1/admin/users/${encodeURIComponent(userId)}`);
+    const user = result?.user || result;
+    if (user?.id !== userId) fail('监听配置读取失败', 502);
+    return user;
+  }
   async function read(identity) {
     const userId = owner(identity);
-    const result = await client.request(`/auth/v1/admin/users/${encodeURIComponent(userId)}`);
-    const raw = result?.user || result;
-    if (raw?.id !== userId) fail('监听配置读取失败', 502);
+    const raw = await loadUser(identity, userId);
     const saved = record(raw.user_metadata?.[META_KEY]);
     let config;
     try { config = normalizeTerminalConfig(saved, env); } catch { config = normalizeTerminalConfig({}, env); }
@@ -80,14 +102,19 @@ export function createTerminalConfig({env = process.env, transport = fetch, clie
   async function write(identity, input) {
     const userId = owner(identity), config = normalizeTerminalConfig(input, env), updatedAt = now();
     if (Buffer.byteLength(JSON.stringify({...config, updatedAt}), 'utf8') > 8_000) fail('监听配置过大，请减少来源或关键词', 413);
-    // Auth merges this metadata key. Sending only our key preserves nickname/avatar and
-    // avoids round-tripping app_metadata, email, credentials, or unrelated preferences.
-    const current = await client.request(`/auth/v1/admin/users/${encodeURIComponent(userId)}`);
-    const currentUser = current?.user || current;
-    if (currentUser?.id !== userId) fail('监听配置写入失败', 502);
-    const userMetadata = record(currentUser.user_metadata);
-    userMetadata[META_KEY] = {...config, updatedAt};
-    await client.request(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, {method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_metadata: userMetadata})});
+    const currentUser = await loadUser(identity, userId);
+    if (hasUserToken(identity)) {
+      // The authenticated /user endpoint merges `data` into user_metadata.
+      // Only our preference key is writable; email, password, app_metadata,
+      // nickname and avatar are not copied or accepted from browser input.
+      const saved = await userRequest(identity, {method: 'PUT', body: JSON.stringify({data: {[META_KEY]: {...config, updatedAt}}})});
+      if ((saved?.user || saved)?.id !== userId) fail('监听配置写入失败', 502);
+    } else {
+      // Compatibility for server callers which still supply only an identity
+      // and an Admin API client. Web routes always prefer the session token.
+      const userMetadata = {...record(currentUser.user_metadata), [META_KEY]: {...config, updatedAt}};
+      await client.request(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, {method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_metadata: userMetadata})});
+    }
     return {config, updatedAt, capabilities: terminalCapabilities(env)};
   }
   return {read, write};

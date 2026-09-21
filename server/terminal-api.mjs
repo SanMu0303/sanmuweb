@@ -52,7 +52,10 @@ export function createTerminalApi({env = process.env, news = createTerminalNews(
         if (!check.ok) return json({error: check.reason === 'origin' ? '请求来源不正确，请从本站重新打开终端' : '请使用 JSON 保存配置'}, 403);
       }
       auth = authFactory();
-      const identity = await auth.identify(request);
+      // Prefer the full, already validated session context so preference
+      // stores can use the user's access token. Test doubles and legacy auth
+      // adapters may only expose identify(), so keep that compatibility path.
+      const identity = typeof auth.session === 'function' ? await auth.session(request) : await auth.identify(request);
       if (!identity.signedIn) return finish(json({error: '请登录后使用个人监听配置', code: 'sign_in_required'}, 401));
       const store = configFactory();
       if (resource === 'config') return finish(json(request.method === 'PUT' ? await store.write(identity, await readConfig(request)) : await store.read(identity)));
