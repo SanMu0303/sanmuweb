@@ -1,0 +1,158 @@
+.chart {
+  position: relative;
+  display: flex;
+  min-height: 420px;
+  width: 100%;
+  overflow: hidden;
+  flex-direction: column;
+  border: 1px solid rgba(127, 153, 130, 0.24);
+  border-radius: 12px;
+  background: #101214;
+  color: #b7c4b9;
+}
+
+.embed {
+  position: relative;
+  z-index: 1;
+  min-height: 420px;
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.widget {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.widget :global(iframe) {
+  display: block;
+  height: 100%;
+  width: 100%;
+  border: 0;
+}
+
+.attribution {
+  position: relative;
+  z-index: 2;
+  min-height: 27px;
+  padding: 5px 12px;
+  background: rgba(16, 18, 20, 0.96);
+  color: #76847a;
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.attribution a {
+  color: #91b378;
+  text-decoration: none;
+}
+
+.attribution a:hover,
+.attribution a:focus-visible {
+  color: #b8d59e;
+  text-decoration: underline;
+}
+
+.status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.loading,
+.fallback {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  padding: 24px;
+  background: rgba(16, 18, 20, 0.94);
+  color: #c7d4c7;
+  font-size: 14px;
+  text-align: center;
+}
+
+.loading {
+  pointer-events: none;
+}
+
+.fallback p {
+  margin: 0;
+}
+
+.fallbackActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fallbackActions button,
+.fallbackActions a {
+  min-height: 36px;
+  border: 1px solid rgba(141, 177, 121, 0.58);
+  border-radius: 7px;
+  padding: 7px 13px;
+  background: rgba(119, 157, 97, 0.16);
+  color: #c8dda9;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.fallbackActions button:hover,
+.fallbackActions button:focus-visible,
+.fallbackActions a:hover,
+.fallbackActions a:focus-visible {
+  border-color: #b2d68b;
+  background: rgba(119, 157, 97, 0.3);
+}
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin: 0 auto;
+  border: 2px solid rgba(164, 194, 145, 0.3);
+  border-top-color: #a8cb8a;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 700px) {
+  .chart,
+  .embed {
+    min-height: 340px;
+  }
+
+  .attribution {
+    padding-inline: 9px;
+    font-size: 10px;
+  }
+
+  .fallback {
+    padding: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
