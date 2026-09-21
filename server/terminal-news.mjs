@@ -15,10 +15,10 @@ const DEFAULT_POLL_INTERVAL = 60;
 /** Public, primary feeds. These are intentionally kept in code so GET never accepts an
  * arbitrary unauthenticated URL. Users can request their own feeds through authenticated POST. */
 export const DEFAULT_SOURCES = Object.freeze([
-  {id: 'coindesk', kind: 'rss', name: 'CoinDesk', address: 'https://www.coindesk.com/arc/outboundfeeds/rss/'},
-  {id: 'federal-reserve', kind: 'rss', name: 'Federal Reserve', address: 'https://www.federalreserve.gov/feeds/press_all.xml'},
-  {id: 'cointelegraph', kind: 'rss', name: 'Cointelegraph', address: 'https://cointelegraph.com/rss'},
-  {id: 'sec-news', kind: 'rss', name: 'SEC News', address: 'https://www.sec.gov/news/pressreleases.rss'},
+  {id: 'coindesk', kind: 'rss', name: 'CoinDesk', market: 'crypto', address: 'https://www.coindesk.com/arc/outboundfeeds/rss/'},
+  {id: 'federal-reserve', kind: 'rss', name: 'Federal Reserve', market: 'macro', address: 'https://www.federalreserve.gov/feeds/press_all.xml'},
+  {id: 'cointelegraph', kind: 'rss', name: 'Cointelegraph', market: 'crypto', address: 'https://cointelegraph.com/rss'},
+  {id: 'sec-news', kind: 'rss', name: 'SEC News', market: 'macro', address: 'https://www.sec.gov/news/pressreleases.rss'},
 ]);
 
 const fail = (message, status = 400) => { throw Object.assign(new Error(message), {status}); };
@@ -137,11 +137,11 @@ async function resolvePublic(hostname, resolver = dnsLookup) {
   return records.map(record => ({address: record.address, family: record.family || net.isIP(record.address)}));
 }
 
-function validFeedAddress(value) {
+export function validFeedAddress(value) {
   try {
     const url = new URL(String(value || '').trim());
     if (url.protocol !== 'https:' || url.username || url.password || url.hash || !url.hostname || isDisallowedHostname(url.hostname)) return null;
-    if (url.port && (!/^\d+$/.test(url.port) || Number(url.port) < 1 || Number(url.port) > 65535)) return null;
+    if (url.port && url.port !== '443') return null;
     return url;
   } catch { return null; }
 }
@@ -166,7 +166,7 @@ export function normalizeSources(input, {defaults = DEFAULT_SOURCES} = {}) {
     if (kind === 'rss' && !validFeedAddress(address)) fail('RSS 地址必须使用安全的 HTTPS 地址', 400);
     if (kind === 'x' && !/^(?:https?:\/\/(?:www\.)?(?:x|twitter)\.com\/)?@?[A-Za-z0-9_]{1,15}$/.test(address)) fail('X 账号地址不正确', 400);
     seen.add(id);
-    output.push({id, kind, name: clampText(raw.name || id, 80), address});
+    output.push({id, kind, name: clampText(raw.name || id, 80), address, market: ['crypto', 'stocks', 'indices', 'forex', 'commodities', 'macro'].includes(raw.market) ? raw.market : 'other'});
   }
   return output;
 }
@@ -204,6 +204,10 @@ async function readResponse(response, maxBytes = MAX_XML_BYTES) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
+export function pinnedLookup(records) {
+  return (_hostname, options, callback) => options?.all ? callback(null, records) : callback(null, records[0].address, records[0].family);
+}
+
 function requestPinned(url, {resolver = dnsLookup, timeoutMs = FETCH_TIMEOUT_MS, maxBytes = MAX_XML_BYTES} = {}) {
   return new Promise(async (resolve, reject) => {
     let records;
@@ -216,7 +220,7 @@ function requestPinned(url, {resolver = dnsLookup, timeoutMs = FETCH_TIMEOUT_MS,
       path: `${url.pathname || '/'}${url.search || ''}`,
       method: 'GET',
       headers: {'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.2', 'User-Agent': 'SanMuResearchTerminal/1.0'},
-      lookup: (_hostname, _options, callback) => callback(null, records[0].address, records[0].family),
+      lookup: pinnedLookup(records),
       ...(url.protocol === 'https:' ? {servername: url.hostname} : {}),
     }, async response => {
       try {
@@ -238,8 +242,8 @@ async function fetchDocument(url, options) {
     const status = Number(response.status || response.statusCode || 0);
     if (status >= 300 && status < 400) {
       const location = response.headers?.get ? response.headers.get('location') : response.headers?.location;
-      const next = location ? new URL(location, current) : null;
-      if (!next || next.protocol !== 'https:' || next.username || next.password || redirects === 2) fail('消息来源重定向不安全', 400);
+      const next = location ? validFeedAddress(new URL(location, current).href) : null;
+      if (!next || redirects === 2) fail('消息来源重定向不安全', 400);
       await resolvePublic(next.hostname, options.resolver || dnsLookup);
       current = next;
       continue;
@@ -281,6 +285,42 @@ async function fetchX(source, options) {
   return {items, status: 'ok'};
 }
 
+
+async function fetchRss(source, options) {
+  const document = await fetchDocument(validFeedAddress(source.address), options);
+  if (!/<(?:rss|feed|rdf:RDF)(?:\s|>)/i.test(document)) throw new Error('来源未返回 RSS/Atom 文档');
+  return {items: parseRss(document, source), status: 'ok'};
+}
+
+/** Text tags are discovery labels, not a claim that a TradingView symbol can be inferred. */
+export function normalizeEvent(item, source = {}) {
+  const text = `${item.title || ''} ${item.summary || ''}`;
+  const tags = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'USDT', 'USDC'].filter(tag => new RegExp(`\\b${tag}\\b`, 'i').test(text));
+  return {...item, market: source.market || 'other', tags};
+}
+
+/** Stable keyset paging over a bounded per-request snapshot; no numeric offset drift. */
+export function pageEvents(events, options = {}) {
+  const query = clampText(options.q, 160).toLowerCase();
+  const marketAliases = {'加密资产':'crypto','股票':'stocks','指数':'indices','外汇':'forex','商品':'commodities','宏观':'macro'};
+  const marketInput = clampText(options.market, 32);
+  const market = marketAliases[marketInput] || marketInput;
+  const source = clampText(options.source, 64);
+  let filtered = events.filter(item => (!market || market === 'all' || item.market === market) && (!source || source === 'all' || item.sourceId === source) && (!query || `${item.title} ${item.summary} ${item.sourceName} ${(item.tags || []).join(' ')}`.toLowerCase().includes(query)));
+  const total = filtered.length;
+  if (options.cursor) {
+    let cursor;
+    try { cursor = JSON.parse(Buffer.from(String(options.cursor), 'base64url').toString()); } catch { fail('分页参数不正确'); }
+    if (!Array.isArray(cursor) || cursor.length !== 2 || !Number.isFinite(cursor[0]) || typeof cursor[1] !== 'string') fail('分页参数不正确');
+    filtered = filtered.filter(item => Date.parse(item.publishedAt) < cursor[0] || (Date.parse(item.publishedAt) === cursor[0] && `${item.sourceId}:${item.id}` > cursor[1]));
+  }
+  const limit = Math.min(100, Math.max(1, Math.floor(Number(options.limit) || 100)));
+  const items = filtered.slice(0, limit);
+  const last = items.at(-1);
+  const nextCursor = filtered.length > items.length && last ? Buffer.from(JSON.stringify([Date.parse(last.publishedAt), `${last.sourceId}:${last.id}`])).toString('base64url') : null;
+  return {items, total, nextCursor};
+}
+
 function dedupeItems(items) {
   const seen = new Set();
   return items.filter(item => {
@@ -290,7 +330,7 @@ function dedupeItems(items) {
     if (urlKey) seen.add(urlKey);
     if (idKey) seen.add(idKey);
     return true;
-  }).sort((a, b) => Date.parse(b.publishedAt || 0) - Date.parse(a.publishedAt || 0)).slice(0, MAX_ITEMS);
+  }).sort((a, b) => Date.parse(b.publishedAt || 0) - Date.parse(a.publishedAt || 0) || `${a.sourceId}:${a.id}`.localeCompare(`${b.sourceId}:${b.id}`)).slice(0, MAX_ITEMS);
 }
 
 /**
@@ -308,7 +348,7 @@ export function createTerminalNews({env = process.env, fetchImpl, resolver = dns
     if (inflight.has(key)) return inflight.get(key);
     const promise = (async () => {
       try {
-        const result = source.kind === 'x' ? await fetchX(source, {env, fetchImpl, timeoutMs}) : {items: parseRss(await fetchDocument(validFeedAddress(source.address), {resolver, fetchImpl, timeoutMs}), source), status: 'ok'};
+        const result = source.kind === 'x' ? await fetchX(source, {env, fetchImpl, timeoutMs}) : await fetchRss(source, {resolver, fetchImpl, timeoutMs});
         const value = {items: result.items || [], status: result.status || 'ok', ...(result.message ? {message: result.message} : {})};
         cache.set(key, {fetchedAt: now(), result: value});
         return value;
@@ -324,13 +364,14 @@ export function createTerminalNews({env = process.env, fetchImpl, resolver = dns
     if (cache.size > 32) cache.delete(cache.keys().next().value);
     return promise;
   };
-  async function query(sources) {
+  async function query(sources, filters = {}) {
     const selected = normalizeSources(sources);
     const results = await Promise.all(selected.map(async source => ({source, result: await fetchSource(source)})));
-    const items = dedupeItems(results.flatMap(({result}) => result.items));
+    const all = dedupeItems(results.flatMap(({source, result}) => result.items.map(item => normalizeEvent({...item, sourceId: source.id, sourceName: source.name}, source))));
+    const {items, nextCursor, total} = pageEvents(all, filters);
     return {
-      items,
-      sources: results.map(({source, result}) => ({id: source.id, name: source.name, url: source.address, status: result.status, ...(result.message ? {message: result.message} : {})})),
+      items, nextCursor, total,
+      sources: results.map(({source, result}) => ({id: source.id, name: source.name, url: source.address, market: source.market, status: result.status, ...(result.message ? {message: result.message} : {})})),
       fetchedAt: new Date(now()).toISOString(),
       pollInterval: DEFAULT_POLL_INTERVAL,
     };
