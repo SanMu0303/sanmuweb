@@ -87,7 +87,7 @@
 .site-shell .mobile-menu-toggle { color: var(--site-muted); }
 .site-shell .mobile-menu-toggle:hover { color: var(--site-ink); background: var(--site-accent-soft); border-radius: 5px; }
 .site-shell .topbar .muted { color: var(--site-faint); }
-.site-shell .sidebar-heading { display: block; margin: 0; padding: 0 10px 16px; color: var(--site-ink); }
+.site-shell .sidebar-heading { display: block; margin: 0; padding: 0 10px 16px; color: var(--site-ink); font-size: 11px; line-height: 1.6; }
 .site-shell .sidebar-heading strong { font-size: 11px; font-weight: 650; letter-spacing: .05em; }
 .site-shell .sidebar-heading small { color: var(--site-faint); font-size: 10px; letter-spacing: .14em; }
 .site-shell .sidebar nav { gap: 3px; }
