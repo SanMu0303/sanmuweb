@@ -79,6 +79,8 @@
 .site-shell .site-topbar-brand small { display: block; margin-top: 3px; color: var(--site-faint); font-size: 8px; font-weight: 500; letter-spacing: .16em; line-height: 1; }
 .site-shell .site-topbar-meta { display: inline-flex; align-items: center; gap: 7px; margin-left: clamp(24px, 8vw, 130px); color: var(--site-muted); font-size: 11px; line-height: 1; white-space: nowrap; }
 .site-shell .site-live-dot { display: inline-block; width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #79a765; box-shadow: 0 0 0 3px rgb(121 167 101 / 15%); }
+.site-shell .mobile-menu-toggle { color: var(--site-muted); }
+.site-shell .mobile-menu-toggle:hover { color: var(--site-ink); background: var(--site-accent-soft); border-radius: 5px; }
 .site-shell .topbar .muted { color: var(--site-faint); }
 .site-shell .sidebar-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 8px 10px 27px; color: var(--site-ink); }
 .site-shell .sidebar-heading strong { font-size: 14px; font-weight: 650; letter-spacing: .02em; }
