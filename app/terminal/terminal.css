@@ -17,3 +17,21 @@
 .terminal-page button:focus-visible,.terminal-page a:focus-visible,.terminal-page [role=separator]:focus-visible{outline:2px solid var(--terminal-green);outline-offset:2px}
 @media(max-width:900px){.terminal-volume-control{display:none}.terminal-connection{font-size:10px}.terminal-brand strong{white-space:nowrap}.terminal-chart-kicker{display:none}.terminal-top-button,.terminal-icon-button{min-width:32px;min-height:32px}.terminal-main .terminal-chart-header{gap:6px}.terminal-chart-header>div{gap:6px;flex-wrap:wrap}.terminal-back{white-space:nowrap}.terminal-brand-divider{display:none}.terminal-topbar{gap:6px}.terminal-brand{gap:8px}.terminal-chart-note{line-height:1.4}}
 @media(max-width:420px){.terminal-connection{max-width:54px;line-height:1.15;gap:4px}.terminal-connection-dot{flex-shrink:0}.terminal-topbar-actions{gap:3px}.terminal-back{gap:3px}.terminal-top-button{padding:0 5px}.terminal-brand strong{font-size:13px}}
+
+/* The isolated terminal shares the site's two themes while keeping its
+   workbench geometry and independent scrolling intact. */
+.terminal-page--soft{--terminal-bg:#f4f7f4;--terminal-surface:#fff;--terminal-surface-2:#edf3ee;--terminal-line:#dbe5dd;--terminal-line-soft:#e7eee8;--terminal-text:#17231c;--terminal-muted:#68786e;--terminal-faint:#91a096;--terminal-green:#3f7651;--terminal-green-dark:#e3efe4;--terminal-amber:#9a6f28;--terminal-red:#a6534c;--terminal-chart-bg:#f7f9f7;--terminal-chart-text:#24382b;--terminal-chart-muted:#718278;--terminal-chart-link:#3f7651;--terminal-chart-link-hover:#2d5d3c;--terminal-chart-overlay:rgba(244,247,244,.96);background:var(--terminal-bg);color:var(--terminal-text)}
+.terminal-page--soft .terminal-topbar,.terminal-page--soft .terminal-mobile-tabs{background:#fff}
+.terminal-page--soft .terminal-divider{background:#edf3ee}
+.terminal-page--soft .terminal-chart-area{background:var(--terminal-bg)}
+.terminal-page--soft .terminal-chart-host{background:#fff}
+.terminal-page--soft .terminal-filterbar select,.terminal-page--soft .terminal-filter-search input,.terminal-page--soft .workbench-manager input,.terminal-page--soft .workbench-manager select,.terminal-page--soft .workbench-window-filterbar select{background:#fff;color:var(--terminal-text)}
+.terminal-page--soft .terminal-filter-search,.terminal-page--soft .workbench-window-filterbar .terminal-filter-search{background:#fff}
+.terminal-page--soft .terminal-mobile-tabs button.active{background:var(--terminal-green-dark);color:var(--terminal-green)}
+.terminal-page--soft .workbench-event-title{color:var(--terminal-text)}
+.terminal-page--soft .workbench-event-tags span{border-color:#cbdccf;color:#4f7b5c}
+.terminal-page--soft .workbench-inline-error{background:#fff1ef;border-color:#e6c4bf;color:#9a514a}
+.terminal-page--soft .workbench-login-note{background:#f0f6f1;border-color:#cfe0d2}
+.terminal-page--soft .workbench-manager,.terminal-page--soft .workbench-smart-manager{background:#f0f5f1;border-color:#bdd2c1}
+.terminal-page--soft .workbench-primary{background:#4f805b;color:#fff;border-color:#6b9a75}
+.terminal-page--soft .terminal-toast{background:#fff8ed;color:#765625;border-color:#e0c89f}
