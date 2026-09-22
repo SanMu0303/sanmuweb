@@ -1,5 +1,6 @@
 "use client";
 import './home.css';
+import './live-light-home.css';
 import Feed from '@/components/Feed';
 import {useResource} from '@/lib/live';
 import type {Post} from '@/lib/posts';
