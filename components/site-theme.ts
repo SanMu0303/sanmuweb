@@ -11,6 +11,7 @@ export function readSiteTheme(): SiteTheme {
   if (typeof window === "undefined") return "soft";
   const queryTheme = new URLSearchParams(window.location.search).get("theme");
   if (queryTheme === "dark" || queryTheme === "classic") return "dark";
+  if (queryTheme === "soft" || queryTheme === "light") return "soft";
   try {
     return window.localStorage.getItem(STORAGE_KEY) === "dark" ? "dark" : "soft";
   } catch {
@@ -31,4 +32,3 @@ export function writeSiteTheme(theme: SiteTheme) {
   else url.searchParams.set("theme", "dark");
   window.history.replaceState({}, "", url);
 }
-
