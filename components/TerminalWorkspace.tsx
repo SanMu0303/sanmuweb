@@ -83,7 +83,20 @@ export default function TerminalWorkspace() {
   const previousIds=useRef<Record<Panel,Set<string>>>({market:new Set(),selected:new Set(),smart:new Set()}); const lastSuccess=useRef<Record<Panel,number|undefined>>({market:undefined,selected:undefined,smart:undefined}); const initialized=useRef<Record<Panel,boolean>>({market:false,selected:false,smart:false}); const latestFeeds=useRef<Record<Panel,FeedResponse|null>>({market:null,selected:null,smart:null}); const scrollElements=useRef<Record<Panel,HTMLDivElement|null>>({market:null,selected:null,smart:null}); const lastBeepAt=useRef(0); const scrollAtLatest=useRef<Record<Panel,boolean>>({market:true,selected:true,smart:true}); const splitRef=useRef(split); const panelSizesRef=useRef(panelSizes); const audioContext=useRef<AudioContext|null>(null);
 
   const refreshConfig=useCallback(async()=>{setConfigLoading(true);try{const current=await request<ConfigResponse>("/api/terminal/config");setConfigError("");setConfig(current.config);setCapabilities(current.capabilities);setVolumeDraft(current.config.preferences.volume);setSplit(current.config.preferences.splitRatio);setPanelSizes(current.config.preferences.panelSizes);}catch(e){const err=e as Err;if(err.status!==401)setConfigError(errorMessage(e));}finally{setConfigLoading(false);}},[]);
-  useEffect(()=>{void request<Session>("/api/session").then(setSession).catch(()=>setSession({signedIn:false}));void refreshConfig();},[refreshConfig]);
+  useEffect(()=>{
+    let active=true;
+    void request<Session>("/api/session").then(current=>{
+      if(!active)return;
+      setSession(current);
+      if(current.signedIn)void refreshConfig();
+      else setConfigLoading(false);
+    }).catch(()=>{
+      if(!active)return;
+      setSession({signedIn:false});
+      setConfigLoading(false);
+    });
+    return()=>{active=false;};
+  },[refreshConfig]);
   const playTone=useCallback((panel:Panel,force=false)=>{if(volumeDraft<=0||(!force&&(!audioActive||!config.preferences.sound||!config.preferences.panelSound[panel])))return;try{const A=window.AudioContext||(window as typeof window & {webkitAudioContext?:typeof AudioContext}).webkitAudioContext;if(!A)return;const ctx=audioContext.current||new A();audioContext.current=ctx;void ctx.resume();const o=ctx.createOscillator();const g=ctx.createGain();o.frequency.value=panel==="smart"?740:620;g.gain.setValueAtTime(.0001,ctx.currentTime);g.gain.exponentialRampToValueAtTime(Math.max(.015,volumeDraft*.06),ctx.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.18);o.connect(g).connect(ctx.destination);o.start();o.stop(ctx.currentTime+.2);}catch{/* user gesture required */}},[audioActive,config.preferences,volumeDraft]);
   const setPanelError=(panel:Panel,message:string)=>setFeedErrors(current=>({...current,[panel]:message}));
   // Polling reads current UI preferences through a ref. Feed updates must not
