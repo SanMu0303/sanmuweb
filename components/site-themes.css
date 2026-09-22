@@ -31,8 +31,11 @@
   --site-faint: #91a096;
   --site-accent: #3f7651;
   --site-accent-soft: #e3efe4;
+  --site-topbar-bg: rgba(255, 255, 255, .86);
   color-scheme: light;
 }
+
+.site-shell--dark { --site-topbar-bg: rgba(16, 18, 20, .92); }
 
 .site-shell .workspace {
   min-height: 100dvh;
@@ -64,7 +67,7 @@
   height: 58px;
   width: 100%;
   padding: 0 clamp(18px, 3vw, 48px);
-  background: color-mix(in srgb, var(--site-panel) 90%, transparent);
+  background: var(--site-topbar-bg);
   border-bottom: 1px solid var(--site-line);
   color: var(--site-muted);
   backdrop-filter: blur(10px);
@@ -74,35 +77,39 @@
 .site-shell .account-links { font-size: 12px; }
 .site-shell .topbar-location { display: flex; align-items: center; gap: 22px; min-width: 0; }
 .site-shell .site-topbar-brand { display: inline-flex; align-items: center; gap: 10px; min-width: 220px; color: var(--site-ink); text-decoration: none; }
-.site-shell .site-topbar-mark { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--site-accent-soft); color: var(--site-accent); font-size: 16px; font-weight: 700; line-height: 1; }
-.site-shell .site-topbar-brand strong { display: block; color: var(--site-ink); font-size: 14px; line-height: 1.15; letter-spacing: .02em; }
-.site-shell .site-topbar-brand small { display: block; margin-top: 3px; color: var(--site-faint); font-size: 8px; font-weight: 500; letter-spacing: .16em; line-height: 1; }
+.site-shell .site-topbar-mark { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; background: #dcebdc; color: var(--site-accent); font-size: 16px; font-weight: 700; line-height: 1; }
+.site-shell--dark .site-topbar-mark { background: #29352a; }
+.site-shell .site-topbar-brand strong { display: block; color: var(--site-ink); font-size: 14px; line-height: 1.2; letter-spacing: .04em; }
+.site-shell .site-topbar-brand small { display: block; margin-top: 2px; color: var(--site-faint); font-size: 8px; font-weight: 500; letter-spacing: .16em; line-height: 1; }
 .site-shell .site-topbar-meta { display: inline-flex; align-items: center; gap: 7px; margin-left: 0; color: var(--site-muted); font-size: 11px; line-height: 1; white-space: nowrap; }
-.site-shell .site-live-dot { display: inline-block; width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #79a765; box-shadow: 0 0 0 3px rgb(121 167 101 / 15%); }
+.site-shell .site-live-dot { display: inline-block; width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: #79a765; box-shadow: 0 0 0 3px rgb(121 167 101 / 15%); }
 .site-shell .mobile-menu-toggle { color: var(--site-muted); }
 .site-shell .mobile-menu-toggle:hover { color: var(--site-ink); background: var(--site-accent-soft); border-radius: 5px; }
 .site-shell .topbar .muted { color: var(--site-faint); }
-.site-shell .sidebar-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 8px 10px 27px; color: var(--site-ink); }
-.site-shell .sidebar-heading strong { font-size: 14px; font-weight: 650; letter-spacing: .02em; }
+.site-shell .sidebar-heading { display: block; margin: 0 10px 16px; color: var(--site-ink); }
+.site-shell .sidebar-heading strong { font-size: 11px; font-weight: 650; letter-spacing: .05em; }
 .site-shell .sidebar-heading small { color: var(--site-faint); font-size: 10px; letter-spacing: .14em; }
 .site-shell .sidebar nav { gap: 3px; }
-.site-shell .sidebar nav a { gap: 9px; padding: 9px 10px; border-radius: 5px; color: var(--site-muted); font-size: 12px; }
+.site-shell .sidebar nav a { gap: 9px; padding: 9px 10px; border-radius: 5px; color: var(--site-muted); font-size: 12px; line-height: 1.3; }
 .site-shell .sidebar nav a span { min-width: 0; overflow-wrap: anywhere; }
 .site-shell .sidebar nav a:hover,
-.site-shell .sidebar nav a.active { background: var(--site-accent-soft); color: var(--site-accent); }
-.site-shell .side-note { margin: auto 10px 25px; padding-top: 28px; }
-.site-shell .side-note .eyebrow { color: var(--site-accent); font-size: 9px; letter-spacing: .12em; }
-.site-shell .side-note p { color: var(--site-muted); font-size: 11px; line-height: 1.8; margin: 9px 0 12px; }
-.site-shell .side-note small,
-.site-shell .side-bottom { color: var(--site-faint); font-size: 10px; }
-.site-shell .rule { border-color: var(--site-line-strong); margin-bottom: 12px; }
-.site-shell .sidebar-account-links { border-top: 1px solid var(--site-line); padding-top: 7px; margin: 0 0 7px; }
-.site-shell .member-nav { gap: 8px; padding: 9px 10px; border-top: 0; color: var(--site-accent); font-size: 12px; }
+.site-shell .sidebar nav a.active { background: #deecdf; color: var(--site-accent); }
+.site-shell--dark .sidebar nav a:hover,
+.site-shell--dark .sidebar nav a.active { background: #242a24; }
+.site-shell .side-note { margin: auto 10px 0; padding: 22px 10px 20px; }
+.site-shell .side-note .eyebrow { color: #9aaa9e; font-size: 8px; letter-spacing: .13em; }
+.site-shell .side-note p { color: var(--site-faint); font-size: 10px; line-height: 1.7; margin: 9px 0 12px; }
+.site-shell .side-note i { display: block; width: 24px; border-top: 1px solid var(--site-line-strong); }
+.site-shell .side-bottom { display: flex; align-items: center; gap: 7px; color: var(--site-faint); font-size: 10px; }
+.site-shell .sidebar-account-links { border-top: 1px solid var(--site-line); padding-top: 2px; margin: 0; }
+.site-shell .member-nav { gap: 8px; padding: 11px 10px 7px; border-top: 0; color: var(--site-accent); font-size: 12px; }
 .site-shell .member-nav span { flex: 1; }
-.site-shell .admin-entry { display: flex; align-items: center; gap: 9px; color: var(--site-muted); font-size: 11px; padding: 8px 10px; border-radius: 5px; }
+.site-shell .admin-entry { display: flex; align-items: center; gap: 8px; color: var(--site-muted); font-size: 11px; padding: 6px 10px; border-radius: 5px; }
 .site-shell .admin-entry:hover,
 .site-shell .admin-entry.active { background: var(--site-accent-soft); color: var(--site-accent); }
-.site-shell .side-bottom { padding: 10px; }
+.site-shell .side-bottom { padding: 13px 10px 0; }
+.site-shell .sidebar { background: #eef4ef; }
+.site-shell--dark .sidebar { background: #121416; }
 
 .site-theme-toggle {
   display: inline-flex;
@@ -245,7 +252,7 @@
 /* The mobile drawer reuses the same research-workbench navigation as the
    fixed desktop rail. Keep its account links aligned and free of the old
    brand/section-number treatment. */
-.site-shell .drawer-content .sidebar-heading { margin: 28px 10px 27px; }
+.site-shell .drawer-content .sidebar-heading { margin: 0 10px 16px; }
 .site-shell .drawer-content .sidebar-account-links { margin-top: 0; }
 .site-shell .drawer-content .member-nav,
 .site-shell .drawer-content .admin-entry { display: flex; align-items: center; }

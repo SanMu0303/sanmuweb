@@ -49,8 +49,8 @@ export default function LiveLightHomeShell({children}: {children: React.ReactNod
         <div className="light-home-sidebar-note"><span>THE PROCESS MATTERS</span><p>观察。等待。执行。<br/>让每一次判断都有迹可循。</p><i/></div>
         <div className="light-home-account-links" aria-label="账户入口">
           <Link className="light-home-member-link" href="/membership/"><UserRound size={16}/><span>会员中心</span><ArrowUpRight size={14}/></Link>
-          {session.data?.signedIn && <Link className="light-home-account-sub-link" href="/profile/"><span>个人中心</span><ArrowUpRight size={13}/></Link>}
-          {session.data?.isAdmin && <Link className="light-home-account-sub-link" href="/admin/"><span>内容管理</span><ArrowUpRight size={13}/></Link>}
+          {session.data?.signedIn && <Link className="light-home-account-sub-link" href="/profile/"><UserRound size={16}/><span>个人中心</span><ArrowUpRight size={13}/></Link>}
+          {session.data?.isAdmin && <Link className="light-home-account-sub-link" href="/admin/"><NotebookPen size={16}/><span>内容管理</span><ArrowUpRight size={13}/></Link>}
         </div>
         <div className="light-home-sidebar-foot"><span className="light-home-live-dot"/>{theme === "dark" ? "暗色界面已启用" : "柔和亮面已启用"}</div>
       </aside>
