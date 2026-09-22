@@ -1,5 +1,6 @@
 import type {Metadata} from 'next';
 import './globals.css';
+import '@/components/site-themes.css';
 import '@/components/membership.css';
 import '@/components/session-security.css';
 import RouteFrame from '@/components/RouteFrame';
