@@ -27,8 +27,8 @@
   --site-line: #dbe5dd;
   --site-line-strong: #c4d3c8;
   --site-ink: #17231c;
-  --site-muted: #6d7d72;
-  --site-faint: #91a096;
+  --site-muted: #53645a;
+  --site-faint: #718077;
   --site-accent: #3f7651;
   --site-accent-soft: #e3efe4;
   --site-topbar-bg: rgba(255, 255, 255, .86);
@@ -139,7 +139,7 @@
 .site-shell .login-pill { border-color: var(--site-line-strong); color: var(--site-accent); font-size: 11px; }
 
 .site-shell main {
-  width: min(1380px, 100%);
+  width: min(1680px, calc(100% - 48px));
   max-width: none;
   margin: 0 auto;
   padding: 26px clamp(22px, 3.5vw, 58px) 54px;
@@ -214,6 +214,43 @@
 .site-shell .list-end,
 .site-shell .quiet { color: var(--site-muted); }
 
+/* Soft-theme chips keep metadata legible without turning the footer into a
+   second content block. Dates remain plain text; market, stage and topic
+   labels use the same compact chip geometry and wrap as a group. */
+.site-shell--soft .record-bottom-meta,
+.site-shell--soft .record-tags { gap: 6px 8px; row-gap: 6px; }
+.site-shell--soft .record-bottom-meta > * + *::before { content: none; }
+.site-shell--soft .record-bottom-meta > a,
+.site-shell--soft .record-bottom-meta > span:not(.record-stage):not(.record-type):not(.record-pin),
+.site-shell--soft .record-stage,
+.site-shell--soft .record-type,
+.site-shell--soft .record-pin,
+.site-shell--soft .record-tags a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 4px 8px;
+  border: 1px solid #b9cdbd;
+  border-radius: 7px;
+  background: #eef5ef;
+  color: #294735;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.site-shell--soft .record-stage { background: #e7f2e7; border-color: #a9c6ad; color: #315d3d; }
+.site-shell--soft .record-type { background: #f1f3ec; border-color: #c9d3c5; color: #53634f; }
+.site-shell--soft .record-pin { background: #f8f0dc; border-color: #d8c49a; color: #76591f; }
+.site-shell--soft .record-tags a { background: #f2f5ef; border-color: #c2d0c3; color: #3c5943; }
+.site-shell--soft .member-content-mask { background: #e8f0e9; border-color: #c2d5c6; }
+.site-shell--soft .member-content-mask::after { background: linear-gradient(180deg, #e6eee688, #dce8dfeb); }
+.site-shell--soft .member-content-mask-panel { background: linear-gradient(180deg, #eef5ef22, #e8f0e9db 70%, #e3ede5f5); }
+.site-shell--soft .member-content-mask-panel strong,
+.site-shell--soft .member-content-mask-compact-title { color: #294735; }
+.site-shell--soft .member-content-mask-compact-entry { color: #4a7255; text-decoration-color: #a5c2aa; }
+.site-shell--soft .member-content-mask-body span { color: #66806d; }
+
 /* The dark version retains the original palette but uses the compact soft
    theme's type scale and spacing. */
 .site-shell--dark { color-scheme: dark; }
@@ -231,7 +268,7 @@
 @media (max-width: 1200px) {
   .site-shell .sidebar { width: 190px; }
   .site-shell .workspace { margin-left: 190px; }
-  .site-shell main { padding-inline: 26px; }
+  .site-shell main { width: calc(100% - 40px); padding-inline: 20px; }
 }
 @media (max-width: 760px) {
   .site-shell .sidebar { display: none; }
@@ -243,7 +280,7 @@
   .site-shell .site-topbar-mark { width: 28px; height: 28px; font-size: 15px; }
   .site-shell .site-topbar-brand strong { font-size: 13px; }
   .site-shell .site-topbar-brand small { font-size: 7px; }
-  .site-shell main { padding: 20px 16px 40px; }
+  .site-shell main { width: 100%; padding: 20px 16px 40px; }
   .site-shell .account-links > a:not(.account-identity) { display: none; }
   .site-shell .site-theme-toggle { min-height: 32px; padding-inline: 7px; font-size: 10px; }
   .site-shell .page-heading h1,

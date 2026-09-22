@@ -1,8 +1,6 @@
 "use client";
 
-import Link from 'next/link';
 import {LockKeyhole} from 'lucide-react';
-import {useEffect, useState} from 'react';
 
 type MemberContentMaskProps = {
   /** Safe text only. The server projection intentionally strips the member body. */
@@ -45,12 +43,6 @@ function safeTopic(value: string | undefined, symbol: string | undefined, kind: 
 export default function MemberContentMask({preview, publicTitle, symbol, showTopic = false, kind = 'post', compact = false, nestedLink = false, maskedLines: _maskedLines, signedIn}: MemberContentMaskProps) {
   const topic = safeTopic(publicTitle, symbol, kind);
   const isWatch = kind === 'watch';
-  const [returnTo, setReturnTo] = useState('/');
-  useEffect(() => {
-    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    setReturnTo(current || '/');
-  }, []);
-  const loginHref = `/login/?returnTo=${encodeURIComponent(returnTo)}`;
   const goMembership = () => window.location.assign(membershipPath);
   const stopAndOpenMembership = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
@@ -62,15 +54,14 @@ export default function MemberContentMask({preview, publicTitle, symbol, showTop
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
+      event.stopPropagation();
       goMembership();
     }
   };
   // Keep the texture deliberately short. It is only a visual cue and must not
   // make a restricted card resemble a full article or push the feed down.
   const rows = compact ? SAFE_ROWS.slice(0, 2) : SAFE_ROWS.slice(0, 3);
-  const promptTitle = isWatch ? '会员专享 · 完整观察记录' : '会员专享 · 完整研究记录';
-  const promptNote = isWatch ? '观察结束后免费公开' : '完整判断与持续更新仅对会员开放';
-  return <section className={`member-content-mask${compact ? ' is-compact' : ''}`} aria-label={isWatch ? '会员专享 · 完整观察记录' : '会员专享 · 完整研究记录'} role="link" tabIndex={0} onClick={stopAndOpenMembership} onKeyDown={handleKeyDown}>
+  return <section className={`member-content-mask${compact ? ' is-compact' : ''}`} aria-label={isWatch ? '正在观察 · 会员专属' : '会员专属'} role="link" tabIndex={0} onClick={stopAndOpenMembership} onKeyDown={handleKeyDown}>
     {showTopic && <div className="member-content-mask-topic">
       <strong>{topic}</strong>
     </div>}
@@ -78,13 +69,8 @@ export default function MemberContentMask({preview, publicTitle, symbol, showTop
       {rows.map((row, index) => <span key={index} style={{width: `${[92, 76, 98, 84][index % 4]}%`}}>{row}</span>)}
     </div>
     <div className="member-content-mask-panel">
-      {compact ? <strong className="member-content-mask-compact-title"><LockKeyhole size={14} strokeWidth={1.8} aria-hidden="true"/>会员专属</strong> : <>
-        <span className="member-content-mask-label">会员专属</span>
-        <strong>{promptTitle}</strong>
-        <small>{promptNote}</small>
-      </>}
-      {compact ? <span className="member-content-mask-compact-entry">查看权益</span> : <button type="button" className="button secondary member-content-mask-cta" onClick={stopAndOpenMembership}>{isWatch ? '开通会员' : '查看会员权益'}</button>}
-      {!compact && signedIn !== true && <Link className="member-content-mask-login" href={loginHref} onClick={event => event.stopPropagation()}>已有会员？登录</Link>}
+      <strong className="member-content-mask-compact-title"><LockKeyhole size={14} strokeWidth={1.8} aria-hidden="true"/>会员专属</strong>
+      <span className="member-content-mask-compact-entry">查看权益 ↗</span>
     </div>
   </section>;
 }
