@@ -33,6 +33,8 @@ export interface TerminalChartProps {
   symbol?: string;
   /** TradingView interval (minutes, D, W or M). */
   interval?: string;
+  /** TradingView theme follows the surrounding terminal theme. */
+  theme?: "dark" | "light";
   className?: string;
   /** "ready" means the embedded frame loaded, not that its market feed is live. */
   onStatusChange?: (status: TerminalChartStatus) => void;
@@ -61,6 +63,7 @@ function normalizeInterval(value?: string) {
 export default function TerminalChart({
   symbol = DEFAULT_SYMBOL,
   interval = DEFAULT_INTERVAL,
+  theme = "dark",
   className,
   onStatusChange,
 }: TerminalChartProps) {
@@ -111,9 +114,9 @@ export default function TerminalChart({
       symbol: tvSymbol,
       interval: tvInterval,
       timezone: "Asia/Shanghai",
-      theme: "dark",
-      backgroundColor: "#101419",
-      gridColor: "rgba(119, 136, 122, 0.14)",
+      theme,
+      backgroundColor: theme === "light" ? "#f4f7f4" : "#101419",
+      gridColor: theme === "light" ? "rgba(63, 118, 81, 0.14)" : "rgba(119, 136, 122, 0.14)",
       style: "1",
       locale: "zh_CN",
       allow_symbol_change: true,
@@ -172,7 +175,7 @@ export default function TerminalChart({
       script.removeEventListener("error", onScriptError);
       host.replaceChildren();
     };
-  }, [tvInterval, tvSymbol, retryToken]);
+  }, [theme, tvInterval, tvSymbol, retryToken]);
 
   const chartClassName = [styles.chart, className].filter(Boolean).join(" ");
   const statusText =

@@ -1,0 +1,221 @@
+/* Shared theme surface for every page that uses the regular site shell.
+   The terminal keeps its isolated workbench skin.  The main site exposes only
+   `soft` and `dark`; all geometry and type scales are shared between them. */
+.site-shell {
+  --site-bg: #101214;
+  --site-panel: #171a1d;
+  --site-panel-soft: #1d2224;
+  --site-line: #292d31;
+  --site-line-strong: #3b4540;
+  --site-ink: #e6e8e8;
+  --site-muted: #939ba1;
+  --site-faint: #737e80;
+  --site-accent: #bbce9a;
+  --site-accent-soft: #293428;
+  min-height: 100dvh;
+  background: var(--site-bg);
+  color: var(--site-ink);
+  font-size: 14px;
+  line-height: 1.6;
+  color-scheme: dark;
+}
+
+.site-shell--soft {
+  --site-bg: #f4f7f4;
+  --site-panel: #ffffff;
+  --site-panel-soft: #edf3ee;
+  --site-line: #dbe5dd;
+  --site-line-strong: #c4d3c8;
+  --site-ink: #17231c;
+  --site-muted: #68786e;
+  --site-faint: #91a096;
+  --site-accent: #3f7651;
+  --site-accent-soft: #e3efe4;
+  color-scheme: light;
+}
+
+.site-shell .workspace {
+  min-height: 100dvh;
+  margin-left: 214px;
+  background: var(--site-bg);
+  color: var(--site-ink);
+}
+
+.site-shell .sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  width: 214px;
+  height: 100dvh;
+  overflow-y: auto;
+  padding: 28px 17px 20px;
+  background: var(--site-panel-soft);
+  border-right: 1px solid var(--site-line);
+  color: var(--site-ink);
+}
+
+.site-shell .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 58px;
+  padding: 0 clamp(18px, 3vw, 48px);
+  background: color-mix(in srgb, var(--site-panel) 90%, transparent);
+  border-bottom: 1px solid var(--site-line);
+  color: var(--site-muted);
+  backdrop-filter: blur(10px);
+}
+
+.site-shell .topbar-location,
+.site-shell .account-links { font-size: 12px; }
+.site-shell .topbar-location { display: flex; align-items: center; gap: 9px; }
+.site-shell .topbar .muted { color: var(--site-faint); }
+.site-shell .brand { color: var(--site-ink); font-size: 14px; }
+.site-shell .brand small { color: var(--site-faint); font-size: 8px; letter-spacing: .16em; }
+.site-shell .logo { color: var(--site-accent); }
+.site-shell .nav-label { color: var(--site-faint); font-size: 10px; letter-spacing: .12em; margin: 30px 10px 12px; }
+.site-shell .sidebar nav { gap: 3px; }
+.site-shell .sidebar nav a { gap: 9px; padding: 9px 10px; border-radius: 5px; color: var(--site-muted); font-size: 12px; }
+.site-shell .sidebar nav a:hover,
+.site-shell .sidebar nav a.active { background: var(--site-accent-soft); color: var(--site-accent); }
+.site-shell .side-note { margin: auto 10px 25px; padding-top: 28px; }
+.site-shell .side-note .eyebrow { color: var(--site-accent); font-size: 9px; letter-spacing: .12em; }
+.site-shell .side-note p { color: var(--site-muted); font-size: 11px; line-height: 1.8; margin: 9px 0 12px; }
+.site-shell .side-note small,
+.site-shell .side-bottom { color: var(--site-faint); font-size: 10px; }
+.site-shell .rule { border-color: var(--site-line-strong); margin-bottom: 12px; }
+.site-shell .member-nav { gap: 8px; padding: 13px 10px; border-color: var(--site-line); color: var(--site-accent); font-size: 12px; }
+.site-shell .admin-entry { color: var(--site-accent); font-size: 11px; padding: 8px 10px; }
+.site-shell .side-bottom { padding: 10px; }
+
+.site-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 1px solid var(--site-line-strong);
+  border-radius: 5px;
+  background: var(--site-panel);
+  color: var(--site-muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.site-theme-toggle:hover,
+.site-theme-toggle[aria-pressed="true"] { border-color: var(--site-accent); background: var(--site-accent-soft); color: var(--site-accent); }
+.site-shell .account-links { gap: 9px; }
+.site-shell .account-links > a { color: var(--site-muted); }
+.site-shell .account-identity { color: var(--site-ink) !important; }
+.site-shell .account-identity img,
+.site-shell .account-initial { width: 25px; height: 25px; border-radius: 50%; object-fit: cover; }
+.site-shell .account-initial { display: grid; place-items: center; background: var(--site-accent-soft); color: var(--site-accent); }
+.site-shell .login-pill { border-color: var(--site-line-strong); color: var(--site-accent); font-size: 11px; }
+
+.site-shell main {
+  width: min(1380px, 100%);
+  max-width: none;
+  margin: 0 auto;
+  padding: 26px clamp(22px, 3.5vw, 58px) 54px;
+  color: var(--site-ink);
+  font-size: 14px;
+}
+.site-shell main :where(h1, h2, h3, h4, strong, b) { color: var(--site-ink); }
+.site-shell main :where(p, li, label, dt, dd) { color: var(--site-muted); }
+.site-shell main :where(a) { color: var(--site-accent); }
+.site-shell main :where(input, select, textarea) { color: var(--site-ink); background: var(--site-panel); border-color: var(--site-line-strong); }
+.site-shell main :where(input, select, textarea)::placeholder { color: var(--site-faint); }
+.site-shell .muted { color: var(--site-muted); }
+.site-shell footer { background: var(--site-bg); border-color: var(--site-line); color: var(--site-faint); font-size: 10px; padding: 18px clamp(18px, 3vw, 48px); }
+
+/* Shared page headers and reading scale.  Both themes use the same compact
+   dimensions so changing theme never shifts the page structure. */
+.site-shell .page-heading,
+.site-shell .studio-heading,
+.site-shell .member-management-heading,
+.site-shell .terminal-heading { margin-bottom: 18px; }
+.site-shell .page-heading h1,
+.site-shell .studio-heading h1,
+.site-shell .member-management-heading h1,
+.site-shell .terminal-heading h1 { font-size: clamp(26px, 2.2vw, 34px); line-height: 1.25; margin: 5px 0 6px; }
+.site-shell .page-heading p,
+.site-shell .studio-heading p,
+.site-shell .member-management-heading p,
+.site-shell .terminal-heading p { color: var(--site-muted); font-size: 12px; line-height: 1.55; }
+.site-shell .terminal-heading { align-items: flex-end; padding-bottom: 2px; }
+.site-shell .terminal-heading .eyebrow,
+.site-shell .page-heading .eyebrow,
+.site-shell .studio-heading .eyebrow { color: var(--site-accent); font-size: 10px; letter-spacing: .14em; }
+
+/* Common surfaces used by the archive, watchlist, library and account pages. */
+.site-shell :where(.watch-card, .watch-observation-card, .observation, .member-status, .course-intro > div, .studio-item, .studio-list, .video-card, .learning-current, .learning-resume, .notice, .watch-history-entry, .watch-map-root, .watch-map-node .watch-history-entry, .watch-member-preview, .member-preview-note, .compact-member-note, .member-gate) {
+  background: var(--site-panel);
+  border-color: var(--site-line);
+  color: var(--site-ink);
+}
+.site-shell :where(.watch-card, .watch-observation-card) h2,
+.site-shell :where(.watch-card, .watch-observation-card) h3,
+.site-shell :where(.watch-card, .watch-observation-card) strong { color: var(--site-ink); }
+.site-shell :where(.watch-card, .watch-observation-card) p,
+.site-shell :where(.observation, .member-status, .video-card, .learning-current, .learning-resume) p { color: var(--site-muted); }
+.site-shell .watch-observation-card.is-ended { background: var(--site-panel-soft); opacity: 1; }
+.site-shell .watch-detail-header,
+.site-shell .symbol-heading { border-color: var(--site-line); }
+.site-shell .watch-map::before,
+.site-shell .watch-map-node::before { background: var(--site-line-strong); }
+.site-shell .watch-map-node::after { background: var(--site-panel); border-color: var(--site-accent); box-shadow: 0 0 0 4px var(--site-bg); }
+.site-shell .watch-map-node .watch-history-entry { box-shadow: 0 4px 14px color-mix(in srgb, var(--site-ink) 8%, transparent); }
+.site-shell :where(.section-line, .feed-tools, .studio-tabs, .library-tabs, .course-lesson, .rail-section, .archive-selection) { border-color: var(--site-line); }
+.site-shell :where(.filters button, .studio-tabs button, .library-tabs button, .archive-nav button) { color: var(--site-muted); }
+.site-shell :where(.filters button.selected, .studio-tabs .selected, .library-tabs button.active, .archive-nav .current, .archive-nav .expanded) { background: var(--site-accent-soft); color: var(--site-accent); }
+.site-shell :where(.post, .research-record) { border-color: var(--site-line); }
+.site-shell .post-title { color: var(--site-ink); font-size: 16px; }
+.site-shell .post p,
+.site-shell .record-body p,
+.site-shell .record-summary,
+.site-shell .record-preview p { color: var(--site-muted); font-size: 14px; line-height: 1.75; }
+.site-shell .record-title,
+.site-shell .record-heading,
+.site-shell .record-body h4 { color: var(--site-ink); }
+.site-shell .record-bottom-meta,
+.site-shell .record-tags,
+.site-shell .record-footline,
+.site-shell .timeframe,
+.site-shell .section-line > span { color: var(--site-faint); }
+.site-shell .record-tags a,
+.site-shell .record-bottom-meta a { color: var(--site-accent); }
+.site-shell .empty,
+.site-shell .list-end,
+.site-shell .quiet { color: var(--site-muted); }
+
+/* The dark version retains the original palette but uses the compact soft
+   theme's type scale and spacing. */
+.site-shell--dark { color-scheme: dark; }
+.site-shell--dark main { font-size: 14px; }
+.site-shell--dark .post { padding: 17px 0; }
+.site-shell--dark .post p,
+.site-shell--dark .reading section p,
+.site-shell--dark .record-body p,
+.site-shell--dark .record-summary { font-size: 14px; line-height: 1.75; }
+.site-shell--dark .watch-card,
+.site-shell--dark .watch-observation-card,
+.site-shell--dark .observation,
+.site-shell--dark .member-status { background: var(--site-panel); }
+
+@media (max-width: 1200px) {
+  .site-shell .sidebar { width: 190px; }
+  .site-shell .workspace { margin-left: 190px; }
+  .site-shell main { padding-inline: 26px; }
+}
+@media (max-width: 760px) {
+  .site-shell .sidebar { display: none; }
+  .site-shell .workspace { margin-left: 0; }
+  .site-shell .topbar { height: 56px; padding-inline: 14px; }
+  .site-shell main { padding: 20px 16px 40px; }
+  .site-shell .account-links > a:not(.account-identity) { display: none; }
+  .site-shell .site-theme-toggle { min-height: 32px; padding-inline: 7px; font-size: 10px; }
+  .site-shell .page-heading h1,
+  .site-shell .studio-heading h1,
+  .site-shell .member-management-heading h1,
+  .site-shell .terminal-heading h1 { font-size: 26px; }
+  .site-shell footer { flex-direction: column; gap: 8px; padding-bottom: 24px; }
+}

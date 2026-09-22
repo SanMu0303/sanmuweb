@@ -4,8 +4,7 @@ import Link from "next/link";
 import {useEffect, useState} from "react";
 import {Activity, BookOpen, Compass, LineChart, NotebookPen, UserRound} from "lucide-react";
 import {useResource} from "@/lib/live";
-
-type Theme = "airy" | "classic";
+import {readSiteTheme, writeSiteTheme, type SiteTheme} from "@/components/site-theme";
 
 const navigation = [
   ["/", "最新内容", Compass],
@@ -15,30 +14,18 @@ const navigation = [
   ["/knowledge/", "知识库 / 课程", BookOpen],
 ] as const;
 
-function readTheme(): Theme {
-  if (typeof window === "undefined") return "airy";
-  return new URLSearchParams(window.location.search).get("theme") === "classic" ? "classic" : "airy";
-}
-
-function writeTheme(theme: Theme) {
-  const url = new URL(window.location.href);
-  if (theme === "airy") url.searchParams.delete("theme");
-  else url.searchParams.set("theme", theme);
-  window.history.replaceState({}, "", url);
-}
-
 export default function LiveLightHomeShell({children}: {children: React.ReactNode}) {
   const session = useResource<{signedIn?: boolean; nickname?: string; avatarUrl?: string}>("/api/session");
-  const [theme, setTheme] = useState<Theme>("airy");
+  const [theme, setTheme] = useState<SiteTheme>("soft");
 
-  useEffect(() => setTheme(readTheme()), []);
+  useEffect(() => setTheme(readSiteTheme()), []);
   const toggleTheme = () => {
-    const next: Theme = theme === "airy" ? "classic" : "airy";
+    const next: SiteTheme = theme === "soft" ? "dark" : "soft";
     setTheme(next);
-    writeTheme(next);
+    writeSiteTheme(next);
   };
 
-  return <div className={`light-home-live${theme === "classic" ? " light-home-live--classic" : ""}`}>
+  return <div className={`light-home-live${theme === "dark" ? " light-home-live--dark" : ""}`} data-theme={theme}>
     <header className="light-home-topbar">
       <Link href="/" className="light-home-brand" aria-label="三木趋势首页">
         <span className="light-home-mark">三</span>
@@ -46,8 +33,8 @@ export default function LiveLightHomeShell({children}: {children: React.ReactNod
       </Link>
       <div className="light-home-topbar-meta"><span className="light-home-live-dot"/>研究空间 · 持续记录</div>
       <div className="light-home-account">
-        <button type="button" className="light-home-theme-toggle" aria-pressed={theme === "classic"} onClick={toggleTheme} title="切换首页亮面风格">
-          <span aria-hidden="true">{theme === "airy" ? "◌" : "☼"}</span>{theme === "airy" ? "普通亮面" : "柔和亮面"}
+        <button type="button" className="light-home-theme-toggle" aria-pressed={theme === "dark"} onClick={toggleTheme} title="切换界面风格">
+          <span aria-hidden="true">{theme === "soft" ? "☾" : "☼"}</span>{theme === "soft" ? "暗色风格" : "柔和亮面"}
         </button>
         {session.data?.signedIn ? <Link href="/profile/" className="light-home-account-link">
           {session.data.avatarUrl ? <img src={session.data.avatarUrl} alt=""/> : <span className="light-home-account-initial">{session.data.nickname?.slice(0, 1) || "研"}</span>}
@@ -61,7 +48,7 @@ export default function LiveLightHomeShell({children}: {children: React.ReactNod
         <nav>{navigation.map(([href, label, Icon], index) => <Link key={href} href={href} className={index === 0 ? "active" : undefined} aria-current={index === 0 ? "page" : undefined}><Icon size={16}/><span>{label}</span><small>{String(index + 1).padStart(2, "0")}</small></Link>)}</nav>
         <div className="light-home-sidebar-note"><span>THE PROCESS MATTERS</span><p>观察。等待。执行。<br/>让每一次判断都有迹可循。</p><i/></div>
         <Link className="light-home-member-link" href="/membership/"><UserRound size={16}/>会员中心 <b>↗</b></Link>
-        <div className="light-home-sidebar-foot"><span className="light-home-live-dot"/>亮色界面已启用</div>
+        <div className="light-home-sidebar-foot"><span className="light-home-live-dot"/>{theme === "dark" ? "暗色界面已启用" : "柔和亮面已启用"}</div>
       </aside>
       <main className="light-home-main">{children}</main>
     </div>

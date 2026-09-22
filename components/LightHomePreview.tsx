@@ -4,9 +4,9 @@ import {useEffect, useMemo, useState} from 'react';
 import PostCard from './PostCard';
 import type {Post} from '@/lib/posts';
 import styles from './LightHomePreview.module.css';
+import {readSiteTheme, writeSiteTheme, type SiteTheme} from './site-theme';
 
 type Category = 'all' | 'public' | 'member';
-type Theme = 'airy' | 'classic';
 const categoryLabels: Record<Category, string> = {all: '全部', public: '免费内容', member: '会员专属'};
 
 function readCategory(): Category {
@@ -22,21 +22,9 @@ function updateCategory(value: Category) {
   window.history.replaceState({}, '', url);
 }
 
-function readTheme(): Theme {
-  if (typeof window === 'undefined') return 'airy';
-  return new URLSearchParams(window.location.search).get('theme') === 'classic' ? 'classic' : 'airy';
-}
-
-function updateTheme(value: Theme) {
-  const url = new URL(window.location.href);
-  if (value === 'airy') url.searchParams.delete('theme');
-  else url.searchParams.set('theme', value);
-  window.history.replaceState({}, '', url);
-}
-
 export default function LightHomePreview({posts}: {posts: Post[]}) {
   const [category, setCategory] = useState<Category>('all');
-  const [theme, setTheme] = useState<Theme>('airy');
+  const [theme, setTheme] = useState<SiteTheme>('soft');
   const [query, setQuery] = useState('');
   const [notice, setNotice] = useState('');
   const [composerOpen, setComposerOpen] = useState(false);
@@ -44,7 +32,7 @@ export default function LightHomePreview({posts}: {posts: Post[]}) {
 
   useEffect(() => {
     setCategory(readCategory());
-    setTheme(readTheme());
+    setTheme(readSiteTheme());
   }, []);
   const counts = useMemo(() => {
     const publicCount = posts.filter(post => !post.isMemberOnly && !post.locked).length;
@@ -61,9 +49,9 @@ export default function LightHomePreview({posts}: {posts: Post[]}) {
 
   const chooseCategory = (value: Category) => { setCategory(value); updateCategory(value); };
   const chooseTheme = () => {
-    const next: Theme = theme === 'airy' ? 'classic' : 'airy';
+    const next: SiteTheme = theme === 'soft' ? 'dark' : 'soft';
     setTheme(next);
-    updateTheme(next);
+    writeSiteTheme(next);
   };
   const capturePreviewAction = (event: React.MouseEvent<HTMLElement>) => {
     const target = event.target as HTMLElement;
@@ -74,7 +62,7 @@ export default function LightHomePreview({posts}: {posts: Post[]}) {
     }
   };
 
-  return <div className={`${styles.root} ${theme === 'classic' ? styles.classic : ''}`} onClickCapture={capturePreviewAction}>
+  return <div className={`${styles.root} ${theme === 'dark' ? styles.dark : ''}`} data-theme={theme} onClickCapture={capturePreviewAction}>
     <header className={styles.topbar}>
       <div className={styles.wordmark}><span className={styles.mark}>三</span><span>三木趋势</span><small>RESEARCH JOURNAL</small></div>
       <div className={styles.previewPill}>视觉预览 · 示例数据</div>
@@ -116,7 +104,7 @@ export default function LightHomePreview({posts}: {posts: Post[]}) {
       </main>
     </div>
     {composerOpen && <div className={styles.modalBackdrop} role="presentation" onClick={() => setComposerOpen(false)}><section className={styles.composerModal} role="dialog" aria-modal="true" aria-labelledby="composer-title" onClick={event => event.stopPropagation()}><div className={styles.modalTop}><div><span className={styles.sectionKicker}>LOCAL PREVIEW</span><h2 id="composer-title">写一条</h2></div><button type="button" onClick={() => setComposerOpen(false)} aria-label="关闭">×</button></div><textarea value={draft} onChange={event => setDraft(event.target.value)} placeholder="记录今天的观察……" autoFocus/><div className={styles.modalFoot}><span>示例草稿 · 不会写入网站</span><button type="button" className={styles.writeButton} onClick={() => {setComposerOpen(false);setNotice('示例草稿已保存在本次预览中，未写入正式网站。')}}>保存草稿</button></div></section></div>}
-    <div className={styles.themeDock}><span>页面风格</span><button type="button" aria-pressed={theme === 'classic'} onClick={chooseTheme} title="切换首页亮面风格"><span aria-hidden="true">{theme === 'airy' ? '◌' : '☼'}</span>{theme === 'airy' ? '普通亮面' : '柔和亮面'}</button></div>
+    <div className={styles.themeDock}><span>页面风格</span><button type="button" aria-pressed={theme === 'dark'} onClick={chooseTheme} title="切换界面风格"><span aria-hidden="true">{theme === 'soft' ? '☾' : '☼'}</span>{theme === 'soft' ? '暗色风格' : '柔和亮面'}</button></div>
     {notice && <button type="button" className={styles.notice} onClick={() => setNotice('')}>{notice}<span>×</span></button>}
   </div>;
 }
