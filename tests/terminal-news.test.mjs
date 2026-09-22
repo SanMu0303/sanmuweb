@@ -19,6 +19,49 @@ test('RSS parser strips markup and unsafe links without returning raw HTML', () 
   assert.equal(items[0].sourceId, 'demo');
 });
 
+test('RSS CDATA links and RFC dates are decoded before validation and parsing', () => {
+  const rows = parseRss(`<rss><channel><item>
+    <title><![CDATA[Research update]]></title>
+    <link><![CDATA[https://cointelegraph.com/news/example?utm_source=rss&amp;ref=feed]]></link>
+    <pubDate><![CDATA[Mon, 21 Sep 2026 14:00:00 GMT]]></pubDate>
+  </item><item>
+    <title>Policy update</title>
+    <link><![CDATA[https://www.federalreserve.gov/newsevents/pressreleases/example.htm]]></link>
+    <pubDate><![CDATA[ Mon, 21 Sep 2026 10:00:00 -0400 ]]></pubDate>
+  </item></channel></rss>`,{id:'test',name:'Test'});
+  assert.equal(rows[0].url, 'https://cointelegraph.com/news/example?utm_source=rss&ref=feed');
+  assert.equal(rows[0].publishedAt, '2026-09-21T14:00:00.000Z');
+  assert.equal(rows[1].url, 'https://www.federalreserve.gov/newsevents/pressreleases/example.htm');
+  assert.equal(rows[1].publishedAt, '2026-09-21T14:00:00.000Z');
+});
+
+test('CDATA never bypasses unsafe-link checks and unknown dates never become epoch dates', () => {
+  const rows = parseRss(`<rss><channel><item><title>Unsafe</title><link><![CDATA[javascript:alert(1)]]></link><pubDate><![CDATA[not a date]]></pubDate></item>
+    <item><title>Private</title><link><![CDATA[https://127.0.0.1/private]]></link></item>
+    <item><title>Fallback date</title><pubDate></pubDate><dc:date><![CDATA[2026-09-21T14:00:00Z]]></dc:date></item></channel></rss>`,{id:'test',name:'Test'});
+  assert.equal(rows[0].url, '');
+  assert.equal(rows[1].url, '');
+  assert.equal(rows[0].publishedAt, '');
+  assert.equal(rows[1].publishedAt, '');
+  assert.equal(rows[2].publishedAt, '2026-09-21T14:00:00.000Z');
+});
+
+test('unknown publication dates sort last and remain pageable without fabricating a timestamp', async () => {
+  const service = createTerminalNews({resolver,fetchImpl:async()=>new Response(feed([
+    {id:'unknown-a',title:'Unknown A',summary:'A',url:'https://example.com/a',date:''},
+    {id:'known',title:'Known',summary:'K',url:'https://example.com/k',date:'2026-09-21T14:00:00Z'},
+    {id:'unknown-b',title:'Unknown B',summary:'B',url:'https://example.com/b',date:'invalid'},
+  ]))});
+  const sources=[{id:'test',kind:'rss',name:'Test',address:'https://feed.test/feed.xml'}];
+  const first=await service.query(sources,{limit:1});
+  const second=await service.query(sources,{limit:1,cursor:first.nextCursor});
+  const third=await service.query(sources,{limit:1,cursor:second.nextCursor});
+  assert.deepEqual([first,second,third].map(page=>page.items[0].id),['known','unknown-a','unknown-b']);
+  assert.equal(second.items[0].publishedAt,'');
+  assert.equal(third.items[0].publishedAt,'');
+  assert.equal(third.nextCursor,null);
+});
+
 test('GET query returns bounded, deduplicated items and source statuses', async () => {
   const calls = [];
   const fetchImpl = async url => {
