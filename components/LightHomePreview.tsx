@@ -80,7 +80,7 @@ export default function LightHomePreview({posts}: {posts: Post[]}) {
     </header>
     <div className={styles.layout}>
       <aside className={styles.nav} aria-label="预览导航">
-        <div className={styles.navTitle}><span>研究工作台</span><small>SPACE</small></div>
+        <div className={styles.navTitle}>研究工作台</div>
         <nav>
           {previewNavigation.map(([item, Icon], index) => <button key={item} type="button" className={index === 0 ? styles.activeNav : ''} onClick={() => index === 0 ? undefined : setNotice('本次仅制作首页亮色版本，其他页面暂不包含在预览中。')}><Icon size={16}/><span>{item}</span></button>)}
         </nav>

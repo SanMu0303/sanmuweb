@@ -44,7 +44,7 @@ export default function LiveLightHomeShell({children}: {children: React.ReactNod
     </header>
     <div className="light-home-body">
       <aside className="light-home-sidebar" aria-label="研究空间导航">
-        <div className="light-home-sidebar-title">研究工作台 <small>SPACE</small></div>
+        <div className="light-home-sidebar-title">研究工作台</div>
         <nav>{navigation.map(([href, label, Icon], index) => <Link key={href} href={href} className={index === 0 ? "active" : undefined} aria-current={index === 0 ? "page" : undefined}><Icon size={16}/><span>{label}</span></Link>)}</nav>
         <div className="light-home-sidebar-note"><span>THE PROCESS MATTERS</span><p>观察。等待。执行。<br/>让每一次判断都有迹可循。</p><i/></div>
         <div className="light-home-account-links" aria-label="账户入口">

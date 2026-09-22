@@ -68,7 +68,13 @@
 
 .site-shell .topbar-location,
 .site-shell .account-links { font-size: 12px; }
-.site-shell .topbar-location { display: flex; align-items: center; gap: 9px; }
+.site-shell .topbar-location { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.site-shell .site-topbar-brand { display: inline-flex; align-items: center; gap: 9px; min-width: max-content; color: var(--site-ink); text-decoration: none; }
+.site-shell .site-topbar-mark { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--site-accent-soft); color: var(--site-accent); font-size: 16px; font-weight: 700; line-height: 1; }
+.site-shell .site-topbar-brand strong { display: block; color: var(--site-ink); font-size: 14px; line-height: 1.15; letter-spacing: .02em; }
+.site-shell .site-topbar-brand small { display: block; margin-top: 3px; color: var(--site-faint); font-size: 8px; font-weight: 500; letter-spacing: .16em; line-height: 1; }
+.site-shell .site-topbar-meta { display: inline-flex; align-items: center; gap: 7px; margin-left: clamp(24px, 8vw, 130px); color: var(--site-muted); font-size: 11px; line-height: 1; white-space: nowrap; }
+.site-shell .site-live-dot { display: inline-block; width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #79a765; box-shadow: 0 0 0 3px rgb(121 167 101 / 15%); }
 .site-shell .topbar .muted { color: var(--site-faint); }
 .site-shell .sidebar-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 8px 10px 27px; color: var(--site-ink); }
 .site-shell .sidebar-heading strong { font-size: 14px; font-weight: 650; letter-spacing: .02em; }
@@ -214,6 +220,10 @@
   .site-shell .sidebar { display: none; }
   .site-shell .workspace { margin-left: 0; }
   .site-shell .topbar { height: 56px; padding-inline: 14px; }
+  .site-shell .site-topbar-meta { display: none; }
+  .site-shell .site-topbar-mark { width: 28px; height: 28px; font-size: 15px; }
+  .site-shell .site-topbar-brand strong { font-size: 13px; }
+  .site-shell .site-topbar-brand small { font-size: 7px; }
   .site-shell main { padding: 20px 16px 40px; }
   .site-shell .account-links > a:not(.account-identity) { display: none; }
   .site-shell .site-theme-toggle { min-height: 32px; padding-inline: 7px; font-size: 10px; }
