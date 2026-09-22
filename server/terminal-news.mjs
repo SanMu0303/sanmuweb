@@ -31,6 +31,12 @@ function decodeEntities(value) {
   }).replace(/&(amp|lt|gt|quot|apos);/gi, (_, entity) => ({amp: '&', lt: '<', gt: '>', quot: '"', apos: "'"}[entity.toLowerCase()]));
 }
 
+// XML values can be wrapped in CDATA even when they are dates or links.
+// Decode the XML wrapper before URL validation or native date parsing.
+function xmlValue(value) {
+  return decodeEntities(String(value || '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, '$1')).trim();
+}
+
 /** Remove markup before it ever reaches the client. This is deliberately not an HTML renderer. */
 export function cleanFeedText(value, max = 500) {
   return clampText(decodeEntities(String(value || '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, '$1').replace(/<[^>]*>/g, ' ')), max);
@@ -53,7 +59,7 @@ function linkXml(block) {
 
 function safeExternalUrl(value) {
   try {
-    const url = new URL(decodeEntities(value).trim());
+    const url = new URL(xmlValue(value));
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || /[\u0000-\u001f\u007f]/.test(url.href)) return '';
     if (!url.hostname || isDisallowedHostname(url.hostname)) return '';
     return url.href.slice(0, 2048);
@@ -172,8 +178,17 @@ export function normalizeSources(input, {defaults = DEFAULT_SOURCES} = {}) {
 }
 
 function parseDate(value) {
-  const date = new Date(decodeEntities(value));
+  const text = xmlValue(value);
+  if (!text) return null;
+  const date = new Date(text);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+// Unknown publication times remain unknown in the response. A finite sort
+// sentinel keeps them at the end and makes keyset pagination deterministic.
+function eventTime(value) {
+  const time = Date.parse(value || '');
+  return Number.isFinite(time) ? time : -8640000000000000;
 }
 
 export function parseRss(xml, source) {
@@ -184,7 +199,7 @@ export function parseRss(xml, source) {
     const title = cleanFeedText(childXml(block, ['title']), 240);
     const summary = cleanFeedText(childXml(block, ['description', 'summary', 'content', 'content:encoded']), 500);
     const url = safeExternalUrl(linkXml(block));
-    const publishedAt = parseDate(childXml(block, ['pubDate', 'published', 'updated', 'dc:date'])) || new Date(0).toISOString();
+    const publishedAt = ['pubDate', 'published', 'updated', 'dc:date'].map(name => parseDate(childXml(block, [name]))).find(Boolean) || '';
     const rawId = cleanFeedText(childXml(block, ['guid', 'id']), 256);
     if (!title && !summary) continue;
     const id = clampText(rawId || url || `${source.id}:${title}:${publishedAt}`, 256);
@@ -280,7 +295,7 @@ async function fetchX(source, options) {
   const items = (Array.isArray(data?.data) ? data.data : []).map(tweet => ({
     id: `x:${tweet.id}`, title: `@${username} 的动态`, summary: cleanFeedText(tweet.text, 500),
     url: safeExternalUrl(`https://x.com/${username}/status/${tweet.id}`), sourceId: source.id, sourceName: source.name,
-    publishedAt: parseDate(tweet.created_at) || new Date(0).toISOString(),
+    publishedAt: parseDate(tweet.created_at) || '',
   }));
   return {items, status: 'ok'};
 }
@@ -312,12 +327,12 @@ export function pageEvents(events, options = {}) {
     let cursor;
     try { cursor = JSON.parse(Buffer.from(String(options.cursor), 'base64url').toString()); } catch { fail('分页参数不正确'); }
     if (!Array.isArray(cursor) || cursor.length !== 2 || !Number.isFinite(cursor[0]) || typeof cursor[1] !== 'string') fail('分页参数不正确');
-    filtered = filtered.filter(item => Date.parse(item.publishedAt) < cursor[0] || (Date.parse(item.publishedAt) === cursor[0] && `${item.sourceId}:${item.id}` > cursor[1]));
+    filtered = filtered.filter(item => eventTime(item.publishedAt) < cursor[0] || (eventTime(item.publishedAt) === cursor[0] && `${item.sourceId}:${item.id}` > cursor[1]));
   }
   const limit = Math.min(100, Math.max(1, Math.floor(Number(options.limit) || 100)));
   const items = filtered.slice(0, limit);
   const last = items.at(-1);
-  const nextCursor = filtered.length > items.length && last ? Buffer.from(JSON.stringify([Date.parse(last.publishedAt), `${last.sourceId}:${last.id}`])).toString('base64url') : null;
+  const nextCursor = filtered.length > items.length && last ? Buffer.from(JSON.stringify([eventTime(last.publishedAt), `${last.sourceId}:${last.id}`])).toString('base64url') : null;
   return {items, total, nextCursor};
 }
 
@@ -330,7 +345,7 @@ function dedupeItems(items) {
     if (urlKey) seen.add(urlKey);
     if (idKey) seen.add(idKey);
     return true;
-  }).sort((a, b) => Date.parse(b.publishedAt || 0) - Date.parse(a.publishedAt || 0) || `${a.sourceId}:${a.id}`.localeCompare(`${b.sourceId}:${b.id}`)).slice(0, MAX_ITEMS);
+  }).sort((a, b) => eventTime(b.publishedAt) - eventTime(a.publishedAt) || `${a.sourceId}:${a.id}`.localeCompare(`${b.sourceId}:${b.id}`)).slice(0, MAX_ITEMS);
 }
 
 /**
