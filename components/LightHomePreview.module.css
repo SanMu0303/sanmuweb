@@ -71,3 +71,38 @@
 .dark .themeDock{background:#171a1df2;border-color:var(--line);color:var(--muted)}
 .dark .themeDock button{background:#293428;border-color:#52684d;color:#cfe0bc}
 .dark .notice{background:#171a1d;border-color:var(--line);color:#cfe0bc}
+
+/* Keep the preview rail aligned with the production research workbench. */
+.navTitle{display:flex;align-items:baseline;justify-content:space-between;gap:12px;letter-spacing:.05em;font-weight:650;color:var(--ink)}
+.navTitle small{color:#aab4af;font-size:8px;letter-spacing:.14em;font-weight:500}
+.nav nav button{justify-content:flex-start;gap:9px}
+.nav nav button svg{flex:0 0 auto}
+.nav nav button span{font-size:13px;color:inherit;font-variant-numeric:normal}
+.accountLinks{border-top:1px solid var(--line);padding-top:7px;margin-top:auto}
+.accountLinks a{display:flex;align-items:center;gap:8px;padding:8px 10px;color:var(--accent);font-size:12px;text-decoration:none;border-radius:7px}
+.accountLinks a svg:last-child{margin-left:auto}
+.accountLinks a:not(:first-child){color:var(--muted);font-size:11px}
+.accountLinks a:hover{background:#edf4ee;color:#335841}
+.dark .accountLinks a:hover{background:#242a24;color:#cee0b3}
+.dark .accountLinks a:not(:first-child){color:var(--muted)}
+@media(max-width:760px){.accountLinks{display:none}.nav nav button{gap:7px}.nav nav button span{font-size:11px}}
+
+/* Keep the preview navigation aligned with the production workspace: labels
+   sit beside their icons and account actions stay in the lower rail. */
+.navTitle{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.navTitle small{font-size:9px;color:#aab5ae;letter-spacing:.12em;font-weight:500}
+.nav nav button{justify-content:flex-start;gap:9px}
+.nav nav button>svg{flex:0 0 auto}
+.nav nav button>span{font-size:13px;color:inherit;font-variant-numeric:normal}
+.accountLinks{margin-top:auto;border-top:1px solid var(--line);padding-top:2px}
+.accountLinks a{display:flex;align-items:center;gap:8px;padding:7px 10px;color:#718178;font-size:11px;text-decoration:none}
+.accountLinks a:first-child{padding-top:11px;color:var(--accent);font-size:12px}
+.accountLinks a svg:last-child{margin-left:auto}
+.accountLinks a:hover{background:#edf4ee;color:#335841}
+.dark .nav nav button:hover>span,.dark .nav nav .activeNav>span{color:inherit}
+.dark .accountLinks{border-color:var(--line)}
+.dark .accountLinks a{color:var(--muted)}
+.dark .accountLinks a:first-child{color:var(--accent)}
+.dark .accountLinks a:hover{background:#242a24;color:#cee0b3}
+.navBottom{margin-top:0}
+@media(max-width:760px){.accountLinks{display:none}.navTitle{display:none}}

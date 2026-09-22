@@ -70,12 +70,12 @@
 .site-shell .account-links { font-size: 12px; }
 .site-shell .topbar-location { display: flex; align-items: center; gap: 9px; }
 .site-shell .topbar .muted { color: var(--site-faint); }
-.site-shell .brand { color: var(--site-ink); font-size: 14px; }
-.site-shell .brand small { color: var(--site-faint); font-size: 8px; letter-spacing: .16em; }
-.site-shell .logo { color: var(--site-accent); }
-.site-shell .nav-label { color: var(--site-faint); font-size: 10px; letter-spacing: .12em; margin: 30px 10px 12px; }
+.site-shell .sidebar-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 8px 10px 27px; color: var(--site-ink); }
+.site-shell .sidebar-heading strong { font-size: 14px; font-weight: 650; letter-spacing: .02em; }
+.site-shell .sidebar-heading small { color: var(--site-faint); font-size: 10px; letter-spacing: .14em; }
 .site-shell .sidebar nav { gap: 3px; }
 .site-shell .sidebar nav a { gap: 9px; padding: 9px 10px; border-radius: 5px; color: var(--site-muted); font-size: 12px; }
+.site-shell .sidebar nav a span { min-width: 0; overflow-wrap: anywhere; }
 .site-shell .sidebar nav a:hover,
 .site-shell .sidebar nav a.active { background: var(--site-accent-soft); color: var(--site-accent); }
 .site-shell .side-note { margin: auto 10px 25px; padding-top: 28px; }
@@ -84,8 +84,12 @@
 .site-shell .side-note small,
 .site-shell .side-bottom { color: var(--site-faint); font-size: 10px; }
 .site-shell .rule { border-color: var(--site-line-strong); margin-bottom: 12px; }
-.site-shell .member-nav { gap: 8px; padding: 13px 10px; border-color: var(--site-line); color: var(--site-accent); font-size: 12px; }
-.site-shell .admin-entry { color: var(--site-accent); font-size: 11px; padding: 8px 10px; }
+.site-shell .sidebar-account-links { border-top: 1px solid var(--site-line); padding-top: 7px; margin: 0 0 7px; }
+.site-shell .member-nav { gap: 8px; padding: 9px 10px; border-top: 0; color: var(--site-accent); font-size: 12px; }
+.site-shell .member-nav span { flex: 1; }
+.site-shell .admin-entry { display: flex; align-items: center; gap: 9px; color: var(--site-muted); font-size: 11px; padding: 8px 10px; border-radius: 5px; }
+.site-shell .admin-entry:hover,
+.site-shell .admin-entry.active { background: var(--site-accent-soft); color: var(--site-accent); }
 .site-shell .side-bottom { padding: 10px; }
 
 .site-theme-toggle {
@@ -219,3 +223,12 @@
   .site-shell .terminal-heading h1 { font-size: 26px; }
   .site-shell footer { flex-direction: column; gap: 8px; padding-bottom: 24px; }
 }
+
+/* The mobile drawer reuses the same research-workbench navigation as the
+   fixed desktop rail. Keep its account links aligned and free of the old
+   brand/section-number treatment. */
+.site-shell .drawer-content .sidebar-heading { margin: 28px 10px 27px; }
+.site-shell .drawer-content .sidebar-account-links { margin-top: 0; }
+.site-shell .drawer-content .member-nav,
+.site-shell .drawer-content .admin-entry { display: flex; align-items: center; }
+.site-shell .drawer-content .admin-entry { position: static; padding: 10px; font-size: 14px; }

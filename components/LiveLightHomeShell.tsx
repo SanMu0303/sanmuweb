@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {useEffect, useState} from "react";
-import {Activity, BookOpen, Compass, LineChart, NotebookPen, UserRound} from "lucide-react";
+import {Activity, ArrowUpRight, BookOpen, Compass, LineChart, NotebookPen, UserRound} from "lucide-react";
 import {useResource} from "@/lib/live";
 import {readSiteTheme, writeSiteTheme, type SiteTheme} from "@/components/site-theme";
 
@@ -15,7 +15,7 @@ const navigation = [
 ] as const;
 
 export default function LiveLightHomeShell({children}: {children: React.ReactNode}) {
-  const session = useResource<{signedIn?: boolean; nickname?: string; avatarUrl?: string}>("/api/session");
+  const session = useResource<{signedIn?: boolean; isAdmin?: boolean; nickname?: string; avatarUrl?: string}>("/api/session");
   const [theme, setTheme] = useState<SiteTheme>("soft");
 
   useEffect(() => setTheme(readSiteTheme()), []);
@@ -45,9 +45,13 @@ export default function LiveLightHomeShell({children}: {children: React.ReactNod
     <div className="light-home-body">
       <aside className="light-home-sidebar" aria-label="研究空间导航">
         <div className="light-home-sidebar-title">研究工作台 <small>SPACE</small></div>
-        <nav>{navigation.map(([href, label, Icon], index) => <Link key={href} href={href} className={index === 0 ? "active" : undefined} aria-current={index === 0 ? "page" : undefined}><Icon size={16}/><span>{label}</span><small>{String(index + 1).padStart(2, "0")}</small></Link>)}</nav>
+        <nav>{navigation.map(([href, label, Icon], index) => <Link key={href} href={href} className={index === 0 ? "active" : undefined} aria-current={index === 0 ? "page" : undefined}><Icon size={16}/><span>{label}</span></Link>)}</nav>
         <div className="light-home-sidebar-note"><span>THE PROCESS MATTERS</span><p>观察。等待。执行。<br/>让每一次判断都有迹可循。</p><i/></div>
-        <Link className="light-home-member-link" href="/membership/"><UserRound size={16}/>会员中心 <b>↗</b></Link>
+        <div className="light-home-account-links" aria-label="账户入口">
+          <Link className="light-home-member-link" href="/membership/"><UserRound size={16}/><span>会员中心</span><ArrowUpRight size={14}/></Link>
+          {session.data?.signedIn && <Link className="light-home-account-sub-link" href="/profile/"><span>个人中心</span><ArrowUpRight size={13}/></Link>}
+          {session.data?.isAdmin && <Link className="light-home-account-sub-link" href="/admin/"><span>内容管理</span><ArrowUpRight size={13}/></Link>}
+        </div>
         <div className="light-home-sidebar-foot"><span className="light-home-live-dot"/>{theme === "dark" ? "暗色界面已启用" : "柔和亮面已启用"}</div>
       </aside>
       <main className="light-home-main">{children}</main>

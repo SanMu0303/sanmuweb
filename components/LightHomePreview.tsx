@@ -5,9 +5,18 @@ import PostCard from './PostCard';
 import type {Post} from '@/lib/posts';
 import styles from './LightHomePreview.module.css';
 import {readSiteTheme, writeSiteTheme, type SiteTheme} from './site-theme';
+import {useResource} from '@/lib/live';
+import {Activity, ArrowUpRight, BookOpen, Compass, LineChart, NotebookPen, UserRound} from 'lucide-react';
 
 type Category = 'all' | 'public' | 'member';
 const categoryLabels: Record<Category, string> = {all: '全部', public: '免费内容', member: '会员专属'};
+const previewNavigation = [
+  ['最新内容', Compass],
+  ['趋势观察池', Activity],
+  ['交易终端', LineChart],
+  ['市场复盘', NotebookPen],
+  ['知识库 / 课程', BookOpen],
+] as const;
 
 function readCategory(): Category {
   if (typeof window === 'undefined') return 'all';
@@ -23,6 +32,7 @@ function updateCategory(value: Category) {
 }
 
 export default function LightHomePreview({posts}: {posts: Post[]}) {
+  const session = useResource<{signedIn?: boolean; isAdmin?: boolean}>('/api/session');
   const [category, setCategory] = useState<Category>('all');
   const [theme, setTheme] = useState<SiteTheme>('soft');
   const [query, setQuery] = useState('');
@@ -70,10 +80,15 @@ export default function LightHomePreview({posts}: {posts: Post[]}) {
     </header>
     <div className={styles.layout}>
       <aside className={styles.nav} aria-label="预览导航">
-        <div className={styles.navTitle}>研究工作台</div>
+        <div className={styles.navTitle}><span>研究工作台</span><small>SPACE</small></div>
         <nav>
-          {['最新内容', '趋势观察池', '市场复盘', '知识库 / 课程'].map((item, index) => <button key={item} type="button" className={index === 0 ? styles.activeNav : ''} onClick={() => index === 0 ? undefined : setNotice('本次仅制作首页亮色版本，其他页面暂不包含在预览中。')}>{item}<span>{index === 0 ? '01' : `0${index + 1}`}</span></button>)}
+          {previewNavigation.map(([item, Icon], index) => <button key={item} type="button" className={index === 0 ? styles.activeNav : ''} onClick={() => index === 0 ? undefined : setNotice('本次仅制作首页亮色版本，其他页面暂不包含在预览中。')}><Icon size={16}/><span>{item}</span></button>)}
         </nav>
+        <div className={styles.accountLinks} aria-label="账户入口">
+          <a href="/membership/" onClick={event => {event.preventDefault();setNotice('本次仅制作首页亮色版本，其他页面暂不包含在预览中。')}}><UserRound size={16}/><span>会员中心</span><ArrowUpRight size={14}/></a>
+          {session.data?.signedIn && <a href="/profile/" onClick={event => {event.preventDefault();setNotice('本次仅制作首页亮色版本，其他页面暂不包含在预览中。')}}><span>个人中心</span><ArrowUpRight size={13}/></a>}
+          {session.data?.isAdmin && <a href="/admin/" onClick={event => {event.preventDefault();setNotice('本次仅制作首页亮色版本，其他页面暂不包含在预览中。')}}><span>内容管理</span><ArrowUpRight size={13}/></a>}
+        </div>
         <div className={styles.navBottom}><span className={styles.statusDot}/>本地设计预览<br/><small>线上版本保持不变</small></div>
       </aside>
       <main className={styles.main}>
