@@ -4,6 +4,7 @@ import '@/components/site-themes.css';
 import '@/components/site-navigation.css';
 import '@/components/membership.css';
 import '@/components/session-security.css';
+import '@/components/soft-theme-remediation.css';
 import RouteFrame from '@/components/RouteFrame';
 import {siteThemeBootstrapScript} from '@/components/site-theme';
 import {SiteThemeProvider} from '@/components/SiteThemeProvider';
