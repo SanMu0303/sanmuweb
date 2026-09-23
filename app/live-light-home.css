@@ -151,3 +151,72 @@ body:has(.light-home-live--dark){background:#101214;color:#e6e8e8;color-scheme:d
   .light-home-live:not(.light-home-live--dark) .light-home-main .member-content-mask.is-compact { min-height:70px; padding:0 10px; }
   .light-home-live:not(.light-home-live--dark) .light-home-main .member-content-mask-panel { gap:7px; padding:8px 10px 10px; }
 }
+
+/* The homepage keeps its research feed treatment, but now uses the exact same
+   navigation component and viewport breakpoint as every other site page. */
+.light-home-live { --site-nav-width: 208px; }
+.light-home-topbar { position: fixed; left: 0; right: 0; width: 100%; }
+.light-home-topbar-location { display: flex; align-items: center; gap: 22px; min-width: 0; }
+.light-home-topbar .site-mobile-menu-toggle { color: var(--lh-muted); }
+.light-home-topbar .site-mobile-menu-toggle:hover { color: var(--lh-ink); background: var(--lh-accent-soft); }
+.light-home-body { min-height: 100dvh; padding-top: 58px; }
+.light-home-sidebar { width: var(--site-nav-width); padding: 18px 12px 14px; background: var(--lh-surface-soft); }
+.light-home-main { width: calc(100% - var(--site-nav-width)) !important; margin-left: var(--site-nav-width) !important; }
+.light-home-live .site-navigation .site-nav-heading { color: var(--lh-ink); }
+.light-home-live .site-navigation .site-nav-links { display: grid; gap: 4px; }
+.light-home-live .site-navigation .site-nav-links a { min-height: 44px; gap: 10px; padding: 0 12px; color: var(--lh-muted); font-size: 14px; }
+.light-home-live .site-navigation .site-nav-links a:hover,
+.light-home-live .site-navigation .site-nav-links a.active { background: var(--lh-accent-soft); color: var(--lh-accent); }
+.light-home-live .site-navigation .site-nav-note { color: var(--lh-faint); }
+.light-home-live .site-navigation .site-nav-note > span { color: var(--lh-faint); }
+.light-home-live .site-navigation .site-nav-account { border-color: var(--lh-line); }
+.light-home-live .site-navigation .site-nav-account a { color: var(--lh-muted); }
+.light-home-live .site-navigation .site-nav-account a:hover,
+.light-home-live .site-navigation .site-nav-account a.active { background: var(--lh-accent-soft); color: var(--lh-accent); }
+.light-home-live .site-navigation .site-nav-member { color: var(--lh-accent); }
+.light-home-live .site-navigation .site-nav-status { color: var(--lh-faint); }
+.light-home-mobile-nav { display: none !important; }
+
+/* The document bootstrap writes this before hydration, so the correct surface
+   appears even while React is recovering the persisted theme state. */
+html[data-site-theme="dark"] body:has(.light-home-live) { background: #101214; color: #e6e8e8; color-scheme: dark; }
+html[data-site-theme="dark"] .light-home-live {
+  --lh-bg: #101214;
+  --lh-surface: #171a1d;
+  --lh-surface-soft: #1d2224;
+  --lh-line: #292d31;
+  --lh-line-strong: #3b4540;
+  --lh-ink: #e6e8e8;
+  --lh-muted: #a0a8aa;
+  --lh-faint: #737e80;
+  --lh-accent: #bbce9a;
+  --lh-accent-soft: #293428;
+  --lh-gold: #d8b45e;
+  color-scheme: dark;
+}
+html[data-site-theme="dark"] .light-home-live .light-home-sidebar { background: #121416; }
+html[data-site-theme="dark"] .light-home-live .light-home-topbar { background: rgba(16, 18, 20, .92); }
+html[data-site-theme="dark"] .light-home-live .site-navigation .site-nav-links a:hover,
+html[data-site-theme="dark"] .light-home-live .site-navigation .site-nav-links a.active { background: #242a24; color: #cee0b3; }
+
+@media (min-width: 761px) {
+  .light-home-live .light-home-sidebar { width: var(--site-nav-width); }
+  .light-home-live .light-home-main { width: calc(100% - var(--site-nav-width)) !important; margin-left: var(--site-nav-width) !important; }
+}
+@media (max-width: 760px) {
+  .light-home-topbar { position: sticky; left: auto; right: auto; height: 56px; min-height: 56px; padding: 0 14px; gap: 8px; }
+  .light-home-topbar-location { gap: 5px; }
+  .light-home-body { min-height: 0; padding-top: 0; }
+  .light-home-sidebar { display: none; }
+  .light-home-main { width: 100% !important; margin-left: 0 !important; }
+  .light-home-topbar .site-mobile-menu-toggle { display: inline-flex; }
+  .light-home-brand { gap: 8px; min-width: 0; }
+  .light-home-brand strong { font-size: 13px; }
+  .light-home-brand small { font-size: 7px; }
+  .light-home-topbar-meta { display: none; }
+  .light-home-theme-toggle { min-height: 32px; padding-inline: 7px; font-size: 10px; }
+  .light-home-account { gap: 5px; }
+  .light-home-account-link > span:last-child { display: none; }
+  .light-home-login { display: none; }
+  .light-home-footer { padding: 18px 16px 24px; }
+}

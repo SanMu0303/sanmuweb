@@ -35,3 +35,34 @@
 .terminal-page--soft .workbench-manager,.terminal-page--soft .workbench-smart-manager{background:#f0f5f1;border-color:#bdd2c1}
 .terminal-page--soft .workbench-primary{background:#4f805b;color:#fff;border-color:#6b9a75}
 .terminal-page--soft .terminal-toast{background:#fff8ed;color:#765625;border-color:#e0c89f}
+
+/* The workbench stays independent, but mobile users enter the same site
+   navigation drawer as every other route. */
+.terminal-site-nav-toggle { display: none; flex: 0 0 auto; color: var(--terminal-muted); }
+.terminal-site-nav-toggle:hover { color: var(--terminal-text); background: color-mix(in srgb, var(--terminal-green) 14%, transparent); }
+@media (max-width: 760px) {
+  .terminal-site-nav-toggle { display: inline-flex; width: 40px; min-width: 40px; height: 40px; min-height: 40px; }
+  .terminal-topbar { padding-left: 8px; }
+  .terminal-back { display: none; }
+}
+
+/* Honour the pre-hydration site theme on direct visits as well as the React
+   provider state that follows. */
+html[data-site-theme="dark"] .terminal-page {
+  --terminal-bg:#0d1114;
+  --terminal-surface:#12181c;
+  --terminal-surface-2:#161e22;
+  --terminal-line:#283237;
+  --terminal-line-soft:#1d272b;
+  --terminal-text:#e5ede9;
+  --terminal-muted:#8c9b96;
+  --terminal-faint:#60706b;
+  --terminal-green:#9fca75;
+  --terminal-green-dark:#25402e;
+  --terminal-amber:#d7b276;
+  --terminal-red:#dc8b82;
+  background:var(--terminal-bg);
+  color:var(--terminal-text);
+}
+html[data-site-theme="dark"] .terminal-page .terminal-topbar,
+html[data-site-theme="dark"] .terminal-page .terminal-mobile-tabs { background:#10161a; }
