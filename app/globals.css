@@ -332,3 +332,107 @@ main{padding-top:26px}
 }
 
 .watch-update-images{display:grid;gap:8px}.watch-update-images .section-line{margin:2px 0 0}.watch-update-images .section-line h3{font-size:15px;margin:0}.watch-update-images .image-uploader{border:1px solid #2f3d32;border-radius:5px;padding:10px}.watch-update-images .image-uploader>p{margin:0;color:#8f9d8e;font-size:12px}
+
+/* A few long-lived page modules still use the former dark palette directly.
+   Keep their geometry intact and map only their colour surfaces when the
+   regular site shell is in its soft theme.  The terminal does not use this
+   shell, so its dedicated workbench palette stays isolated. */
+.site-shell--soft .archive-selection { color: var(--site-muted); }
+.site-shell--soft .archive-selection button,
+.site-shell--soft .admin-entry,
+.site-shell--soft .admin-account a,
+.site-shell--soft .editor-status button,
+.site-shell--soft .editor-actions a { color: var(--site-accent); }
+.site-shell--soft .archive-nav { border-color: var(--site-line); }
+.site-shell--soft .archive-nav button {
+  color: var(--site-muted);
+  border-color: var(--site-line-strong);
+}
+.site-shell--soft .archive-nav button:hover:not(:disabled) {
+  color: var(--site-accent);
+  background: var(--site-accent-soft);
+  border-color: var(--site-accent);
+}
+.site-shell--soft .archive-nav .expanded,
+.site-shell--soft .archive-nav .current {
+  color: var(--site-accent);
+  background: var(--site-accent-soft);
+  border-color: var(--site-accent);
+}
+.site-shell--soft .archive-months .current { color: var(--site-accent); }
+
+.site-shell--soft .studio-tabs .selected,
+.site-shell--soft .studio-item.current {
+  color: var(--site-accent);
+  background: var(--site-accent-soft);
+  border-color: var(--site-line-strong);
+}
+.site-shell--soft .studio-item { color: var(--site-ink); background: transparent; }
+.site-shell--soft .studio-item:hover:not(.current) { background: var(--site-panel-soft); }
+.site-shell--soft .list-filter,
+.site-shell--soft .editor-status,
+.site-shell--soft .section-editor > div { color: var(--site-muted); }
+.site-shell--soft .list-filter select,
+.site-shell--soft .editor-fields input,
+.site-shell--soft .editor-fields textarea,
+.site-shell--soft .editor-fields select {
+  background: var(--site-panel);
+  border-color: var(--site-line-strong);
+  color: var(--site-ink);
+  color-scheme: light;
+}
+.site-shell--soft .editor-fields label { color: var(--site-muted); }
+.site-shell--soft .section-editor {
+  background: var(--site-panel-soft);
+  border-color: var(--site-line);
+  color: var(--site-ink);
+}
+.site-shell--soft .section-editor button { color: #76591f; }
+.site-shell--soft .editor-actions { background: var(--site-bg); border-color: var(--site-line); }
+.site-shell--soft .preview { background: var(--site-panel); border-color: var(--site-line); }
+.site-shell--soft .notice {
+  background: #eff6f0;
+  border-color: #a9c7ae;
+  color: #365342;
+}
+.site-shell--soft .notice.error {
+  background: #fff0eb;
+  border-color: #e0a89b;
+  color: #8a4439;
+}
+
+.site-shell--soft .library-tabs,
+.site-shell--soft .library-note,
+.site-shell--soft .course-index,
+.site-shell--soft .lesson-navigation { border-color: var(--site-line); }
+.site-shell--soft .library-tabs button,
+.site-shell--soft .video-card-meta,
+.site-shell--soft .video-card-foot,
+.site-shell--soft .course-index small,
+.site-shell--soft .library-note small,
+.site-shell--soft .lesson-navigation,
+.site-shell--soft .lesson-navigation small { color: var(--site-muted); }
+.site-shell--soft .library-tabs button.active,
+.site-shell--soft .course-index a:hover,
+.site-shell--soft .course-index a.current { color: var(--site-accent); background: var(--site-accent-soft); }
+.site-shell--soft .video-cover { background: var(--site-panel-soft); }
+.site-shell--soft .video-cover img { opacity: .7; }
+.site-shell--soft .video-cover-label {
+  color: var(--site-ink);
+  background: rgb(255 255 255 / 82%);
+  border-radius: 4px;
+  padding: 2px 5px;
+}
+.site-shell--soft .video-play {
+  background: rgb(255 255 255 / 90%);
+  border-color: var(--site-line-strong);
+  color: var(--site-accent);
+}
+.site-shell--soft .video-duration { background: rgb(23 35 28 / 82%); color: #fff; }
+.site-shell--soft .video-card p,
+.site-shell--soft .course-index p,
+.site-shell--soft .library-note p,
+.site-shell--soft .video-placeholder p,
+.site-shell--soft .video-detail-heading p { color: var(--site-muted); }
+.site-shell--soft .course-index h4 { color: var(--site-ink); }
+.site-shell--soft .video-placeholder { background-color: var(--site-panel-soft); color: var(--site-ink); }

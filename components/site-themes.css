@@ -243,13 +243,13 @@
 .site-shell--soft .record-type { background: #f1f3ec; border-color: #c9d3c5; color: #53634f; }
 .site-shell--soft .record-pin { background: #f8f0dc; border-color: #d8c49a; color: #76591f; }
 .site-shell--soft .record-tags a { background: #f2f5ef; border-color: #c2d0c3; color: #3c5943; }
-.site-shell--soft .member-content-mask { background: #e8f0e9; border-color: #c2d5c6; }
-.site-shell--soft .member-content-mask::after { background: linear-gradient(180deg, #e6eee688, #dce8dfeb); }
-.site-shell--soft .member-content-mask-panel { background: linear-gradient(180deg, #eef5ef22, #e8f0e9db 70%, #e3ede5f5); }
+.site-shell--soft .member-content-mask { background: var(--site-panel-soft); border-color: var(--site-line-strong); }
+.site-shell--soft .member-content-mask::after { background: linear-gradient(180deg, color-mix(in srgb, var(--site-panel) 48%, transparent), var(--site-panel-soft)); }
+.site-shell--soft .member-content-mask-panel { background: linear-gradient(180deg, color-mix(in srgb, var(--site-panel) 16%, transparent), color-mix(in srgb, var(--site-panel-soft) 88%, transparent) 62%, var(--site-panel-soft)); }
 .site-shell--soft .member-content-mask-panel strong,
-.site-shell--soft .member-content-mask-compact-title { color: #294735; }
-.site-shell--soft .member-content-mask-compact-entry { color: #4a7255; text-decoration-color: #a5c2aa; }
-.site-shell--soft .member-content-mask-body span { color: #66806d; }
+.site-shell--soft .member-content-mask-compact-title { color: var(--site-ink); }
+.site-shell--soft .member-content-mask-compact-entry { color: var(--site-accent); text-decoration-color: var(--site-line-strong); }
+.site-shell--soft .member-content-mask-body span { color: var(--site-faint); }
 
 /* The dark version retains the original palette but uses the compact soft
    theme's type scale and spacing. */
@@ -264,6 +264,182 @@
 .site-shell--dark .watch-observation-card,
 .site-shell--dark .observation,
 .site-shell--dark .member-status { background: var(--site-panel); }
+
+/* The watchlist used to carry its original dark palette in globals.css. Keep
+   its surfaces and controls tied to the shell tokens so the same records work
+   in both colour systems, including the narrow mobile layout. */
+.site-shell--soft .selects label,
+.site-shell--soft .watch-detail-header p,
+.site-shell--soft .watch-detail-stage,
+.site-shell--soft .watch-history-entry header,
+.site-shell--soft .watch-update-form label,
+.site-shell--soft .watchlist-entry-form label { color: var(--site-muted); }
+
+.site-shell--soft .selects select,
+.site-shell--soft .watch-update-form textarea,
+.site-shell--soft .watch-update-form select,
+.site-shell--soft .watchlist-entry-form input,
+.site-shell--soft .watchlist-entry-form textarea,
+.site-shell--soft .watchlist-entry-form select {
+  background: var(--site-panel);
+  border-color: var(--site-line-strong);
+  color: var(--site-ink);
+  color-scheme: light;
+}
+.site-shell--soft .selects select:focus,
+.site-shell--soft .watch-update-form textarea:focus,
+.site-shell--soft .watch-update-form select:focus,
+.site-shell--soft .watchlist-entry-form input:focus,
+.site-shell--soft .watchlist-entry-form textarea:focus,
+.site-shell--soft .watchlist-entry-form select:focus {
+  border-color: var(--site-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--site-accent) 16%, transparent);
+}
+
+.site-shell--soft .watch-observation-card,
+.site-shell--soft .watch-detail-summary,
+.site-shell--soft .watch-map-root,
+.site-shell--soft .watch-map-node .watch-history-entry,
+.site-shell--soft .watch-member-preview {
+  background: var(--site-panel);
+  border-color: var(--site-line);
+  color: var(--site-ink);
+}
+.site-shell--soft .watch-observation-card.is-ended { background: var(--site-panel-soft); }
+.site-shell--soft .watch-observation-card:hover { border-color: var(--site-accent); }
+.site-shell--soft .watch-observation-card h2,
+.site-shell--soft .watch-map-node .watch-history-entry header strong { color: var(--site-ink); }
+.site-shell--soft .watch-observation-card p,
+.site-shell--soft .watch-detail-summary p,
+.site-shell--soft .watch-map-node .watch-history-entry p,
+.site-shell--soft .watch-member-preview p { color: var(--site-muted); }
+.site-shell--soft .ticker,
+.site-shell--soft .watch-observation-times,
+.site-shell--soft .watch-detail-meta,
+.site-shell--soft .watch-map-root small,
+.site-shell--soft .watch-map-date,
+.site-shell--soft .watch-member-preview small { color: var(--site-faint); }
+.site-shell--soft .watch-observation-times,
+.site-shell--soft .watch-detail-meta,
+.site-shell--soft .watchlist-group + .watchlist-group,
+.site-shell--soft .watch-map-risk { border-color: var(--site-line); }
+.site-shell--soft .watch-observation-more,
+.site-shell--soft .watch-detail-meta a,
+.site-shell--soft .watch-map-node .watch-history-entry a,
+.site-shell--soft .watch-map-index,
+.site-shell--soft .watch-map-root > span { color: var(--site-accent); }
+.site-shell--soft .watchlist-group .section-line h2 span,
+.site-shell--soft .watchlist-group .section-line small,
+.site-shell--soft .watch-map-hint,
+.site-shell--soft .watch-map-risk,
+.site-shell--soft .watch-detail-summary .risk { color: var(--site-muted); }
+.site-shell--soft .watch-detail-header { border-color: var(--site-line); }
+.site-shell--soft .watch-map::before,
+.site-shell--soft .watch-map-node::before { background: var(--site-line-strong); }
+.site-shell--soft .watch-map-node::after {
+  background: var(--site-panel);
+  border-color: var(--site-accent);
+  box-shadow: 0 0 0 4px var(--site-bg);
+}
+.site-shell--soft .watch-map-node.is-latest .watch-history-entry {
+  background: var(--site-panel);
+  border-color: var(--site-accent);
+}
+.site-shell--soft .watch-map-node.is-latest::after { background: var(--site-accent); }
+.site-shell--soft .watch-lifecycle-ended {
+  border-color: var(--site-line-strong);
+  background: var(--site-panel-soft);
+  color: var(--site-muted);
+}
+.site-shell--soft .stage {
+  border: 1px solid var(--site-line-strong);
+  background: var(--site-accent-soft);
+  color: var(--site-accent);
+}
+
+.site-shell--soft .watch-detail-actions .button.secondary,
+.site-shell--soft .watch-update-form .button.secondary,
+.site-shell--soft .watchlist-entry-form .button.secondary,
+.site-shell--soft .watchlist-entry-button {
+  border-color: var(--site-line-strong);
+  background: var(--site-panel);
+  color: var(--site-accent);
+}
+.site-shell--soft .watch-detail-actions .button.secondary:hover,
+.site-shell--soft .watch-update-form .button.secondary:hover,
+.site-shell--soft .watchlist-entry-form .button.secondary:hover,
+.site-shell--soft .watchlist-entry-button:hover {
+  border-color: var(--site-accent);
+  background: var(--site-accent-soft);
+}
+.site-shell--soft .watch-update-dialog,
+.site-shell--soft .watchlist-entry-dialog {
+  border-color: var(--site-line-strong);
+  background: var(--site-panel);
+  color: var(--site-ink);
+  box-shadow: 0 20px 52px color-mix(in srgb, var(--site-ink) 16%, transparent);
+}
+.site-shell--soft .watch-update-dialog::backdrop,
+.site-shell--soft .watchlist-entry-dialog::backdrop {
+  background: color-mix(in srgb, var(--site-ink) 28%, transparent);
+}
+.site-shell--soft .watch-update-form small,
+.site-shell--soft .watchlist-entry-form small,
+.site-shell--soft .watchlist-entry-caption,
+.site-shell--soft .watch-update-images .image-uploader > p { color: var(--site-faint); }
+.site-shell--soft .watch-update-images .image-uploader {
+  border-color: var(--site-line-strong);
+  background: var(--site-panel-soft);
+}
+.site-shell--soft .watch-member-preview strong { color: var(--site-ink); }
+
+/* Restricted observations use a visual texture, but it must be a light
+   surface in the soft shell. The token-only treatment also covers earlier
+   membership gate variants still rendered by archived records. */
+.site-shell--soft .member-content-mask.is-compact .member-content-mask-panel {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--site-panel) 16%, transparent), color-mix(in srgb, var(--site-panel-soft) 88%, transparent) 62%, var(--site-panel-soft));
+}
+.site-shell--soft .member-content-mask-panel strong,
+.site-shell--soft .member-content-mask-compact-title,
+.site-shell--soft .member-content-mask-topic,
+.site-shell--soft .member-content-safe-preview { color: var(--site-ink); }
+.site-shell--soft .member-content-mask-compact-entry,
+.site-shell--soft .member-content-mask-login {
+  color: var(--site-accent);
+  text-decoration-color: var(--site-line-strong);
+}
+.site-shell--soft :where(.member-preview-note, .compact-member-note, .watch-member-preview, .member-gate) {
+  --gate-border: var(--site-line-strong);
+  --gate-surface: var(--site-panel-soft);
+  --gate-texture: var(--site-faint);
+  background: var(--site-panel-soft);
+  border-color: var(--site-line-strong);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--site-panel) 72%, transparent);
+}
+.site-shell--soft :where(.member-preview-note, .compact-member-note, .watch-member-preview, .member-gate)::after {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--site-panel) 20%, transparent), var(--site-panel-soft));
+}
+.site-shell--soft :where(.member-preview-note, .compact-member-note, .watch-member-preview) > span,
+.site-shell--soft .member-gate__label {
+  border-color: var(--site-line-strong);
+  background: var(--site-panel);
+  color: var(--site-ink);
+}
+.site-shell--soft :where(.member-preview-note, .watch-member-preview) > p,
+.site-shell--soft .member-gate__description,
+.site-shell--soft .member-gate__content p,
+.site-shell--soft :where(.watch-member-preview) > small,
+.site-shell--soft .member-gate__hint { color: var(--site-muted); }
+.site-shell--soft :where(.member-preview-note, .compact-member-note, .watch-member-preview, .member-gate) :where(a, .member-gate__cta) {
+  border-color: var(--site-accent);
+  background: var(--site-accent);
+  color: var(--site-panel);
+}
+.site-shell--soft :where(.member-preview-note, .compact-member-note, .watch-member-preview, .member-gate) :where(a, .member-gate__cta):hover {
+  border-color: var(--site-accent);
+  background: var(--site-ink);
+  color: var(--site-panel);
+}
 
 @media (max-width: 1200px) {
   .site-shell .sidebar { width: 190px; }

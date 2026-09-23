@@ -55,3 +55,48 @@
     min-height: 44px;
   }
 }
+
+
+/* The module is also used by the live homepage, which has its own shell.
+   Scope light values to the active shell so dark reading surfaces keep their
+   original contrast.  !important is intentional here: legacy home.css has
+   more specific dark selectors for the same short-post elements. */
+:global(.site-shell--soft) .text {
+  color: var(--site-muted);
+}
+
+:global(.site-shell--soft) .text strong {
+  color: var(--site-ink);
+}
+
+:global(.site-shell--soft) .toggle {
+  color: var(--site-accent);
+}
+
+:global(.site-shell--soft) .toggle:hover {
+  color: #285c38;
+}
+
+:global(.site-shell--soft) .toggle:focus-visible {
+  outline-color: var(--site-accent);
+}
+
+:global(.light-home-live[data-theme="soft"]) .text {
+  color: var(--lh-muted) !important;
+}
+
+:global(.light-home-live[data-theme="soft"]) .text strong {
+  color: var(--lh-ink) !important;
+}
+
+:global(.light-home-live[data-theme="soft"]) .toggle {
+  color: var(--lh-accent) !important;
+}
+
+:global(.light-home-live[data-theme="soft"]) .toggle:hover {
+  color: #234f31 !important;
+}
+
+:global(.light-home-live[data-theme="soft"]) .toggle:focus-visible {
+  outline-color: var(--lh-accent) !important;
+}

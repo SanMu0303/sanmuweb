@@ -3,3 +3,48 @@
 @media(max-width:580px){.member-management-heading{display:block}.member-management-heading>.button{display:inline-block;margin-top:16px}.member-search{flex-wrap:wrap;padding:16px;gap:12px}.member-search label:first-child{flex-basis:100%}.member-search label:nth-child(2){flex:1}.member-search .button{height:43px}.member-user-row{padding:16px;gap:10px}.member-user-state small{font-size:11px}.member-user-state small:nth-child(2){max-width:115px;text-align:right}.member-list-heading,.member-pagination{padding:16px}.member-edit-panel{padding:20px}.member-details{font-size:12px}.member-account-summary p{font-size:13px}.member-status .actions{align-items:center}.member-management h1{font-size:27px}}
 
 .membership-entry-actions{align-items:center}.membership-subscribe-button{min-width:128px;justify-content:center;text-align:center;font-weight:600}
+
+/* The management screen predates the shared site themes and carries a few
+   literal dark values.  Scope the compatibility layer to the soft shell so
+   an administrator sees the same light controls on desktop and mobile while
+   the dark theme remains unchanged. */
+.site-shell--soft .member-search,
+.site-shell--soft .member-list-panel,
+.site-shell--soft .member-edit-panel,
+.site-shell--soft .profile-membership,
+.site-shell--soft .member-video-gate {
+  background:var(--site-panel);
+  border-color:var(--site-line);
+  color:var(--site-ink);
+}
+.site-shell--soft .member-search label,
+.site-shell--soft .member-user-identity>span,
+.site-shell--soft .member-selected-email,
+.site-shell--soft .member-list-message,
+.site-shell--soft .member-list-heading>span,
+.site-shell--soft .member-user-row small,
+.site-shell--soft .member-pagination>span,
+.site-shell--soft .member-details dt,
+.site-shell--soft .member-video-gate {color:var(--site-muted)}
+.site-shell--soft .member-search input,
+.site-shell--soft .member-search select,
+.site-shell--soft .member-expiry-form input[type=date]{
+  background:var(--site-panel);
+  border-color:var(--site-line-strong);
+  color:var(--site-ink);
+  color-scheme:light;
+}
+.site-shell--soft .member-list-heading,
+.site-shell--soft .member-user-row,
+.site-shell--soft .member-details,
+.site-shell--soft .member-edit-actions{border-color:var(--site-line)}
+.site-shell--soft .member-list-message h2,
+.site-shell--soft .member-user-identity strong,
+.site-shell--soft .member-selected-name,
+.site-shell--soft .member-details dd{color:var(--site-ink)}
+.site-shell--soft .member-user-row:hover,
+.site-shell--soft .member-user-row.selected{background:var(--site-accent-soft)}
+.site-shell--soft .member-user-row.selected{box-shadow:inset 3px 0 var(--site-accent)}
+.site-shell--soft .member-revoke{color:#92483e!important;border-color:#d5a59c!important}
+.site-shell--soft .profile-membership>a,
+.site-shell--soft .member-video-gate a{color:var(--site-accent)}
