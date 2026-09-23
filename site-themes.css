@@ -1,0 +1,476 @@
+/* Shared theme surface for every page that uses the regular site shell.
+   The terminal keeps its isolated workbench skin.  The main site exposes only
+   `soft` and `dark`; all geometry and type scales are shared between them. */
+.site-shell {
+  --site-bg: #101214;
+  --site-panel: #171a1d;
+  --site-panel-soft: #1d2224;
+  --site-line: #292d31;
+  --site-line-strong: #3b4540;
+  --site-ink: #e6e8e8;
+  --site-muted: #939ba1;
+  --site-faint: #737e80;
+  --site-accent: #bbce9a;
+  --site-accent-soft: #293428;
+  min-height: 100dvh;
+  background: var(--site-bg);
+  color: var(--site-ink);
+  font-size: 14px;
+  line-height: 1.6;
+  color-scheme: dark;
+}
+
+.site-shell--soft {
+  --site-bg: #f4f7f4;
+  --site-panel: #ffffff;
+  --site-panel-soft: #edf3ee;
+  --site-line: #dbe5dd;
+  --site-line-strong: #c4d3c8;
+  --site-ink: #17231c;
+  --site-muted: #53645a;
+  --site-faint: #718077;
+  --site-accent: #3f7651;
+  --site-accent-soft: #e3efe4;
+  --site-topbar-bg: rgba(255, 255, 255, .86);
+  color-scheme: light;
+}
+
+.site-shell--dark { --site-topbar-bg: rgba(16, 18, 20, .92); }
+
+.site-shell .workspace {
+  min-height: 100dvh;
+  margin-left: 214px;
+  padding-top: 58px;
+  background: var(--site-bg);
+  color: var(--site-ink);
+}
+
+.site-shell .sidebar {
+  position: fixed;
+  inset: 58px auto 0 0;
+  z-index: 40;
+  width: 214px;
+  height: auto;
+  overflow-y: auto;
+  padding: 28px 17px 20px;
+  background: var(--site-panel-soft);
+  border-right: 1px solid var(--site-line);
+  color: var(--site-ink);
+}
+
+.site-shell .topbar {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 30;
+  height: 58px;
+  width: 100%;
+  padding: 0 clamp(18px, 3vw, 48px);
+  background: var(--site-topbar-bg);
+  border-bottom: 1px solid var(--site-line);
+  color: var(--site-ink);
+  backdrop-filter: blur(10px);
+  font-size: 14px;
+}
+
+.site-shell .topbar-location,
+.site-shell .account-links { font-size: 12px; }
+.site-shell .topbar-location { display: flex; align-items: center; gap: 22px; min-width: 0; font-size: 14px; line-height: 1.6; }
+.site-shell .site-topbar-brand { display: inline-flex; align-items: center; gap: 10px; min-width: 220px; color: var(--site-ink); text-decoration: none; font-size: 14px; line-height: 1.6; }
+.site-shell .site-topbar-mark { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; background: #dcebdc; color: var(--site-accent); font-size: 16px; font-weight: 700; line-height: 1.6; }
+.site-shell--dark .site-topbar-mark { background: #29352a; }
+.site-shell .site-topbar-brand strong { display: block; color: var(--site-ink); font-size: 14px; line-height: 1.2; letter-spacing: .04em; }
+.site-shell .site-topbar-brand small { display: block; margin-top: 2px; color: var(--site-faint); font-size: 8px; font-weight: 500; letter-spacing: .16em; line-height: 1; }
+.site-shell .site-topbar-meta { display: inline-flex; align-items: center; gap: 7px; margin-left: 0; color: var(--site-muted); font-size: 11px; line-height: 1.6; white-space: nowrap; }
+.site-shell .site-live-dot { display: inline-block; width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: #79a765; box-shadow: 0 0 0 3px rgb(121 167 101 / 15%); }
+.site-shell .mobile-menu-toggle { color: var(--site-muted); }
+.site-shell .mobile-menu-toggle:hover { color: var(--site-ink); background: var(--site-accent-soft); border-radius: 5px; }
+.site-shell .topbar .muted { color: var(--site-faint); }
+.site-shell .sidebar-heading { display: block; margin: 0; padding: 0 10px 16px; color: var(--site-ink); font-size: 11px; line-height: 1.6; }
+.site-shell .sidebar-heading strong { font-size: 11px; font-weight: 650; letter-spacing: .05em; }
+.site-shell .sidebar-heading small { color: var(--site-faint); font-size: 10px; letter-spacing: .14em; }
+.site-shell .sidebar nav { gap: 3px; }
+.site-shell .sidebar nav a { gap: 9px; padding: 9px 10px; border-radius: 5px; color: var(--site-muted); font-size: 12px; line-height: 1.3; }
+.site-shell .sidebar nav a span { min-width: 0; overflow-wrap: anywhere; }
+.site-shell .sidebar nav a:hover,
+.site-shell .sidebar nav a.active { background: #deecdf; color: var(--site-accent); }
+.site-shell--dark .sidebar nav a:hover,
+.site-shell--dark .sidebar nav a.active { background: #242a24; }
+.site-shell .side-note { margin: auto 0 0; padding: 22px 10px 20px; color: var(--site-faint); font-size: 10px; line-height: 1.7; }
+.site-shell .side-note .eyebrow { color: #9aaa9e; font-size: 8px; letter-spacing: .13em; }
+.site-shell .side-note p { color: var(--site-faint); font-size: 10px; line-height: 1.7; margin: 9px 0 12px; }
+.site-shell .side-note i { display: block; width: 24px; border-top: 1px solid var(--site-line-strong); }
+.site-shell .side-bottom { display: flex; align-items: center; gap: 7px; color: var(--site-faint); font-size: 10px; }
+.site-shell .sidebar-account-links { border-top: 1px solid var(--site-line); padding-top: 2px; margin: 0; }
+.site-shell .member-nav { gap: 8px; padding: 11px 10px 7px; border-top: 0; color: var(--site-accent); font-size: 12px; }
+.site-shell .member-nav span { flex: 1; }
+.site-shell .admin-entry { display: flex; align-items: center; gap: 8px; color: var(--site-muted); font-size: 11px; padding: 6px 10px; border-radius: 5px; }
+.site-shell .admin-entry:hover,
+.site-shell .admin-entry.active { background: var(--site-accent-soft); color: var(--site-accent); }
+.site-shell .side-bottom { padding: 13px 10px 0; }
+.site-shell .sidebar { background: #eef4ef; }
+.site-shell--dark .sidebar { background: #121416; }
+
+.site-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 1px solid var(--site-line-strong);
+  border-radius: 5px;
+  background: var(--site-panel);
+  color: var(--site-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.site-theme-toggle:hover,
+.site-theme-toggle[aria-pressed="true"] { border-color: var(--site-accent); background: var(--site-accent-soft); color: var(--site-accent); }
+.site-shell .account-links { gap: 9px; }
+.site-shell .account-links > a { color: var(--site-muted); }
+.site-shell .account-identity { color: var(--site-ink) !important; }
+.site-shell .account-identity img,
+.site-shell .account-initial { width: 25px; height: 25px; border-radius: 50%; object-fit: cover; }
+.site-shell .account-initial { display: grid; place-items: center; background: var(--site-accent-soft); color: var(--site-accent); }
+.site-shell .login-pill { border-color: var(--site-line-strong); color: var(--site-accent); font-size: 11px; }
+
+.site-shell main {
+  width: min(1680px, calc(100% - 48px));
+  max-width: none;
+  margin: 0 auto;
+  padding: 26px clamp(22px, 3.5vw, 58px) 54px;
+  color: var(--site-ink);
+  font-size: 14px;
+}
+.site-shell main :where(h1, h2, h3, h4, strong, b) { color: var(--site-ink); }
+.site-shell main :where(p, li, label, dt, dd) { color: var(--site-muted); }
+.site-shell main :where(a) { color: var(--site-accent); }
+.site-shell main :where(input, select, textarea) { color: var(--site-ink); background: var(--site-panel); border-color: var(--site-line-strong); }
+.site-shell main :where(input, select, textarea)::placeholder { color: var(--site-faint); }
+.site-shell .muted { color: var(--site-muted); }
+.site-shell footer { background: var(--site-bg); border-color: var(--site-line); color: var(--site-faint); font-size: 10px; padding: 18px clamp(18px, 3vw, 48px); }
+
+/* Shared page headers and reading scale.  Both themes use the same compact
+   dimensions so changing theme never shifts the page structure. */
+.site-shell .page-heading,
+.site-shell .studio-heading,
+.site-shell .member-management-heading,
+.site-shell .terminal-heading { margin-bottom: 18px; }
+.site-shell .page-heading h1,
+.site-shell .studio-heading h1,
+.site-shell .member-management-heading h1,
+.site-shell .terminal-heading h1 { font-size: clamp(26px, 2.2vw, 34px); line-height: 1.25; margin: 5px 0 6px; }
+.site-shell .page-heading p,
+.site-shell .studio-heading p,
+.site-shell .member-management-heading p,
+.site-shell .terminal-heading p { color: var(--site-muted); font-size: 12px; line-height: 1.55; }
+.site-shell .terminal-heading { align-items: flex-end; padding-bottom: 2px; }
+.site-shell .terminal-heading .eyebrow,
+.site-shell .page-heading .eyebrow,
+.site-shell .studio-heading .eyebrow { color: var(--site-accent); font-size: 10px; letter-spacing: .14em; }
+
+/* Common surfaces used by the archive, watchlist, library and account pages. */
+.site-shell :where(.watch-card, .watch-observation-card, .observation, .member-status, .course-intro > div, .studio-item, .studio-list, .video-card, .learning-current, .learning-resume, .notice, .watch-history-entry, .watch-map-root, .watch-map-node .watch-history-entry, .watch-member-preview, .member-preview-note, .compact-member-note, .member-gate) {
+  background: var(--site-panel);
+  border-color: var(--site-line);
+  color: var(--site-ink);
+}
+.site-shell :where(.watch-card, .watch-observation-card) h2,
+.site-shell :where(.watch-card, .watch-observation-card) h3,
+.site-shell :where(.watch-card, .watch-observation-card) strong { color: var(--site-ink); }
+.site-shell :where(.watch-card, .watch-observation-card) p,
+.site-shell :where(.observation, .member-status, .video-card, .learning-current, .learning-resume) p { color: var(--site-muted); }
+.site-shell .watch-observation-card.is-ended { background: var(--site-panel-soft); opacity: 1; }
+.site-shell .watch-detail-header,
+.site-shell .symbol-heading { border-color: var(--site-line); }
+.site-shell .watch-map::before,
+.site-shell .watch-map-node::before { background: var(--site-line-strong); }
+.site-shell .watch-map-node::after { background: var(--site-panel); border-color: var(--site-accent); box-shadow: 0 0 0 4px var(--site-bg); }
+.site-shell .watch-map-node .watch-history-entry { box-shadow: 0 4px 14px color-mix(in srgb, var(--site-ink) 8%, transparent); }
+.site-shell :where(.section-line, .feed-tools, .studio-tabs, .library-tabs, .course-lesson, .rail-section, .archive-selection) { border-color: var(--site-line); }
+.site-shell :where(.filters button, .studio-tabs button, .library-tabs button, .archive-nav button) { color: var(--site-muted); }
+.site-shell :where(.filters button.selected, .studio-tabs .selected, .library-tabs button.active, .archive-nav .current, .archive-nav .expanded) { background: var(--site-accent-soft); color: var(--site-accent); }
+.site-shell :where(.post, .research-record) { border-color: var(--site-line); }
+.site-shell .post-title { color: var(--site-ink); font-size: 16px; }
+.site-shell .post p,
+.site-shell .record-body p,
+.site-shell .record-summary,
+.site-shell .record-preview p { color: var(--site-muted); font-size: 14px; line-height: 1.75; }
+.site-shell .record-title,
+.site-shell .record-heading,
+.site-shell .record-body h4 { color: var(--site-ink); }
+.site-shell .record-bottom-meta,
+.site-shell .record-tags,
+.site-shell .record-footline,
+.site-shell .timeframe,
+.site-shell .section-line > span { color: var(--site-faint); }
+.site-shell .record-tags a,
+.site-shell .record-bottom-meta a { color: var(--site-accent); }
+.site-shell .empty,
+.site-shell .list-end,
+.site-shell .quiet { color: var(--site-muted); }
+
+/* Soft-theme chips keep metadata legible without turning the footer into a
+   second content block. Dates remain plain text; market, stage and topic
+   labels use the same compact chip geometry and wrap as a group. */
+.site-shell--soft .record-bottom-meta,
+.site-shell--soft .record-tags { gap: 6px 8px; row-gap: 6px; }
+.site-shell--soft .record-bottom-meta > * + *::before { content: none; }
+.site-shell--soft .record-bottom-meta > a,
+.site-shell--soft .record-bottom-meta > span:not(.record-stage):not(.record-type):not(.record-pin),
+.site-shell--soft .record-stage,
+.site-shell--soft .record-type,
+.site-shell--soft .record-pin,
+.site-shell--soft .record-tags a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 4px 8px;
+  border: 1px solid #b9cdbd;
+  border-radius: 7px;
+  background: #eef5ef;
+  color: #294735;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.site-shell--soft .record-stage { background: #e7f2e7; border-color: #a9c6ad; color: #315d3d; }
+.site-shell--soft .record-type { background: #f1f3ec; border-color: #c9d3c5; color: #53634f; }
+.site-shell--soft .record-pin { background: #f8f0dc; border-color: #d8c49a; color: #76591f; }
+.site-shell--soft .record-tags a { background: #f2f5ef; border-color: #c2d0c3; color: #3c5943; }
+.site-shell--soft .member-content-mask { background: var(--site-panel-soft); border-color: var(--site-line-strong); }
+.site-shell--soft .member-content-mask::after { background: linear-gradient(180deg, color-mix(in srgb, var(--site-panel) 48%, transparent), var(--site-panel-soft)); }
+.site-shell--soft .member-content-mask-panel { background: linear-gradient(180deg, color-mix(in srgb, var(--site-panel) 16%, transparent), color-mix(in srgb, var(--site-panel-soft) 88%, transparent) 62%, var(--site-panel-soft)); }
+.site-shell--soft .member-content-mask-panel strong,
+.site-shell--soft .member-content-mask-compact-title { color: var(--site-ink); }
+.site-shell--soft .member-content-mask-compact-entry { color: var(--site-accent); text-decoration-color: var(--site-line-strong); }
+.site-shell--soft .member-content-mask-body span { color: var(--site-faint); }
+
+/* The dark version retains the original palette but uses the compact soft
+   theme's type scale and spacing. */
+.site-shell--dark { color-scheme: dark; }
+.site-shell--dark main { font-size: 14px; }
+.site-shell--dark .post { padding: 17px 0; }
+.site-shell--dark .post p,
+.site-shell--dark .reading section p,
+.site-shell--dark .record-body p,
+.site-shell--dark .record-summary { font-size: 14px; line-height: 1.75; }
+.site-shell--dark .watch-card,
+.site-shell--dark .watch-observation-card,
+.site-shell--dark .observation,
+.site-shell--dark .member-status { background: var(--site-panel); }
+
+/* The watchlist used to carry its original dark palette in globals.css. Keep
+   its surfaces and controls tied to the shell tokens so the same records work
+   in both colour systems, including the narrow mobile layout. */
+.site-shell--soft .selects label,
+.site-shell--soft .watch-detail-header p,
+.site-shell--soft .watch-detail-stage,
+.site-shell--soft .watch-history-entry header,
+.site-shell--soft .watch-update-form label,
+.site-shell--soft .watchlist-entry-form label { color: var(--site-muted); }
+
+.site-shell--soft .selects select,
+.site-shell--soft .watch-update-form textarea,
+.site-shell--soft .watch-update-form select,
+.site-shell--soft .watchlist-entry-form input,
+.site-shell--soft .watchlist-entry-form textarea,
+.site-shell--soft .watchlist-entry-form select {
+  background: var(--site-panel);
+  border-color: var(--site-line-strong);
+  color: var(--site-ink);
+  color-scheme: light;
+}
+.site-shell--soft .selects select:focus,
+.site-shell--soft .watch-update-form textarea:focus,
+.site-shell--soft .watch-update-form select:focus,
+.site-shell--soft .watchlist-entry-form input:focus,
+.site-shell--soft .watchlist-entry-form textarea:focus,
+.site-shell--soft .watchlist-entry-form select:focus {
+  border-color: var(--site-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--site-accent) 16%, transparent);
+}
+
+.site-shell--soft .watch-observation-card,
+.site-shell--soft .watch-detail-summary,
+.site-shell--soft .watch-map-root,
+.site-shell--soft .watch-map-node .watch-history-entry,
+.site-shell--soft .watch-member-preview {
+  background: var(--site-panel);
+  border-color: var(--site-line);
+  color: var(--site-ink);
+}
+.site-shell--soft .watch-observation-card.is-ended { background: var(--site-panel-soft); }
+.site-shell--soft .watch-observation-card:hover { border-color: var(--site-accent); }
+.site-shell--soft .watch-observation-card h2,
+.site-shell--soft .watch-map-node .watch-history-entry header strong { color: var(--site-ink); }
+.site-shell--soft .watch-observation-card p,
+.site-shell--soft .watch-detail-summary p,
+.site-shell--soft .watch-map-node .watch-history-entry p,
+.site-shell--soft .watch-member-preview p { color: var(--site-muted); }
+.site-shell--soft .ticker,
+.site-shell--soft .watch-observation-times,
+.site-shell--soft .watch-detail-meta,
+.site-shell--soft .watch-map-root small,
+.site-shell--soft .watch-map-date,
+.site-shell--soft .watch-member-preview small { color: var(--site-faint); }
+.site-shell--soft .watch-observation-times,
+.site-shell--soft .watch-detail-meta,
+.site-shell--soft .watchlist-group + .watchlist-group,
+.site-shell--soft .watch-map-risk { border-color: var(--site-line); }
+.site-shell--soft .watch-observation-more,
+.site-shell--soft .watch-detail-meta a,
+.site-shell--soft .watch-map-node .watch-history-entry a,
+.site-shell--soft .watch-map-index,
+.site-shell--soft .watch-map-root > span { color: var(--site-accent); }
+.site-shell--soft .watchlist-group .section-line h2 span,
+.site-shell--soft .watchlist-group .section-line small,
+.site-shell--soft .watch-map-hint,
+.site-shell--soft .watch-map-risk,
+.site-shell--soft .watch-detail-summary .risk { color: var(--site-muted); }
+.site-shell--soft .watch-detail-header { border-color: var(--site-line); }
+.site-shell--soft .watch-map::before,
+.site-shell--soft .watch-map-node::before { background: var(--site-line-strong); }
+.site-shell--soft .watch-map-node::after {
+  background: var(--site-panel);
+  border-color: var(--site-accent);
+  box-shadow: 0 0 0 4px var(--site-bg);
+}
+.site-shell--soft .watch-map-node.is-latest .watch-history-entry {
+  background: var(--site-panel);
+  border-color: var(--site-accent);
+}
+.site-shell--soft .watch-map-node.is-latest::after { background: var(--site-accent); }
+.site-shell--soft .watch-lifecycle-ended {
+  border-color: var(--site-line-strong);
+  background: var(--site-panel-soft);
+  color: var(--site-muted);
+}
+.site-shell--soft .stage {
+  border: 1px solid var(--site-line-strong);
+  background: var(--site-accent-soft);
+  color: var(--site-accent);
+}
+
+.site-shell--soft .watch-detail-actions .button.secondary,
+.site-shell--soft .watch-update-form .button.secondary,
+.site-shell--soft .watchlist-entry-form .button.secondary,
+.site-shell--soft .watchlist-entry-button {
+  border-color: var(--site-line-strong);
+  background: var(--site-panel);
+  color: var(--site-accent);
+}
+.site-shell--soft .watch-detail-actions .button.secondary:hover,
+.site-shell--soft .watch-update-form .button.secondary:hover,
+.site-shell--soft .watchlist-entry-form .button.secondary:hover,
+.site-shell--soft .watchlist-entry-button:hover {
+  border-color: var(--site-accent);
+  background: var(--site-accent-soft);
+}
+.site-shell--soft .watch-update-dialog,
+.site-shell--soft .watchlist-entry-dialog {
+  border-color: var(--site-line-strong);
+  background: var(--site-panel);
+  color: var(--site-ink);
+  box-shadow: 0 20px 52px color-mix(in srgb, var(--site-ink) 16%, transparent);
+}
+.site-shell--soft .watch-update-dialog::backdrop,
+.site-shell--soft .watchlist-entry-dialog::backdrop {
+  background: color-mix(in srgb, var(--site-ink) 28%, transparent);
+}
+.site-shell--soft .watch-update-form small,
+.site-shell--soft .watchlist-entry-form small,
+.site-shell--soft .watchlist-entry-caption,
+.site-shell--soft .watch-update-images .image-uploader > p { color: var(--site-faint); }
+.site-shell--soft .watch-update-images .image-uploader {
+  border-color: var(--site-line-strong);
+  background: var(--site-panel-soft);
+}
+.site-shell--soft .watch-member-preview strong { color: var(--site-ink); }
+
+/* Restricted observations use a visual texture, but it must be a light
+   surface in the soft shell. The token-only treatment also covers earlier
+   membership gate variants still rendered by archived records. */
+.site-shell--soft .member-content-mask.is-compact .member-content-mask-panel {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--site-panel) 16%, transparent), color-mix(in srgb, var(--site-panel-soft) 88%, transparent) 62%, var(--site-panel-soft));
+}
+.site-shell--soft .member-content-mask-panel strong,
+.site-shell--soft .member-content-mask-compact-title,
+.site-shell--soft .member-content-mask-topic,
+.site-shell--soft .member-content-safe-preview { color: var(--site-ink); }
+.site-shell--soft .member-content-mask-compact-entry,
+.site-shell--soft .member-content-mask-login {
+  color: var(--site-accent);
+  text-decoration-color: var(--site-line-strong);
+}
+.site-shell--soft :where(.member-preview-note, .compact-member-note, .watch-member-preview, .member-gate) {
+  --gate-border: var(--site-line-strong);
+  --gate-surface: var(--site-panel-soft);
+  --gate-texture: var(--site-faint);
+  background: var(--site-panel-soft);
+  border-color: var(--site-line-strong);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--site-panel) 72%, transparent);
+}
+.site-shell--soft :where(.member-preview-note, .compact-member-note, .watch-member-preview, .member-gate)::after {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--site-panel) 20%, transparent), var(--site-panel-soft));
+}
+.site-shell--soft :where(.member-preview-note, .compact-member-note, .watch-member-preview) > span,
+.site-shell--soft .member-gate__label {
+  border-color: var(--site-line-strong);
+  background: var(--site-panel);
+  color: var(--site-ink);
+}
+.site-shell--soft :where(.member-preview-note, .watch-member-preview) > p,
+.site-shell--soft .member-gate__description,
+.site-shell--soft .member-gate__content p,
+.site-shell--soft :where(.watch-member-preview) > small,
+.site-shell--soft .member-gate__hint { color: var(--site-muted); }
+.site-shell--soft :where(.member-preview-note, .compact-member-note, .watch-member-preview, .member-gate) :where(a, .member-gate__cta) {
+  border-color: var(--site-accent);
+  background: var(--site-accent);
+  color: var(--site-panel);
+}
+.site-shell--soft :where(.member-preview-note, .compact-member-note, .watch-member-preview, .member-gate) :where(a, .member-gate__cta):hover {
+  border-color: var(--site-accent);
+  background: var(--site-ink);
+  color: var(--site-panel);
+}
+
+@media (max-width: 1200px) {
+  .site-shell .sidebar { width: 190px; }
+  .site-shell .workspace { margin-left: 190px; }
+  .site-shell main { width: calc(100% - 40px); padding-inline: 20px; }
+}
+@media (max-width: 760px) {
+  .site-shell .sidebar { display: none; }
+  .site-shell .workspace { margin-left: 0; padding-top: 0; }
+  .site-shell .topbar { position: sticky; left: auto; right: auto; width: auto; height: 56px; padding-inline: 14px; }
+  .site-shell .topbar-location { gap: 5px; }
+  .site-shell .site-topbar-brand { min-width: 0; gap: 8px; }
+  .site-shell .site-topbar-meta { display: none; }
+  .site-shell .site-topbar-mark { width: 28px; height: 28px; font-size: 15px; }
+  .site-shell .site-topbar-brand strong { font-size: 13px; }
+  .site-shell .site-topbar-brand small { font-size: 7px; }
+  .site-shell main { width: 100%; padding: 20px 16px 40px; }
+  .site-shell .account-links > a:not(.account-identity) { display: none; }
+  .site-shell .site-theme-toggle { min-height: 32px; padding-inline: 7px; font-size: 10px; }
+  .site-shell .page-heading h1,
+  .site-shell .studio-heading h1,
+  .site-shell .member-management-heading h1,
+  .site-shell .terminal-heading h1 { font-size: 26px; }
+  .site-shell footer { flex-direction: column; gap: 8px; padding-bottom: 24px; }
+}
+
+/* The mobile drawer reuses the same research-workbench navigation as the
+   fixed desktop rail. Keep its account links aligned and free of the old
+   brand/section-number treatment. */
+.site-shell .drawer-content .sidebar-heading { margin: 0; }
+.site-shell .drawer-content .sidebar-account-links { margin-top: 0; }
+.site-shell .drawer-content .member-nav,
+.site-shell .drawer-content .admin-entry { display: flex; align-items: center; }
+.site-shell .drawer-content .admin-entry { position: static; padding: 10px; font-size: 14px; }

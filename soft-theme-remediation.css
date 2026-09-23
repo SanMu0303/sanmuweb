@@ -1,0 +1,214 @@
+/*
+ * Compatibility layer for older page modules that still carried their own
+ * dark palette.  It is deliberately scoped to the regular soft site shell;
+ * the dark shell and the terminal's independent workbench remain unchanged.
+ */
+html[data-site-theme="soft"] body:has(.site-shell--soft) {
+  background: #f4f7f4;
+  color: #17231c;
+  color-scheme: light;
+}
+
+.site-shell--soft {
+  color-scheme: light;
+}
+
+/* Native controls are the most visible leak from the former dark theme. */
+.site-shell--soft :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  background: #fff !important;
+  color: #17231c !important;
+  border-color: #b9cfbd !important;
+  color-scheme: light;
+}
+.site-shell--soft :where(input, textarea)::placeholder { color: #718077 !important; opacity: 1; }
+.site-shell--soft select option { background: #fff; color: #17231c; }
+.site-shell--soft :where(input, select, textarea):focus-visible {
+  outline-color: #3f7651;
+  border-color: #6f9a78 !important;
+}
+
+/* Shared legacy controls and record utilities. */
+.site-shell--soft :where(.button.secondary, .watchlist-entry-button) {
+  background: #fff;
+  border-color: #9bb9a1;
+  color: #315f3e;
+}
+.site-shell--soft :where(.button.secondary, .watchlist-entry-button):hover {
+  background: #eaf3eb;
+  border-color: #5f8d69;
+  color: #214d2f;
+}
+.site-shell--soft :where(.search, .research-search, .home-feed-search) {
+  background: #fff;
+  color: #587064;
+  border-color: #c4d5c8;
+}
+.site-shell--soft :where(.research-filters, .active-filter-line, .stream-heading, .research-rail, .sidebar-module, .archive-nav, .lifecycle-strip) {
+  border-color: #d7e3d9;
+}
+.site-shell--soft :where(.research-filter-row select, .list-filter select, .selects select) {
+  background: #fff;
+  border-color: #b9cfbd;
+  color: #24372a;
+}
+.site-shell--soft :where(.filters button.selected, .studio-tabs .selected, .archive-nav .expanded, .archive-nav .current) {
+  background: #e5f0e6;
+  border-color: #a9c5ae;
+  color: #315f3e;
+}
+.site-shell--soft :where(.pinned-research .research-record, .stream-column, .focus-observation, .member-card, .member-preview-note, .compact-member-note, .section-editor) {
+  background: #fff;
+  border-color: #d1dfd4;
+  color: #24372a;
+}
+.site-shell--soft :where(.focus-observation:hover, .pinned-research .research-record:hover) {
+  background: #f2f7f2;
+  border-color: #aac4ae;
+}
+.site-shell--soft :where(.research-record, .post, .course-lesson, .timeline-record) { border-color: #d9e4da; }
+.site-shell--soft :where(.research-search, .research-filter-row select, .home-feed-search) svg { color: #63806b; }
+.site-shell--soft :where(.record-preview, .member-preview-note) {
+  background: #f0f6f1;
+  border-color: #a9c5ae;
+  color: #405c48;
+}
+.site-shell--soft :where(.record-stage, .record-type, .record-pin, .home-symbol-tag, .record-bottom-meta > span, .record-bottom-meta > a) {
+  background: #f1f6f1;
+  border-color: #bbcebf;
+  color: #365a40;
+}
+.site-shell--soft .record-stage-高潮 { background: #fbf3df; border-color: #d9c694; color: #76591f; }
+.site-shell--soft .record-stage-失效 { background: #fbebe7; border-color: #e0b3a9; color: #934c42; }
+.site-shell--soft :where(.research-image img, .image-failed, .post-thumbnails button, .post-thumbnails .image-fallback) {
+  background: #f0f5f1;
+  border-color: #ceddd1;
+  color: #5a7060;
+}
+.site-shell--soft .post-thumbnails button > span:not(.image-fallback) {
+  background: rgb(31 59 39 / 78%);
+  color: #fff;
+}
+
+/* Editors, uploads, image preview and account management. */
+.site-shell--soft :where(.editor-fields input, .editor-fields textarea, .editor-fields select, .account-form input) {
+  background: #fff;
+  border-color: #b9cfbd;
+  color: #17231c;
+}
+.site-shell--soft :where(.editor-actions, .quick-composer-actions) { background: var(--site-bg); border-color: var(--site-line); }
+.site-shell--soft :where(.account-initial, .profile-avatar) { background: #e7f0e8; color: #3f7651; }
+.site-shell--soft :where(.video-cover-editor, .video-cover-empty) { background: #fff; border-color: #cadaca; color: #53695a; }
+.site-shell--soft :where(.video-cover-previews img, .video-source-preview) { background: #eef4ef; border-color: #c3d5c6; }
+.site-shell--soft .video-cover-editor .video-cover-ready { color: #3f7651; }
+.site-shell--soft .video-cover-save-hint { color: #8c5e23; }
+.site-shell--soft :where(.upload-drop-hint, .upload-preview-item, .upload-state) {
+  background: #eef4ef;
+  border-color: #c7d8ca;
+  color: #3f6650;
+}
+.site-shell--soft :where(.upload-controls > button, .image-url-option > button, .upload-order button) {
+  background: #fff;
+  border-color: #b8cdbb;
+  color: #315f3e;
+}
+.site-shell--soft :where(.upload-delete, .upload-number) { background: #315f3e; color: #fff; }
+.site-shell--soft .image-lightbox { background: #f8fbf8; color: #17231c; border-color: #bfd1c2; box-shadow: 0 24px 80px rgb(23 47 31 / 25%); }
+.site-shell--soft .image-lightbox button { background: #fff; border-color: #b7cbb9; color: #315f3e; }
+.site-shell--soft .lightbox-image-scroll { background: #edf3ee; }
+
+/* Membership and profile surfaces. */
+.site-shell--soft .member-badge { background: #eef5ef; border-color: #bad0be; color: #365d41; }
+.site-shell--soft .member-badge.active { background: #e5f2e6; border-color: #8fb998; color: #2f6940; }
+.site-shell--soft .member-badge.expired { background: #fff4e4; border-color: #ddc18f; color: #805a20; }
+.site-shell--soft .member-badge.revoked { background: #feeeeb; border-color: #e2b5ad; color: #984a41; }
+.site-shell--soft .member-badge.admin { background: #e8eff5; border-color: #b5c9da; color: #415c73; }
+.site-shell--soft .member-search { background: #fff; border-color: #d0dfd2; }
+.site-shell--soft .member-search label,
+.site-shell--soft .member-user-identity > span { color: #586b5f; }
+.site-shell--soft .member-user-row:hover,
+.site-shell--soft .member-user-row.selected { background: #edf5ee; }
+.site-shell--soft .member-user-row.selected { box-shadow: inset 3px 0 #5b8b65; }
+.site-shell--soft .profile-membership,
+.site-shell--soft .member-video-gate { background: #fff; border-color: #cfddd1; color: #506556; }
+.site-shell--soft :where(.profile-membership > a, .member-video-gate a) { color: #356b46; }
+.site-shell--soft .member-expiry-form input[type="date"] { color-scheme: light; }
+
+/* Native dialogs retain a dimmed backdrop, but their actual surfaces are
+   always light when the page is light. */
+.site-shell--soft :where(.quick-composer-dialog, .watch-update-dialog, .watchlist-entry-dialog, .mobile-course-directory dialog) {
+  background: #fff;
+  border-color: #bcd0bf;
+  color: #17231c;
+  box-shadow: 0 24px 80px rgb(23 47 31 / 25%);
+}
+.site-shell--soft :where(.quick-composer-dialog::backdrop, .watch-update-dialog::backdrop, .watchlist-entry-dialog::backdrop, .mobile-course-directory dialog::backdrop) { background: rgb(22 38 29 / 34%); }
+.site-shell--soft :where(.quick-composer-header, .quick-composer-actions) { border-color: #d5e2d7; }
+.site-shell--soft :where(.quick-composer-close, .sheet-close) { background: transparent; border-color: #b9cdbb; color: #42634b; }
+.site-shell--soft :where(.quick-composer-close:hover, .sheet-close:hover) { background: #eaf3eb; color: #214d2f; }
+.site-shell--soft :where(.composer-sync-box, .composer-sync-box.selected) { background: #f4f8f4; border-color: #c6d8c8; }
+.site-shell--soft .composer-sync-fields { border-color: #d5e2d7; }
+.site-shell--soft :where(.watch-update-form label, .watchlist-entry-form label) { color: #3e5545; }
+.site-shell--soft :where(.watch-update-form small, .watchlist-entry-form small) { color: #63756a; }
+
+@media (max-width: 760px) {
+  .site-shell--soft :where(.quick-composer-dialog, .watch-update-dialog, .watchlist-entry-dialog) { width: calc(100% - 24px); }
+  .site-shell--soft .image-lightbox { width: min(100% - 20px, 1100px); max-width: calc(100% - 20px); padding: 12px; }
+}
+
+/* The homepage has an intentionally separate layout, so mirror the same
+   compatibility fixes here instead of letting legacy home.css dark controls
+   leak into the soft theme. */
+.light-home-live:not(.light-home-live--dark) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  background: #fff !important;
+  color: #17231c !important;
+  border-color: #b9cfbd !important;
+  color-scheme: light;
+}
+.light-home-live:not(.light-home-live--dark) :where(input, textarea)::placeholder { color: #718077 !important; opacity: 1; }
+.light-home-live:not(.light-home-live--dark) select option { background: #fff; color: #17231c; }
+.light-home-live:not(.light-home-live--dark) :where(.research-search, .research-filter-row select, .home-feed-search) {
+  background: #fff !important;
+  border-color: #c4d5c8 !important;
+  color: #587064 !important;
+}
+.light-home-live:not(.light-home-live--dark) :where(.quick-composer-dialog) {
+  background: #fff !important;
+  border-color: #bcd0bf !important;
+  color: #17231c !important;
+  box-shadow: 0 24px 80px rgb(23 47 31 / 25%) !important;
+}
+.light-home-live:not(.light-home-live--dark) .quick-composer-dialog::backdrop { background: rgb(22 38 29 / 34%); }
+.light-home-live:not(.light-home-live--dark) :where(.quick-composer-header, .quick-composer-actions) { border-color: #d5e2d7 !important; }
+.light-home-live:not(.light-home-live--dark) .quick-composer-actions { background: #fff !important; }
+.light-home-live:not(.light-home-live--dark) :where(.quick-composer-close) { background: transparent !important; border-color: #b9cdbb !important; color: #42634b !important; }
+.light-home-live:not(.light-home-live--dark) .quick-composer-close:hover { background: #eaf3eb !important; color: #214d2f !important; }
+.light-home-live:not(.light-home-live--dark) :where(.composer-sync-box, .composer-sync-box.selected) { background: #f4f8f4 !important; border-color: #c6d8c8 !important; }
+.light-home-live:not(.light-home-live--dark) .composer-sync-fields { border-color: #d5e2d7 !important; }
+.light-home-live:not(.light-home-live--dark) :where(.post-thumbnails button, .post-thumbnails .image-fallback, .research-image img) { background: #f0f5f1 !important; border-color: #ceddd1 !important; color: #5a7060 !important; }
+.light-home-live:not(.light-home-live--dark) .post-thumbnails button > span:not(.image-fallback) { background: rgb(31 59 39 / 78%) !important; color: #fff !important; }
+.light-home-live:not(.light-home-live--dark) .image-lightbox { background: #f8fbf8 !important; border-color: #bfd1c2 !important; color: #17231c !important; }
+.light-home-live:not(.light-home-live--dark) .image-lightbox button { background: #fff !important; border-color: #b7cbb9 !important; color: #315f3e !important; }
+.light-home-live:not(.light-home-live--dark) .lightbox-image-scroll { background: #edf3ee !important; }
+.light-home-live:not(.light-home-live--dark) :where(.upload-drop-hint, .upload-preview-item, .upload-state) { background: #eef4ef !important; border-color: #c7d8ca !important; color: #3f6650 !important; }
+.light-home-live:not(.light-home-live--dark) :where(.upload-controls > button, .image-url-option > button, .upload-order button) { background: #fff !important; border-color: #b8cdbb !important; color: #315f3e !important; }
+.light-home-live:not(.light-home-live--dark) :where(.upload-delete, .upload-number) { background: #315f3e !important; color: #fff !important; }
+
+/* Long-form reading, symbol timelines and account forms. */
+.site-shell--soft .article-art { background: linear-gradient(135deg,#eef6ef,#e4efe6); border-color: #bfd2c2; color: #294735; }
+.site-shell--soft .article-art > span,
+.site-shell--soft .article-art small { color: #5d7664; }
+.site-shell--soft .article-art svg { stroke: #4f805b; }
+.site-shell--soft .art-1 { background: linear-gradient(135deg,#edf3f5,#e5eef1); border-color: #c7d5da; }
+.site-shell--soft .art-2 { background: linear-gradient(135deg,#fbf5e9,#f4eddc); border-color: #dfcfaa; }
+.site-shell--soft .paywall { background: #eef5ef; border-color: #bfd2c2; }
+.site-shell--soft .paywall p { color: #49634f !important; }
+.site-shell--soft .lifecycle-strip { background: #fff; border-color: #cfddd1; }
+.site-shell--soft .lifecycle-strip > a { border-color: #d6e2d8; }
+.site-shell--soft .lifecycle-strip small { color: #4f7959; }
+.site-shell--soft .lifecycle-strip p { color: #607368; }
+.site-shell--soft .timeline-record { border-color: #acc7b1; }
+.site-shell--soft .timeline-record::before { background: #5d8d67; }
+.site-shell--soft .bold-toolbar { color: #607368; }
+.site-shell--soft .bold-toolbar button { background: #fff; border-color: #bcd0bf; color: #315f3e; }
+.site-shell--soft .bold-toolbar button:hover { background: #edf5ee; border-color: #7fa387; }
+.site-shell--soft .account-form small { color: #65776b; }

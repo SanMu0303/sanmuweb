@@ -1,0 +1,47 @@
+.page{max-width:960px;margin:0 auto}.back{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#9aab9b}.back:hover{color:#d4e2c8}.heading{margin:30px 0}.heading h1{font-size:32px;font-weight:600;margin:12px 0}.heading p{color:#a0ada1;font-size:15px;margin:0}.form{background:#181e1a;border:1px solid #303a31;border-radius:8px;overflow:hidden}.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}.selections{padding:32px;min-width:0}.section h2,.duration legend{display:flex;align-items:center;gap:12px;font-size:17px;font-weight:500;margin:0 0 24px;color:#dbe4d6}.step{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;border:1px solid #43513f;border-radius:50%;color:#a6bb97;font:12px monospace}.field{display:block;color:#a7b4a7;font-size:13px;margin-bottom:9px}.selectWrap{position:relative}.selectWrap select{display:block;appearance:none;width:100%;min-width:0;height:48px;padding:0 42px 0 14px;background:#121813;color:#dce4d7;border:1px solid #465340;border-radius:4px;font:inherit;font-size:14px;color-scheme:dark;cursor:pointer}.selectWrap svg{position:absolute;right:14px;top:16px;pointer-events:none;color:#9fb38e}.selectWrap select:focus-visible{outline:2px solid #b7ce9b;outline-offset:3px}.networkField{margin-top:22px}.hint{font-size:12px;color:#94a191;line-height:1.8;margin:10px 0 0}.duration{border:0;min-width:0;padding:0;margin:34px 0 0}.duration legend{padding:0;width:100%}.plan{display:flex;align-items:center;position:relative;gap:12px;padding:20px;border:1px solid #8a9f73;background:#263023;border-radius:5px;cursor:pointer}.plan input{position:absolute;opacity:0;width:1px;height:1px}.plan:focus-within{outline:2px solid #b7ce9b;outline-offset:3px}.planText{display:grid;gap:6px}.planText strong{font-size:23px;font-weight:500;color:#e0ead6}.planText small{font-size:12px;color:#a4b698}.planCheck{margin-left:auto;display:grid;place-items:center;background:#b7cb9e;color:#253020;border-radius:50%;width:22px;height:22px}.summary{min-width:0;padding:34px 30px;background:linear-gradient(140deg,#222b21,#1b231c);border-left:1px solid #303b30}.summaryEyebrow{font-size:12px;letter-spacing:1.5px;color:#afc39e}.summary h2{font-size:22px;font-weight:500;margin:12px 0 23px;color:#dce8d2}.benefits{list-style:none;padding:0;margin:0 0 28px;display:grid;gap:14px;color:#adbea6;font-size:13px}.benefits li{display:flex;align-items:flex-start;gap:9px;line-height:1.6}.benefits svg{flex-shrink:0;margin-top:3px;color:#93aa7d}.details{display:grid;gap:12px;font-size:13px;margin:0;padding:22px 0;border-block:1px solid #3a4637}.details>div{display:flex;align-items:baseline;justify-content:space-between;gap:14px;line-height:1.6}.details dt{color:#94a58e;flex-shrink:0}.details dd{margin:0;color:#d1dfc8;text-align:right;overflow-wrap:anywhere}.total{padding-top:24px}.total>span{font-size:13px;color:#a1b397}.total p{display:flex;flex-wrap:wrap;align-items:baseline;gap:9px;margin:8px 0 0}.total strong{font-size:38px;font-weight:500;color:#e3edd8;letter-spacing:-1px;font-variant-numeric:tabular-nums}.total p>span{font-size:13px;color:#a7bb99}.footer{display:flex;align-items:center;justify-content:space-between;gap:24px;border-top:1px solid #303a31;padding:22px 32px}.footer p{font-size:12px;color:#95a28f;line-height:1.8;margin:0}.confirm,.returnButton{display:flex;align-items:center;justify-content:center;gap:16px;min-height:46px;padding:11px 28px;border:1px solid #b5c79f;border-radius:4px;background:#b5c79f;color:#1c261a;font:inherit;font-size:14px;font-weight:500;cursor:pointer}.confirm:hover,.returnButton:hover{background:#c5d6b1;border-color:#c5d6b1}.confirm:focus-visible,.returnButton:focus-visible,.close:focus-visible,.back:focus-visible{outline:2px solid #d4e4c3;outline-offset:4px}.dialog{margin:auto;color:#d9e3d2;background:#19211a;border:1px solid #526048;border-radius:9px;width:calc(100% - 32px);max-width:460px;max-height:calc(100dvh - 40px);padding:0;overflow:auto;box-shadow:0 24px 80px #0008}.dialog::backdrop{background:#060b08ba}.dialogContent{padding:32px;position:relative}.close{position:absolute;right:18px;top:18px;width:34px;height:34px;display:grid;place-items:center;border:0;background:transparent;color:#a8b59f;border-radius:4px;cursor:pointer}.close:hover{background:#2b3828;color:#e0ecd5}.dialog h2{font-size:24px;font-weight:500;margin:12px 35px 0 0}.dialogAmount{display:flex;align-items:baseline;gap:9px;margin:24px 0}.dialogAmount strong{font-size:36px;font-weight:500;letter-spacing:-1px;font-variant-numeric:tabular-nums}.dialogAmount>span{font-size:13px;color:#a8bc9b}.unavailable{text-align:center;padding:26px 10px}.walletIcon{display:grid;place-items:center;margin:0 auto 14px;width:50px;height:50px;background:#293626;color:#9fb68a;border-radius:50%}.unavailable h3{font-size:16px;font-weight:500;margin:0 0 8px}.unavailable p{font-size:13px;line-height:1.8;color:#a5b39b;margin:0}.returnButton{width:100%}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.summary{border-left:0;border-top:1px solid #303b30;padding:26px 28px}.selections{padding:28px}.summary h2{font-size:20px;margin-bottom:18px}.benefits{gap:10px;margin-bottom:24px}.footer{padding:22px 28px}}
+@media(max-width:480px){.heading{margin:24px 0}.heading h1{font-size:28px}.heading p{font-size:14px}.selections,.summary{padding:23px 20px}.duration{margin-top:28px}.section h2,.duration legend{margin-bottom:20px}.plan{padding:18px}.total strong{font-size:34px}.footer{flex-direction:column;align-items:stretch;gap:16px;padding:20px}.footer p{text-align:center}.confirm{width:100%}.dialogContent{padding:26px 22px}.dialogAmount strong{font-size:32px}.dialog .details{font-size:12px}}
+
+/* This module predates the shared soft theme and originally supplied a full
+   dark payment screen. Keep the same layout, but let a light site shell use
+   the same quiet surfaces as the rest of the member area. */
+:global(.site-shell--soft) .page{color:#17231c}
+:global(.site-shell--soft) .back{color:#4e6e58}
+:global(.site-shell--soft) .back:hover{color:#285a39}
+:global(.site-shell--soft) .heading p{color:#5b6d61}
+:global(.site-shell--soft) .form{background:#fff;border-color:#c9d9cd}
+:global(.site-shell--soft) .section h2,
+:global(.site-shell--soft) .duration legend{color:#1d3024}
+:global(.site-shell--soft) .step{border-color:#aac5ae;color:#416d4c;background:#f3f8f3}
+:global(.site-shell--soft) .field{color:#405448}
+:global(.site-shell--soft) .selectWrap select{background:#fff;color:#17231c;border-color:#b9cfbd;color-scheme:light}
+:global(.site-shell--soft) .selectWrap svg{color:#4d7057}
+:global(.site-shell--soft) .hint{color:#66786b}
+:global(.site-shell--soft) .plan{background:#edf5ee;border-color:#a9c4ad}
+:global(.site-shell--soft) .planText strong{color:#203326}
+:global(.site-shell--soft) .planText small{color:#5b7562}
+:global(.site-shell--soft) .planCheck{background:#4f805b;color:#fff}
+:global(.site-shell--soft) .summary{background:linear-gradient(140deg,#f1f7f1,#e8f1e9);border-color:#c9d9cd}
+:global(.site-shell--soft) .summaryEyebrow{color:#477153}
+:global(.site-shell--soft) .summary h2{color:#203326}
+:global(.site-shell--soft) .benefits{color:#48604e}
+:global(.site-shell--soft) .benefits svg{color:#4f805b}
+:global(.site-shell--soft) .details{border-color:#c6d7c9}
+:global(.site-shell--soft) .details dt,
+:global(.site-shell--soft) .total>span,
+:global(.site-shell--soft) .total p>span,
+:global(.site-shell--soft) .footer p{color:#607166}
+:global(.site-shell--soft) .details dd,
+:global(.site-shell--soft) .total strong{color:#203326}
+:global(.site-shell--soft) .footer{border-color:#c9d9cd}
+:global(.site-shell--soft) .confirm,
+:global(.site-shell--soft) .returnButton{background:#4f805b;border-color:#4f805b;color:#fff}
+:global(.site-shell--soft) .confirm:hover,
+:global(.site-shell--soft) .returnButton:hover{background:#3f704b;border-color:#3f704b}
+:global(.site-shell--soft) .dialog{background:#fff;border-color:#bdd1c1;color:#1d3024;box-shadow:0 24px 80px rgb(24 46 32 / 24%)}
+:global(.site-shell--soft) .dialog::backdrop{background:rgb(24 42 31 / 34%)}
+:global(.site-shell--soft) .close{color:#506357}
+:global(.site-shell--soft) .close:hover{background:#edf4ee;color:#214b2e}
+:global(.site-shell--soft) .dialogAmount>span{color:#54705b}
+:global(.site-shell--soft) .walletIcon{background:#e4f0e5;color:#477754}
+:global(.site-shell--soft) .unavailable p{color:#607166}
