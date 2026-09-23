@@ -10,6 +10,15 @@ html[data-site-theme="soft"] body:has(.site-shell--soft) {
 }
 
 .site-shell--soft {
+  /* Legacy page modules still consume the original global tokens.  Map them
+     to the scoped theme here, so nested surfaces cannot fall back to the
+     former dark root palette. */
+  --bg: var(--site-bg);
+  --panel: var(--site-panel);
+  --line: var(--site-line);
+  --text: var(--site-ink);
+  --muted: var(--site-muted);
+  --accent: var(--site-accent);
   color-scheme: light;
 }
 
