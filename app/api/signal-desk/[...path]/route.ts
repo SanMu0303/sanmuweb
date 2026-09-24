@@ -1,8 +1,12 @@
 import {createSignalDeskMarket} from '@/server/signal-desk-market.mjs';
 
-export const runtime = 'nodejs';
+// The adapter only uses Web APIs, so run it at the edge in Singapore.
+// Binance's USDⓈ-M public endpoints reject requests from some US egress IPs;
+// keeping this route out of the default US Node region preserves direct
+// Binance public-data access without any API key.
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-export const preferredRegion = 'hkg1';
+export const preferredRegion = 'sin1';
 
 const market = createSignalDeskMarket();
 
@@ -16,6 +20,19 @@ const SCANNER_UNAVAILABLE = {
     state: 'unavailable',
     transport: 'not_configured',
     reason: '该功能需要常驻扫描器和长连接；当前无状态部署不会伪造实时信号。',
+  },
+};
+
+// REST snapshots are available on Vercel, while the original project's
+// process-local WebSocket scanner is not.  Keep this successful response
+// separate from the SSE endpoints so the terminal can load Binance prices,
+// K-lines and contracts without pretending that a persistent scanner exists.
+const SCANNER_STATUS = {
+  signals: [],
+  status: {
+    state: 'unavailable',
+    transport: 'rest_polling',
+    reason: '币安行情已通过公共 REST 接口接入；全市场扫描器需要常驻服务，尚未启用。',
   },
 };
 
@@ -59,9 +76,10 @@ function pathName(path: string[]) {
 export async function GET(request: Request, context: RouteContext) {
   const {path = []} = await context.params;
   const endpoint = pathName(path);
-  if (endpoint === 'signals' || endpoint === 'signals/stream' || endpoint === 'stream') {
+  if (endpoint === 'signals/stream' || endpoint === 'stream') {
     return scannerUnavailableResponse();
   }
+  if (endpoint === 'signals') return Response.json(SCANNER_STATUS, {headers: headers()});
   if (endpoint === 'config') {
     return Response.json({error: '此接口仅支持 POST', code: 'method_not_allowed'}, {
       status: 405,
@@ -79,6 +97,7 @@ export async function GET(request: Request, context: RouteContext) {
           ...common,
           symbol: url.searchParams.get('symbol') || undefined,
           timeframe: url.searchParams.get('timeframe') || undefined,
+          limit: url.searchParams.get('limit') || undefined,
           at: url.searchParams.get('at') || undefined,
           before: url.searchParams.get('before') || undefined,
           fresh: url.searchParams.get('fresh') === '1',
@@ -112,6 +131,10 @@ export async function GET(request: Request, context: RouteContext) {
 
 export async function POST(_request: Request, context: RouteContext) {
   const {path = []} = await context.params;
-  if (pathName(path) === 'config') return scannerUnavailableResponse();
+  if (pathName(path) === 'config') {
+    // The client can retain its local settings.  We deliberately do not claim
+    // they configure a non-existent background scanner.
+    return Response.json({accepted: false, ...SCANNER_STATUS}, {headers: headers()});
+  }
   return Response.json({error: '接口不存在', code: 'not_found'}, {status: 404, headers: headers()});
 }
