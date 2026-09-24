@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const action = url.searchParams.get('action') || 'snapshot';
   try {
-    if (action === 'catalog') return json(await market.catalog());
+    if (action === 'catalog') return json(await market.catalog({source: url.searchParams.get('source') || undefined}));
     if (action === 'candles') return json(await market.candles({
       symbol: url.searchParams.get('symbol') || undefined,
       interval: url.searchParams.get('interval') || undefined,
