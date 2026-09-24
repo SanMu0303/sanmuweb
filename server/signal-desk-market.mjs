@@ -79,6 +79,15 @@ function cleanTimeframe(value) {
   return timeframe;
 }
 
+function cleanKlineLimit(value) {
+  if (value === undefined || value === null || value === '') return 1_000;
+  const limit = Number(value);
+  if (!Number.isInteger(limit) || limit < 2 || limit > 1_000) {
+    fail('K 线数量不支持', 400, {code: 'invalid_kline_limit'});
+  }
+  return limit;
+}
+
 function cleanSource(value) {
   if (value === undefined || value === null || value === '' || value === 'auto') return undefined;
   if (Object.hasOwn(SOURCES, value)) return value;
@@ -491,8 +500,9 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
   async function binanceKlines(input) {
     const symbol = cleanSymbol(input.symbol);
     const timeframe = cleanTimeframe(input.timeframe);
+    const limit = cleanKlineLimit(input.limit);
     const endTime = klineEnd(input, timeframe);
-    const raw = await binance('/fapi/v1/klines', {symbol, interval: TIMEFRAMES[timeframe].binance, limit: 1_000, endTime});
+    const raw = await binance('/fapi/v1/klines', {symbol, interval: TIMEFRAMES[timeframe].binance, limit, endTime});
     const value = (Array.isArray(raw) ? raw : []).map(normalizeBinanceCandle).filter(Boolean).sort((a, b) => a.time - b.time);
     if (!value.length) fail('未取得 K 线数据，请检查交易对后重试', 502, {source: 'binance-usdm', retryable: true, code: 'empty_klines'});
     return withMeta(value, 'binance-usdm');
@@ -501,8 +511,9 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
   async function bybitKlines(input) {
     const symbol = cleanSymbol(input.symbol);
     const timeframe = cleanTimeframe(input.timeframe);
+    const limit = cleanKlineLimit(input.limit);
     const end = klineEnd(input, timeframe);
-    const raw = await bybit('/v5/market/kline', {category: 'linear', symbol, interval: TIMEFRAMES[timeframe].bybit, limit: 1_000, end});
+    const raw = await bybit('/v5/market/kline', {category: 'linear', symbol, interval: TIMEFRAMES[timeframe].bybit, limit, end});
     // Bybit returns newest-first; the imported chart expects increasing seconds.
     const value = (Array.isArray(raw?.list) ? raw.list : []).map(normalizeBybitCandle).filter(Boolean).sort((a, b) => a.time - b.time);
     if (!value.length) fail('未取得 K 线数据，请检查交易对后重试', 502, {source: 'bybit-linear', retryable: true, code: 'empty_klines'});
@@ -512,9 +523,10 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
   async function okxKlines(input) {
     const symbol = cleanSymbol(input.symbol);
     const timeframe = cleanTimeframe(input.timeframe);
+    const limit = cleanKlineLimit(input.limit);
     const endTime = klineEnd(input, timeframe);
     const raw = await okx('/api/v5/market/candles', {
-      instId: toOkxInstrument(symbol), bar: TIMEFRAMES[timeframe].okx, limit: 300,
+      instId: toOkxInstrument(symbol), bar: TIMEFRAMES[timeframe].okx, limit: Math.min(limit, 300),
       ...(endTime ? {after: endTime} : {}),
     });
     const value = raw.map(normalizeOkxCandle).filter(Boolean).sort((a, b) => a.time - b.time);
@@ -528,10 +540,11 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
     // gets interpreted as a provider outage.
     cleanSymbol(input.symbol);
     cleanTimeframe(input.timeframe);
+    cleanKlineLimit(input.limit);
     return fromSource(requested, {
-      'binance-usdm': () => input.fresh ? binanceKlines(input) : cached(`klines:binance-usdm:${input.symbol}:${input.timeframe}:${input.at || ''}:${input.before || ''}`, 45_000, () => binanceKlines(input)),
-      'bybit-linear': () => input.fresh ? bybitKlines(input) : cached(`klines:bybit-linear:${input.symbol}:${input.timeframe}:${input.at || ''}:${input.before || ''}`, 45_000, () => bybitKlines(input)),
-      'okx-swap': () => input.fresh ? okxKlines(input) : cached(`klines:okx-swap:${input.symbol}:${input.timeframe}:${input.at || ''}:${input.before || ''}`, 45_000, () => okxKlines(input)),
+      'binance-usdm': () => input.fresh ? binanceKlines(input) : cached(`klines:binance-usdm:${input.symbol}:${input.timeframe}:${input.limit || ''}:${input.at || ''}:${input.before || ''}`, 45_000, () => binanceKlines(input)),
+      'bybit-linear': () => input.fresh ? bybitKlines(input) : cached(`klines:bybit-linear:${input.symbol}:${input.timeframe}:${input.limit || ''}:${input.at || ''}:${input.before || ''}`, 45_000, () => bybitKlines(input)),
+      'okx-swap': () => input.fresh ? okxKlines(input) : cached(`klines:okx-swap:${input.symbol}:${input.timeframe}:${input.limit || ''}:${input.at || ''}:${input.before || ''}`, 45_000, () => okxKlines(input)),
     });
   }
 
