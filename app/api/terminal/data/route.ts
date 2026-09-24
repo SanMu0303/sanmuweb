@@ -2,6 +2,7 @@ import {createTerminalMarket} from '@/server/terminal-market.mjs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const preferredRegion = 'hkg1';
 
 const market = createTerminalMarket();
 
