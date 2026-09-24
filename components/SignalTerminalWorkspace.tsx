@@ -50,7 +50,7 @@ const defaultSnapshot: Snapshot | null = null;
 function apiUrl(params: Record<string, string | number | undefined>) {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) if (value !== undefined && value !== '') search.set(key, String(value));
-  return `/api/terminal/market/?${search.toString()}`;
+  return `/api/terminal/data/?${search.toString()}`;
 }
 
 async function request<T>(params: Record<string, string | number | undefined>): Promise<T> {
