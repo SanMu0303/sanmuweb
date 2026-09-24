@@ -1,0 +1,16 @@
+/* Parent shell only. The supplied Signal Desk CSS runs inside its iframe. */
+.trend-signal-terminal-shell {
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  background: #101312;
+}
+
+.trend-signal-terminal-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #101312;
+}
