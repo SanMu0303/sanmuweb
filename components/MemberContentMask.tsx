@@ -12,7 +12,7 @@ type MemberContentMaskProps = {
   /** Render the topic inside the gate when the parent does not render its own heading. */
   showTopic?: boolean;
   kind?: 'post' | 'watch';
-  /** Compact gate for subsequent restricted cards in one result set. */
+  /** Compact gate used by condensed content streams. */
   compact?: boolean;
   /** Watchlist cards are already links; stop the outer link when the gate opens. */
   nestedLink?: boolean;

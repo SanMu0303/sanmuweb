@@ -10,7 +10,7 @@ import MemberContentMask from './MemberContentMask';
 import type {Post} from '@/lib/posts';
 import {timelineHref,filterHref} from '@/lib/posts';
 const tones={'观察更新':'observe','交易计划':'plan','交易反馈':'feedback','市场复盘':'review','教学内容':'lesson',video:'lesson'};
-export default function PostCard({post,full=false,timeline=false,compact=false,memberGateCompact,signedIn,isAdmin=false,onWatchSaved}:{post:Post;full?:boolean;timeline?:boolean;compact?:boolean;/** Compact only repeated locked cards; the first locked result remains expanded. */memberGateCompact?:boolean;signedIn?:boolean;isAdmin?:boolean;onWatchSaved?:()=>void}) {
+export default function PostCard({post,full=false,timeline=false,compact=false,memberGateCompact,signedIn,isAdmin=false,onWatchSaved}:{post:Post;full?:boolean;timeline?:boolean;compact?:boolean;/** Force the shared compact gate when a caller renders a condensed content stream. */memberGateCompact?:boolean;signedIn?:boolean;isAdmin?:boolean;onWatchSaved?:()=>void}) {
   if (post.video) return <article className="research-record" id={'record-'+post.slug}><VideoCard video={post.video} feed/></article>;
   const inline=post.format==='short'||full;
   const short=compact&&post.format==='short'&&!full;
