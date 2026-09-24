@@ -1,6 +1,5 @@
-import './terminal.css';
-import './signal-terminal.css';
+import './source-terminal.css';
 
-export default function TerminalLayout({children}:{children:React.ReactNode}) {
+export default function TerminalLayout({children}: {children: React.ReactNode}) {
   return children;
 }
