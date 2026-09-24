@@ -27,6 +27,7 @@ type Ticker = {
   lowPrice: number | null;
 };
 type OpenInterestPoint = {time: number; openInterest: number | null; value: number | null};
+type MarketSource = 'binance-usdm' | 'bybit-linear';
 type Snapshot = {
   symbol: string;
   interval: string;
@@ -39,6 +40,8 @@ type Snapshot = {
   topByVolume: Ticker[];
   available: Record<string, boolean>;
   fetchedAt: string;
+  source: MarketSource;
+  sourceInterval?: string;
 };
 type CatalogItem = {symbol: string; baseAsset: string; quoteAsset: string; contractType: string};
 type View = 'chart' | 'signals' | 'scanner' | 'plan';
@@ -46,6 +49,14 @@ type View = 'chart' | 'signals' | 'scanner' | 'plan';
 const STORAGE_KEY = 'sanmu-signal-terminal-v1';
 const MAX_CANDLES = 10_000;
 const defaultSnapshot: Snapshot | null = null;
+
+function normalizedSource(value?: MarketSource): MarketSource {
+  return value === 'bybit-linear' ? 'bybit-linear' : 'binance-usdm';
+}
+
+function sourceName(source: MarketSource) {
+  return source === 'bybit-linear' ? 'Bybit 线性永续' : '币安 USDT 永续';
+}
 
 function apiUrl(params: Record<string, string | number | undefined>) {
   const search = new URLSearchParams();
@@ -96,7 +107,7 @@ function Metric({label, value, hint, tone = ''}: {label: string; value: string; 
   </div>;
 }
 
-function PriceChart({candles, oiHistory, symbol, interval, loading}: {candles: Candle[]; oiHistory: OpenInterestPoint[]; symbol: string; interval: string; loading: boolean}) {
+function PriceChart({candles, oiHistory, symbol, interval, source, sourceInterval, loading}: {candles: Candle[]; oiHistory: OpenInterestPoint[]; symbol: string; interval: string; source: MarketSource; sourceInterval: string; loading: boolean}) {
   const width = 1200;
   const priceHeight = 330;
   const oiHeight = 88;
@@ -111,21 +122,30 @@ function PriceChart({candles, oiHistory, symbol, interval, loading}: {candles: C
   const step = candles.length ? plotWidth / candles.length : plotWidth;
   const body = Math.max(1, Math.min(10, step * 0.64));
   const y = (value: number) => pad.top + ((high - value) / range) * plotHeight;
-  const oiRows = oiHistory.filter(point => point.value !== null && point.time !== null);
-  const oiValues = oiRows.map(point => point.value || 0);
+  const oiIsNotional = source !== 'bybit-linear';
+  const oiRows = oiHistory.filter(point => (oiIsNotional ? point.value : point.openInterest) !== null && point.time !== null);
+  const oiValues = oiRows.map(point => (oiIsNotional ? point.value : point.openInterest) ?? 0);
   const oiMin = oiValues.length ? Math.min(...oiValues) : 0;
   const oiMax = oiValues.length ? Math.max(...oiValues) : 1;
   const oiRange = Math.max(oiMax - oiMin, 1);
   const oiLine = oiRows.map((point, index) => {
     const x = pad.left + (oiRows.length > 1 ? (index / (oiRows.length - 1)) * plotWidth : plotWidth / 2);
-    const pointY = priceHeight + gap + 8 + ((oiMax - (point.value || 0)) / oiRange) * (oiHeight - 18);
+    const pointValue = (oiIsNotional ? point.value : point.openInterest) ?? 0;
+    const pointY = priceHeight + gap + 8 + ((oiMax - pointValue) / oiRange) * (oiHeight - 18);
     return `${x.toFixed(1)},${pointY.toFixed(1)}`;
   }).join(' ');
   const last = candles.at(-1);
+  const sourceHeading = source === 'bybit-linear' ? 'BYBIT LINEAR · 备用数据源' : 'BINANCE USDⓈ-M · LIVE';
+  const intervalText = sourceInterval !== interval
+    ? `${intervalLabels[sourceInterval] || sourceInterval} 原始周期（当前选择 ${intervalLabels[interval] || interval}）`
+    : intervalLabels[interval] || interval;
+  const note = source === 'bybit-linear'
+    ? '当前由 Bybit 线性永续公开接口提供备用行情，每 30 秒刷新一次。系统会在 Binance 恢复可达后优先使用 Binance；Bybit OI 历史按持仓量展示。'
+    : 'K 线来自币安 USDT 永续合约公开接口；实时更新来自浏览器直连的币安 WebSocket。OI 历史受交易所公开历史范围限制。';
 
-  return <section className="signal-terminal-chart" aria-label={`${symbol} ${intervalLabels[interval] || interval} K 线图`}>
+  return <section className="signal-terminal-chart" aria-label={`${symbol} ${intervalText} K 线图，来源：${sourceName(source)}`}>
     <div className="signal-terminal-chart-head">
-      <div><span className="signal-terminal-eyebrow">BINANCE USDⓈ-M · LIVE</span><strong>{symbol.replace('USDT', ' / USDT')}</strong><small>{intervalLabels[interval] || interval} · 最近 {candles.length.toLocaleString()} 根</small></div>
+      <div><span className="signal-terminal-eyebrow">{sourceHeading}</span><strong>{symbol.replace('USDT', ' / USDT')}</strong><small>{intervalText} · 最近 {candles.length.toLocaleString()} 根</small></div>
       {last && <div className="signal-terminal-last"><span>最新</span><b>{priceNumber(last.close)}</b></div>}
     </div>
     <div className="signal-terminal-chart-scroll">
@@ -146,13 +166,13 @@ function PriceChart({candles, oiHistory, symbol, interval, loading}: {candles: C
         })}
         {last && <><line className="signal-terminal-price-line" x1={pad.left} x2={width - pad.right} y1={y(last.close)} y2={y(last.close)}/><text className="signal-terminal-price-label" x={width - pad.right + 8} y={y(last.close) + 4}>{priceNumber(last.close)}</text></>}
         <line className="signal-terminal-grid" x1={pad.left} x2={width - pad.right} y1={priceHeight + gap / 2} y2={priceHeight + gap / 2}/>
-        <text className="signal-terminal-oi-label" x={pad.left} y={priceHeight + gap - 3}>OI · 名义持仓量</text>
+        <text className="signal-terminal-oi-label" x={pad.left} y={priceHeight + gap - 3}>{oiIsNotional ? 'OI · 名义持仓量' : 'OI · 持仓量'}</text>
         {oiLine && <><polyline className="signal-terminal-oi-line" points={oiLine}/><polyline className="signal-terminal-oi-fill" points={`${pad.left},${priceHeight + gap + oiHeight} ${oiLine} ${width - pad.right},${priceHeight + gap + oiHeight}`}/></>}
         {oiValues.length > 0 && <text className="signal-terminal-oi-value" x={width - pad.right + 8} y={priceHeight + gap + 18}>{compactNumber(oiValues.at(-1))}</text>}
       </svg>
-      {!candles.length && <div className="signal-terminal-chart-empty">{loading ? <><LoaderCircle size={16} className="is-spinning"/> 正在读取实时 K 线…</> : '暂无 K 线数据'}</div>}
+      {!candles.length && <div className="signal-terminal-chart-empty">{loading ? <><LoaderCircle size={16} className="is-spinning"/> 正在读取行情 K 线…</> : '暂无 K 线数据'}</div>}
     </div>
-    <p className="signal-terminal-chart-note">K 线来自币安 USDT 永续合约公开接口；实时更新来自浏览器直连的币安 WebSocket。OI 历史受交易所公开历史范围限制。</p>
+    <p className="signal-terminal-chart-note">{note}</p>
   </section>;
 }
 
@@ -230,7 +250,7 @@ function SettingsDrawer({settings, onChange, onClose, onReset}: {settings: Termi
       <label>最低名义持仓量（USDT，可设为 0）<input inputMode="decimal" value={oi} onChange={event => setOi(event.target.value)}/></label>
       <label>成交额排名上限<input inputMode="numeric" value={rank} onChange={event => setRank(event.target.value)}/></label>
       <div className="signal-terminal-settings-actions"><button type="button" onClick={apply} className="is-primary"><Check size={14}/>保存设置</button><button type="button" onClick={onReset}>恢复默认</button></div>
-      <small>公开币安数据仅覆盖其实际提供的 USDT 永续合约。股票、大宗商品或其他数据源需要单独接入，当前不会用模拟行情代替。</small>
+      <small>只读取公开的 USDT 永续合约行情。股票、大宗商品或其他数据源需要单独接入，当前不会用模拟行情代替。</small>
     </aside>
   </div>;
 }
@@ -244,7 +264,7 @@ export default function SignalTerminalWorkspace() {
   const [loading, setLoading] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [error, setError] = useState('');
-  const [connection, setConnection] = useState<'connecting' | 'live' | 'reconnecting' | 'offline'>('connecting');
+  const [connection, setConnection] = useState<'connecting' | 'live' | 'reconnecting' | 'offline' | 'fallback'>('connecting');
   const [signals, setSignals] = useState<SignalItem[]>([]);
   const [signalFilter, setSignalFilter] = useState<'all' | 'notice' | 'warning'>('all');
   const [symbolSearch, setSymbolSearch] = useState('');
@@ -254,7 +274,8 @@ export default function SignalTerminalWorkspace() {
   const [audioActive, setAudioActive] = useState(false);
   const [liveSignalVersion, setLiveSignalVersion] = useState(0);
   const signalsRef = useRef<SignalItem[]>([]);
-  const liveSignalRef = useRef<{symbol: string; interval: string; time: number} | null>(null);
+  const liveSignalRef = useRef<{symbol: string; interval: string; time: number; shouldAlert: boolean} | null>(null);
+  const fallbackLatestRef = useRef<{symbol: string; interval: string; time: number} | null>(null);
   const snapshotRequestRef = useRef(0);
   const hydratingStorageKeyRef = useRef<string | null>(null);
 
@@ -304,6 +325,13 @@ export default function SignalTerminalWorkspace() {
     try {
       const data = await request<Snapshot>({action: 'snapshot', symbol, interval, limit: 1000});
       if (requestId !== snapshotRequestRef.current || data.symbol !== symbol || data.interval !== interval) return;
+      const latestTime = data.candles.at(-1)?.time;
+      const previousFallback = fallbackLatestRef.current;
+      if (data.source === 'bybit-linear' && latestTime && previousFallback?.symbol === symbol && previousFallback.interval === interval && previousFallback.time !== latestTime) {
+        liveSignalRef.current = {symbol, interval, time: latestTime, shouldAlert: false};
+        setLiveSignalVersion(current => current + 1);
+      }
+      if (latestTime) fallbackLatestRef.current = {symbol, interval, time: latestTime};
       setSnapshot(data);
       setError('');
     } catch (reason) {
@@ -322,6 +350,17 @@ export default function SignalTerminalWorkspace() {
   }, [loadSnapshot]);
 
   useEffect(() => {
+    const snapshotIsCurrent = snapshot?.symbol === symbol && snapshot?.interval === interval;
+    const source = normalizedSource(snapshot?.source);
+    if (!snapshotIsCurrent) {
+      setConnection('connecting');
+      return;
+    }
+    if (source === 'bybit-linear') {
+      setConnection('fallback');
+      return;
+    }
+
     let disposed = false;
     let retry = 0;
     let firstMessage = true;
@@ -344,14 +383,14 @@ export default function SignalTerminalWorkspace() {
           const isInitialMessage = firstMessage;
           firstMessage = false;
           setSnapshot(current => {
-            if (!current || current.symbol !== symbol || current.interval !== interval) return current;
+            if (!current || current.symbol !== symbol || current.interval !== interval || normalizedSource(current.source) !== 'binance-usdm') return current;
             const previous = current.candles;
             const latest = previous.at(-1);
             const candles = latest?.time === candle.time ? [...previous.slice(0, -1), candle] : [...previous, candle].slice(-MAX_CANDLES);
             return {...current, candles, ticker: {...current.ticker, lastPrice: candle.close}};
           });
           if (!isInitialMessage) {
-            liveSignalRef.current = {symbol, interval, time: candle.time};
+            liveSignalRef.current = {symbol, interval, time: candle.time, shouldAlert: true};
             setLiveSignalVersion(current => current + 1);
           }
         } catch { /* malformed messages are ignored */ }
@@ -366,7 +405,7 @@ export default function SignalTerminalWorkspace() {
     };
     connect();
     return () => { disposed = true; if (reconnectTimer) window.clearTimeout(reconnectTimer); socket?.close(); };
-  }, [symbol, interval]);
+  }, [symbol, interval, snapshot?.symbol, snapshot?.interval, snapshot?.source]);
 
   const speak = useCallback((text: string) => {
     if (!audioActive || !settings.soundEnabled || !('speechSynthesis' in window)) return;
@@ -390,7 +429,7 @@ export default function SignalTerminalWorkspace() {
       && (oiValue || 0) >= settings.minOiValue
       && (!snapshot.rank || snapshot.rank <= settings.rankLimit);
     setSignals(current => mergeSignals(current, incoming));
-    if (canAlert) speak(`${incoming[0].symbol.replace('USDT', '')}，${signalLabels[incoming[0].kind]}`);
+    if (canAlert && live.shouldAlert) speak(`${incoming[0].symbol.replace('USDT', '')}，${signalLabels[incoming[0].kind]}`);
   }, [liveSignalVersion, snapshot, settings.minVolume, settings.minOiValue, settings.rankLimit, speak]);
 
   const selectSymbol = useCallback((candidate: string) => {
@@ -416,9 +455,9 @@ export default function SignalTerminalWorkspace() {
     if (!first || loadingOlder) return;
     setLoadingOlder(true);
     try {
-      const data = await request<{candles: Candle[]}>({action: 'candles', symbol, interval, limit: 1500, endTime: first.time - 1});
+      const data = await request<{candles: Candle[]; source?: MarketSource}>({action: 'candles', symbol, interval, limit: 1500, endTime: first.time - 1, source: snapshot?.source});
       if (data.candles?.length) setSnapshot(current => {
-        if (!current || current.symbol !== symbol || current.interval !== interval) return current;
+        if (!current || current.symbol !== symbol || current.interval !== interval || (data.source && normalizedSource(current.source) !== data.source)) return current;
         const ids = new Set(current.candles.map(candle => candle.time));
         const merged = [...data.candles.filter(candle => !ids.has(candle.time)), ...current.candles].slice(-MAX_CANDLES);
         return {...current, candles: merged};
@@ -440,8 +479,8 @@ export default function SignalTerminalWorkspace() {
         const candidate = candidates[position];
         try {
           const [data, oi] = await Promise.all([
-            request<{candles: Candle[]}>({action: 'candles', symbol: candidate.symbol, interval, limit: 80}),
-            request<{openInterest: number | null}>({action: 'open-interest', symbol: candidate.symbol}),
+            request<{candles: Candle[]}>({action: 'candles', symbol: candidate.symbol, interval, limit: 80, source: snapshot?.source}),
+            request<{openInterest: number | null}>({action: 'open-interest', symbol: candidate.symbol, source: snapshot?.source}),
           ]);
           const oiValue = oi.openInterest && candidate.lastPrice ? oi.openInterest * candidate.lastPrice : null;
           if (settings.minOiValue <= 0 || (oiValue !== null && oiValue >= settings.minOiValue)) {
@@ -454,7 +493,7 @@ export default function SignalTerminalWorkspace() {
     await Promise.all(Array.from({length: Math.min(4, candidates.length)}, () => worker()));
     setSignals(current => mergeSignals(current, results));
     setScanner(current => ({...current, running: false, notice: results.length ? `发现 ${results.length} 条符合条件的信号。` : '本轮没有符合当前规则的新信号。'}));
-  }, [interval, scanner.running, settings.minOiValue, settings.minVolume, settings.rankLimit, snapshot?.topByVolume]);
+  }, [interval, scanner.running, settings.minOiValue, settings.minVolume, settings.rankLimit, snapshot?.source, snapshot?.topByVolume]);
 
   const armSound = useCallback(() => {
     const nextActive = !audioActive;
@@ -482,11 +521,16 @@ export default function SignalTerminalWorkspace() {
   const visibleSignals = signalFilter === 'all' ? signals : signals.filter(item => item.severity === signalFilter);
   const oiValue = currentOiValue(snapshot);
   const selectedTicker = snapshot?.ticker;
+  const selectedSource = normalizedSource(snapshot?.source);
+  const selectedSourceName = sourceName(selectedSource);
+  const selectedSourceInterval = snapshot?.sourceInterval || interval;
+  const usingFallback = selectedSource === 'bybit-linear';
+  const connectionLabel = connection === 'live' ? '实时推送已连接' : connection === 'fallback' ? '备用行情已加载 · 定时刷新' : connection === 'connecting' ? '正在连接行情' : connection === 'reconnecting' ? '正在重连行情' : '行情连接不可用';
 
   return <main className="signal-terminal" data-connection={connection}>
     <header className="signal-terminal-topbar">
       <div className="signal-terminal-brand"><MobileNavigationDrawer path="/terminal/" theme={theme} session={session} triggerClassName="signal-terminal-nav-toggle"/><Activity size={18}/><div><span>RESEARCH SIGNALS</span><strong>趋势交易信号工作台</strong></div></div>
-      <div className="signal-terminal-top-center"><span className={`signal-terminal-connection is-${connection}`}><i/><b>{connection === 'live' ? '实时推送已连接' : connection === 'connecting' ? '正在连接行情' : connection === 'reconnecting' ? '正在重连行情' : '行情连接不可用'}</b></span><span>BINANCE USDⓈ-M</span></div>
+      <div className="signal-terminal-top-center"><span className={`signal-terminal-connection is-${connection}`}><i/><b>{connectionLabel}</b></span><span>{usingFallback ? 'BYBIT LINEAR · 备用数据源' : 'BINANCE USDⓈ-M'}</span></div>
       <div className="signal-terminal-top-actions"><button type="button" className={audioActive ? 'is-active' : ''} onClick={armSound} aria-pressed={audioActive}>{audioActive ? <Volume2 size={15}/> : <VolumeX size={15}/>}<span>{audioActive ? '声音已开' : settings.soundEnabled ? '点击启用声音' : '开启声音'}</span></button><label className="signal-terminal-volume" title="提醒音量"><Volume2 size={13}/><input type="range" min="0" max="1" step="0.05" value={settings.soundVolume} onChange={event => changeSettings({...settings, soundVolume: Number(event.target.value)})} aria-label="提醒音量"/></label><button type="button" onClick={testSound} title="试听提示音"><Bell size={14}/><span>试听</span></button><button type="button" onClick={() => setSettingsOpen(true)}><Settings2 size={15}/><span>扫描设置</span></button><Link href="/"><ArrowLeft size={15}/><span>返回主站</span></Link></div>
     </header>
 
@@ -498,7 +542,7 @@ export default function SignalTerminalWorkspace() {
       <aside className={`signal-terminal-left ${activeView !== 'signals' ? 'mobile-hidden' : ''}`}>
         <section className="signal-terminal-panel signal-terminal-signal-list">
           <div className="signal-terminal-panel-head"><div><span>LIVE SIGNALS</span><h2>实时信号</h2></div><div className="signal-terminal-panel-actions"><button type="button" onClick={() => setSignalFilter(signalFilter === 'all' ? 'notice' : signalFilter === 'notice' ? 'warning' : 'all')} aria-label="切换信号筛选"><Filter size={14}/>{signalFilter === 'all' ? '全部' : signalFilter === 'notice' ? '关注' : '风险'}</button><span>{signals.length}</span></div></div>
-          <div className="signal-terminal-signal-info"><Radio size={13}/><span>{connection === 'live' ? '当前图表正在接收逐笔聚合 K 线更新' : '信号会在行情连接恢复后继续更新'}</span></div>
+          <div className="signal-terminal-signal-info"><Radio size={13}/><span>{connection === 'live' ? `当前图表正在接收 ${selectedSourceName} K 线更新` : connection === 'fallback' ? 'Bybit 备用行情每 30 秒刷新一次；只为新增 K 线生成视觉信号，不混用 Binance 实时推送。' : '信号会在行情连接恢复后继续更新'}</span></div>
           <div className="signal-terminal-signal-scroll">
             {visibleSignals.length ? visibleSignals.map(item => <SignalCard key={item.id} signal={item} onSelect={selectSymbol} onRemove={(id) => setSignals(current => current.filter(signal => signal.id !== id))}/>) : <div className="signal-terminal-empty"><Bell size={18}/><strong>尚无信号</strong><p>选择标的后，系统会依据实时 K 线检测新高、新低、突破、成交量与价格异动。</p></div>}
           </div>
@@ -508,20 +552,20 @@ export default function SignalTerminalWorkspace() {
 
       <section className={`signal-terminal-market ${activeView !== 'chart' ? 'mobile-hidden' : ''}`}>
         <div className="signal-terminal-market-toolbar">
-          <div className="signal-terminal-symbol-picker"><Search size={15}/><input value={symbolSearch} onChange={event => setSymbolSearch(event.target.value)} placeholder={symbol.replace('USDT', '')} aria-label="搜索币安 USDT 永续交易对"/><ChevronDown size={14}/>{symbolSearch && <div className="signal-terminal-symbol-menu">{filteredSymbols.length ? filteredSymbols.map(item => <button type="button" key={item.symbol} onClick={() => { selectSymbol(item.symbol); setSymbolSearch(''); }}>{item.symbol.replace('USDT', '')}<small>/ USDT 永续</small></button>) : <span>没有匹配的可交易 USDT 永续合约</span>}</div>}</div>
+          <div className="signal-terminal-symbol-picker"><Search size={15}/><input value={symbolSearch} onChange={event => setSymbolSearch(event.target.value)} placeholder={symbol.replace('USDT', '')} aria-label="搜索 USDT 永续交易对"/><ChevronDown size={14}/>{symbolSearch && <div className="signal-terminal-symbol-menu">{filteredSymbols.length ? filteredSymbols.map(item => <button type="button" key={item.symbol} onClick={() => { selectSymbol(item.symbol); setSymbolSearch(''); }}>{item.symbol.replace('USDT', '')}<small>/ USDT 永续</small></button>) : <span>没有匹配的可交易 USDT 永续合约</span>}</div>}</div>
           <div className="signal-terminal-intervals">{Object.keys(intervalLabels).map(value => <button type="button" key={value} className={interval === value ? 'is-active' : ''} onClick={() => changeSettings({...settings, interval: value})}>{value}</button>)}</div>
           <button type="button" className="signal-terminal-refresh" onClick={() => void loadSnapshot()} aria-label="刷新行情"><RefreshCw size={15} className={loading ? 'is-spinning' : ''}/></button>
         </div>
         <section className="signal-terminal-metrics" aria-label="市场指标">
           <Metric label="24H 成交额" value={compactNumber(volumeUsdt(snapshot))} hint="USDT"/>
-          <Metric label="名义持仓量" value={compactNumber(oiValue)} hint="USDT"/>
+          <Metric label={usingFallback ? "当前 OI 估值" : "名义持仓量"} value={compactNumber(oiValue)} hint={usingFallback ? "按标记价格估算" : "USDT"}/>
           <Metric label="流通市值" value="待接入" hint="需可信供应数据"/>
-          <Metric label="成交额排名" value={snapshot?.rank ? `#${snapshot.rank}` : '—'} hint="币安 USDT 永续"/>
+          <Metric label="成交额排名" value={snapshot?.rank ? `#${snapshot.rank}` : '—'} hint={`${selectedSourceName} USDT 永续`}/>
           <Metric label="24H 涨跌幅" value={percent(selectedTicker?.priceChangePercent)} hint={selectedTicker?.highPrice ? `高 ${priceNumber(selectedTicker.highPrice)}` : '—'} tone={metricTone(selectedTicker?.priceChangePercent)}/>
         </section>
         {error && <div className="signal-terminal-error"><AlertTriangle size={15}/><span>{error}</span><button type="button" onClick={() => void loadSnapshot()}>重试</button></div>}
-        <PriceChart candles={snapshot?.candles || []} oiHistory={snapshot?.oiHistory || []} symbol={symbol} interval={interval} loading={loading}/>
-        <div className="signal-terminal-history-bar"><span><HistoryIcon/>已加载 {snapshot?.candles.length.toLocaleString() || 0} 根 K 线</span><button type="button" onClick={() => void loadOlder()} disabled={loadingOlder || !snapshot?.candles.length}>{loadingOlder ? <><LoaderCircle size={13} className="is-spinning"/>读取中</> : <><ChevronDown size={13}/>加载更早历史</>}</button><span>单次公开接口最多 1,500 根；本页最多保留 {MAX_CANDLES.toLocaleString()} 根。</span></div>
+        <PriceChart candles={snapshot?.candles || []} oiHistory={snapshot?.oiHistory || []} symbol={symbol} interval={interval} source={selectedSource} sourceInterval={selectedSourceInterval} loading={loading}/>
+        <div className="signal-terminal-history-bar"><span><HistoryIcon/>已加载 {snapshot?.candles.length.toLocaleString() || 0} 根 K 线</span><button type="button" onClick={() => void loadOlder()} disabled={loadingOlder || !snapshot?.candles.length}>{loadingOlder ? <><LoaderCircle size={13} className="is-spinning"/>读取中</> : <><ChevronDown size={13}/>加载更早历史</>}</button><span>{usingFallback ? "Bybit 单次公开接口最多 1,000 根" : "Binance 单次公开接口最多 1,500 根"}；本页最多保留 {MAX_CANDLES.toLocaleString()} 根。</span></div>
       </section>
 
       <aside className={`signal-terminal-right ${activeView === 'scanner' ? 'mobile-visible' : activeView === 'plan' ? 'mobile-plan' : ''}`}>
@@ -532,7 +576,7 @@ export default function SignalTerminalWorkspace() {
           {scanner.notice && <div className="signal-terminal-scanner-notice">{scanner.notice}</div>}
           <div className="signal-terminal-market-list">
             {(snapshot?.topByVolume || []).filter(item => (item.quoteVolume || 0) >= settings.minVolume).slice(0, 12).map((item, index) => <button type="button" key={item.symbol} className={item.symbol === symbol ? 'is-current' : ''} onClick={() => selectSymbol(item.symbol)}><span>#{index + 1}</span><b>{item.symbol.replace('USDT', '')}</b><small>{compactNumber(item.quoteVolume)}</small><em className={metricTone(item.priceChangePercent)}>{percent(item.priceChangePercent)}</em></button>)}
-            {!snapshot?.topByVolume?.length && <div className="signal-terminal-empty small"><List size={16}/><p>等待币安 24H 成交额列表。</p></div>}
+            {!snapshot?.topByVolume?.length && <div className="signal-terminal-empty small"><List size={16}/><p>等待永续市场 24H 成交额列表。</p></div>}
           </div>
         </section>
         <PlanPanel settings={settings} onChange={changeSettings}/>
