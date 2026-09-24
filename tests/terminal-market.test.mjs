@@ -111,3 +111,37 @@ test('falls back to Bybit linear data only after a recoverable Binance outage an
   assert.equal(mapped.interval, '8h');
   assert.equal(mapped.sourceInterval, '4h');
 });
+
+function okxTertiaryFallbackFetcher(input) {
+  const url = new URL(String(input));
+  if (url.hostname === 'fapi.binance.com') return new Response('upstream unavailable', {status: 503});
+  if (url.hostname === 'api.bybit.com' || url.hostname === 'api.bytick.com') return Response.json({retCode: 10006, retMsg: 'Too many visits'});
+  if (url.hostname !== 'www.okx.com') throw new Error(`unexpected host ${url.hostname}`);
+  const ok = data => Response.json({code: '0', msg: '', data});
+  if (url.pathname === '/api/v5/market/candles') return ok([
+    ['1725000900000', '108', '116', '106', '112', '24', '0', '0', '1'],
+    ['1725000000000', '100', '112', '96', '108', '42', '0', '0', '1'],
+  ]);
+  if (url.pathname === '/api/v5/market/tickers') return ok([
+    {instId: 'ETH-USDT-SWAP', last: '3000', open24h: '3030', volCcy24h: '4000', high24h: '3100', low24h: '2950'},
+    {instId: 'BTC-USDT-SWAP', last: '112', open24h: '109', volCcy24h: '250000', high24h: '116', low24h: '96'},
+  ]);
+  if (url.pathname === '/api/v5/public/open-interest') return ok([{instId: 'BTC-USDT-SWAP', oi: '1234.5', oiCcy: '1200', oiUsd: '134400', ts: '1725000000000'}]);
+  if (url.pathname === '/api/v5/public/instruments') return ok([{instId: 'BTC-USDT-SWAP', state: 'live', ctValCcy: 'BTC'}]);
+  throw new Error(`unexpected OKX path ${url.pathname}`);
+}
+
+test('falls through a Bybit rate limit to a clearly labelled OKX public swap snapshot', async () => {
+  const market = createTerminalMarket({fetcher: okxTertiaryFallbackFetcher, now: () => 1_725_001_000_000});
+  const snapshot = await market.snapshot({symbol: 'BTCUSDT', interval: '15m', limit: 10});
+  assert.equal(snapshot.source, 'okx-swap');
+  assert.equal(snapshot.ticker.lastPrice, 112);
+  assert.equal(snapshot.ticker.priceChangePercent, (112 - 109) / 109 * 100);
+  assert.equal(snapshot.ticker.quoteVolume, 28_000_000);
+  assert.equal(snapshot.currentOi.openInterest, 1200);
+  assert.deepEqual(snapshot.candles.map(item => item.time), [1_725_000_000_000, 1_725_000_900_000]);
+
+  const catalog = await market.catalog({source: 'okx-swap'});
+  assert.equal(catalog.source, 'okx-swap');
+  assert.deepEqual(catalog.symbols.map(item => item.symbol), ['BTCUSDT']);
+});
