@@ -27,9 +27,11 @@ export async function GET(request: Request) {
       interval: url.searchParams.get('interval') || undefined,
       limit: url.searchParams.get('limit') || undefined,
       endTime: url.searchParams.get('endTime') || undefined,
+      source: url.searchParams.get('source') || undefined,
     }));
     if (action === 'open-interest') return json(await market.openInterest({
       symbol: url.searchParams.get('symbol') || undefined,
+      source: url.searchParams.get('source') || undefined,
     }));
     if (action !== 'snapshot') return json({error: '行情接口不存在'}, 404);
     return json(await market.snapshot({
