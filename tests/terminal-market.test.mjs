@@ -70,3 +70,44 @@ test('catalog shares a bounded cache and only returns active USDT perpetual cont
   await market.catalog();
   assert.equal(calls, 2);
 });
+
+function bybitFallbackFetcher(input) {
+  const url = new URL(String(input));
+  if (url.hostname === 'fapi.binance.com') return new Response('upstream unavailable', {status: 503});
+  if (url.hostname !== 'api.bybit.com') throw new Error(`unexpected host ${url.hostname}`);
+  const ok = result => Response.json({retCode: 0, retMsg: 'OK', result});
+  if (url.pathname === '/v5/market/kline') return ok({list: [
+    ['1725000900000', '108', '116', '106', '112', '24', '2650'],
+    ['1725000000000', '100', '112', '96', '108', '42', '4400'],
+  ]});
+  if (url.pathname === '/v5/market/open-interest') return ok({list: [
+    {timestamp: '1725000900000', openInterest: '1250'},
+    {timestamp: '1725000000000', openInterest: '1200'},
+  ]});
+  if (url.pathname === '/v5/market/tickers' && url.searchParams.get('symbol')) return ok({list: [{
+    symbol: 'BTCUSDT', lastPrice: '112', price24hPcnt: '0.025', turnover24h: '30000000', volume24h: '271000', highPrice24h: '116', lowPrice24h: '96', markPrice: '111.8', fundingRate: '0.0001', nextFundingTime: '1725003600000', openInterest: '1250',
+  }]});
+  if (url.pathname === '/v5/market/tickers') return ok({list: [
+    {symbol: 'ETHUSDT', lastPrice: '3000', price24hPcnt: '-0.01', turnover24h: '12000000', volume24h: '4000', highPrice24h: '3100', lowPrice24h: '2950'},
+    {symbol: 'BTCUSDT', lastPrice: '112', price24hPcnt: '0.025', turnover24h: '30000000', volume24h: '271000', highPrice24h: '116', lowPrice24h: '96'},
+  ]});
+  throw new Error(`unexpected Bybit path ${url.pathname}`);
+}
+
+test('falls back to Bybit linear data only after a recoverable Binance outage and labels the response truthfully', async () => {
+  const market = createTerminalMarket({fetcher: bybitFallbackFetcher, now: () => 1_725_001_000_000});
+  const snapshot = await market.snapshot({symbol: 'BTCUSDT', interval: '15m', limit: 10});
+  assert.equal(snapshot.source, 'bybit-linear');
+  assert.equal(snapshot.interval, '15m');
+  assert.equal(snapshot.sourceInterval, '15m');
+  assert.equal(snapshot.ticker.priceChangePercent, 2.5);
+  assert.equal(snapshot.ticker.quoteVolume, 30_000_000);
+  assert.deepEqual(snapshot.candles.map(item => item.time), [1_725_000_000_000, 1_725_000_900_000]);
+  assert.equal(snapshot.oiHistory[0].value, null);
+  assert.equal(snapshot.rank, 1);
+
+  const mapped = await market.candles({symbol: 'BTCUSDT', interval: '8h'});
+  assert.equal(mapped.source, 'bybit-linear');
+  assert.equal(mapped.interval, '8h');
+  assert.equal(mapped.sourceInterval, '4h');
+});
