@@ -47,7 +47,7 @@ export const defaultTerminalSettings: TerminalSettings = {
 
 export const intervalLabels: Record<string, string> = {
   '1m': '1 分钟', '3m': '3 分钟', '5m': '5 分钟', '15m': '15 分钟', '30m': '30 分钟',
-  '1h': '1 小时', '2h': '2 小时', '4h': '4 小时', '6h': '6 小时', '12h': '12 小时', '1d': '日线', '1w': '周线',
+  '1h': '1 小时', '2h': '2 小时', '4h': '4 小时', '6h': '6 小时', '8h': '8 小时', '12h': '12 小时', '1d': '日线', '3d': '3 日线', '1w': '周线',
 };
 
 export const signalLabels: Record<SignalKind, string> = {
