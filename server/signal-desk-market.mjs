@@ -661,6 +661,7 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
     const oi = oiResult.status === 'fulfilled' ? oiResult.value : null;
     return {
       markPrice: toNumber(mark?.markPrice), markTime: toNumber(mark?.time),
+      fundingRate: toNumber(mark?.lastFundingRate), nextFundingTime: toNumber(mark?.nextFundingTime),
       openInterest: toNumber(oi?.openInterest), openInterestValue: null, oiTime: toNumber(oi?.time),
       oiError: oi && mark ? null : '持仓量或标记价格暂不可用',
     };
@@ -673,7 +674,8 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
     const openInterest = firstNumber(row?.oiCcy, row?.oi);
     return {
       markPrice: ticker?.markPrice ?? ticker?.lastPrice ?? null,
-      markTime: toNumber(row?.ts), openInterest,
+      markTime: toNumber(row?.ts), fundingRate: ticker?.fundingRate ?? null, nextFundingTime: ticker?.nextFundingTime ?? null,
+      openInterest,
       openInterestValue: oiValue,
       oiTime: toNumber(row?.ts),
       oiError: row ? null : '持仓量暂不可用',
@@ -716,7 +718,7 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
       return withMeta({
         symbol, base: baseFromSymbol(symbol), updatedAt: now(), volume: null, baseVolume: null, change: null,
         rank: null, total: tickerResult.value.length, openInterest: null, openInterestUSDT: null,
-        markPrice: null, markTime: null, oiTime: null, marketCap: {value: null, error: '无该合约行情'},
+        markPrice: null, markTime: null, fundingRate: null, nextFundingTime: null, oiTime: null, marketCap: null,
         error: '无该合约行情', oiError: '持仓量暂不可用',
         source: sourceMeta(source, contractResult.meta.degraded),
       }, source, contractResult.meta.degraded);
@@ -726,15 +728,14 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
       : source === 'okx-swap'
         ? await selectedOkxMetrics(symbol, ticker)
         : {
-            markPrice: ticker.markPrice, markTime: now(), openInterest: ticker.openInterest,
-            openInterestValue: ticker.openInterestValue, oiTime: now(),
+            markPrice: ticker.markPrice, markTime: now(), fundingRate: ticker.fundingRate, nextFundingTime: ticker.nextFundingTime,
+            openInterest: ticker.openInterest, openInterestValue: ticker.openInterestValue, oiTime: now(),
             oiError: ticker.openInterest === null ? '持仓量暂不可用' : null,
           };
     const rank = [...tickerResult.value].sort((left, right) => (right.quoteVolume || 0) - (left.quoteVolume || 0)).findIndex(item => item.symbol === symbol);
     const openInterestUSDT = metrics.openInterestValue ?? (
       metrics.openInterest !== null && metrics.markPrice !== null ? metrics.openInterest * metrics.markPrice : null
     );
-    const cap = await marketCap(baseFromSymbol(symbol), contract.market);
     const degraded = [...contractResult.meta.degraded, ...tickerResult.meta.degraded];
     return withMeta({
       symbol,
@@ -749,8 +750,10 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
       openInterestUSDT,
       markPrice: metrics.markPrice,
       markTime: metrics.markTime,
+      fundingRate: metrics.fundingRate ?? null,
+      nextFundingTime: metrics.nextFundingTime ?? null,
       oiTime: metrics.oiTime,
-      marketCap: cap,
+      marketCap: null,
       error: null,
       oiError: metrics.oiError || (openInterestUSDT === null ? '持仓量或标记价格暂不可用' : null),
       source: sourceMeta(source, degraded),
