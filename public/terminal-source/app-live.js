@@ -61,4 +61,3 @@ lightweight-charts/dist/lightweight-charts.production.mjs:
    * Licensed under Apache License 2.0 https://www.apache.org/licenses/LICENSE-2.0
    *)
 */
-//# sourceMappingURL=app.js.map
