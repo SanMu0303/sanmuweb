@@ -160,6 +160,39 @@ function normalizeOkxCandle(row) {
   return {time: Math.floor(time / 1000), open, high, low, close, volume};
 }
 
+// Binance describes openInterestHist.timestamp as the end time of a sampled
+// period. The chart library keys K lines by their opening time, so this maps
+// each OI observation onto the K line it belongs to. In particular, a record
+// ending exactly at 10:00:00 is associated with the 09:00–10:00 1H candle,
+// not the candle beginning at 10:00.
+export function oiPeriodEndToKlineOpen(timestamp, timeframe) {
+  const step = TIMEFRAMES[timeframe]?.seconds;
+  const milliseconds = toNumber(timestamp);
+  if (!step || milliseconds === null || milliseconds < 0) return null;
+  const seconds = Math.floor(milliseconds / 1000);
+  return Math.floor(Math.max(0, seconds - 1) / step) * step;
+}
+
+export function normalizeBinanceOiHistory(rows, timeframe, range = {}) {
+  const from = toNumber(range?.start);
+  const to = toNumber(range?.end);
+  const byKlineTime = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const sourceTime = toNumber(row?.timestamp);
+    const value = toNumber(row?.sumOpenInterest);
+    const time = oiPeriodEndToKlineOpen(sourceTime, timeframe);
+    if (sourceTime === null || value === null || time === null) continue;
+    if ((from !== null && time < from) || (to !== null && time > to)) continue;
+    // An upstream retry can overlap the prior page. Retain the newest source
+    // sample for a candle while returning the stable `{time, value}` contract.
+    const previous = byKlineTime.get(time);
+    if (!previous || sourceTime >= previous.sourceTime) byKlineTime.set(time, {time, value, sourceTime});
+  }
+  return [...byKlineTime.values()]
+    .sort((left, right) => left.time - right.time)
+    .map(({time, value}) => ({time, value}));
+}
+
 // The original desk only relies on this Binance-compatible subset.  Numeric
 // fields intentionally remain numeric for all sources; Number() callers in
 // the imported source work with both the original Binance strings and these.
@@ -553,8 +586,11 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
     const timeframe = cleanTimeframe(input.timeframe);
     const range = oiRange(input, timeframe);
     if (!range) return withMeta([], 'binance-usdm');
-    const values = new Map();
-    let end = range.end * 1000;
+    const rows = [];
+    // `range` is made of K-line open times. Include one final period so a
+    // closed final candle can receive its period-end OI record. No point is
+    // invented for the still-open current candle.
+    let end = Math.min(now(), (range.end + TIMEFRAMES[timeframe].seconds) * 1000 - 1);
     for (let page = 0; page < MAX_OI_PAGES && end >= range.start * 1000; page += 1) {
       const raw = await binance('/futures/data/openInterestHist', {
         symbol, period: TIMEFRAMES[timeframe].binance, limit: 500, endTime: end,
@@ -563,15 +599,14 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
       let earliest = Infinity;
       for (const row of raw) {
         const timestamp = toNumber(row?.timestamp);
-        const value = toNumber(row?.sumOpenInterest);
-        if (timestamp === null || value === null) continue;
+        if (timestamp === null) continue;
         earliest = Math.min(earliest, timestamp);
-        if (timestamp >= range.start * 1000 && timestamp <= range.end * 1000) values.set(timestamp, {time: Math.floor(timestamp / 1000), value});
+        rows.push(row);
       }
       if (!Number.isFinite(earliest) || earliest <= range.start * 1000 || earliest > end) break;
       end = earliest - 1;
     }
-    return withMeta([...values.values()].sort((a, b) => a.time - b.time), 'binance-usdm');
+    return withMeta(normalizeBinanceOiHistory(rows, timeframe, range), 'binance-usdm');
   }
 
   async function bybitOiHistory(input) {
