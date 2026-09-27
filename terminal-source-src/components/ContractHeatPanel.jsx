@@ -89,6 +89,7 @@ export default function ContractHeatPanel({
   asOf,
   stale = false,
   source,
+  fallback = false,
   universeSize,
   selectedSymbol,
   onSelect,
@@ -105,7 +106,9 @@ export default function ContractHeatPanel({
         ? "暂不可用"
         : stale
           ? "数据延迟"
-          : "已更新";
+          : fallback
+            ? "浏览器直连"
+            : "已更新";
 
   return (
     <aside className="contract-heat-panel" aria-labelledby="contract-heat-title">
@@ -121,7 +124,9 @@ export default function ContractHeatPanel({
           title={
             hasError
               ? error || "合约热度暂不可用"
-              : "基于成交活跃度、价格关注度与 OI 活跃度计算"
+              : fallback
+                ? "同源热度接口暂不可用；当前浏览器直连 Binance USDⓈ-M 公共数据计算"
+                : "基于成交活跃度、价格关注度与 OI 活跃度计算"
           }
         >
           <i className="dot" />
@@ -129,7 +134,7 @@ export default function ContractHeatPanel({
         </span>
       </div>
       <div className="heat-description">
-        成交 · 价格 · OI 综合排序 <span>不构成交易建议</span>
+        成交 · 价格 · OI 综合排序{fallback ? " · 浏览器直连" : ""} <span>不构成交易建议</span>
       </div>
       <div
         className="heat-list"

@@ -17,7 +17,7 @@ import VoiceAlerts from "./components/VoiceAlerts.jsx";
 import SignalFilters from "./components/SignalFilters.jsx";
 import { shortcutAction, navigationTarget } from "./shortcuts.mjs";
 import { activeSignals, filterSignals, signalStatus } from "./filters.mjs";
-import { decorateContractHeatItems } from "./contractHeat.mjs";
+import { decorateContractHeatItems, directBinanceContractHeat } from "./contractHeat.mjs";
 
 function Settings({ config, onSave, onClose }) {
   const [error, setError] = useState("");
@@ -171,19 +171,30 @@ function Desk({ mode, onMode }) {
         error: "",
       }));
       try {
-        const response = await fetch(
-          "/api/signal-desk/contract-heat/?source=binance-usdm",
-          {
-            headers: { Accept: "application/json" },
-            cache: "no-store",
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`热度接口返回 ${response.status}`);
-        }
-        const payload = await response.json();
-        if (!Array.isArray(payload?.items)) {
-          throw new Error("热度接口未返回榜单数据");
+        let payload;
+        let apiError = null;
+        try {
+          const response = await fetch(
+            "/api/signal-desk/contract-heat/?source=binance-usdm",
+            {
+              headers: { Accept: "application/json" },
+              cache: "no-store",
+            },
+          );
+          if (!response.ok) {
+            throw new Error(`热度接口返回 ${response.status}`);
+          }
+          payload = await response.json();
+          if (!Array.isArray(payload?.items)) {
+            throw new Error("热度接口未返回榜单数据");
+          }
+        } catch (error) {
+          apiError = error;
+          // The same-origin API is preferred because it amortises public
+          // Binance reads. If it is regionally unavailable, read the fixed
+          // Binance USDⓈ-M public endpoints directly in this browser instead.
+          // The fallback is bounded and labelled as browser-direct below.
+          payload = await directBinanceContractHeat();
         }
         const snapshot = decorateContractHeatItems(
           payload.items,
@@ -199,6 +210,7 @@ function Desk({ mode, onMode }) {
             error: "",
             asOf: payload.asOf || Date.now(),
             stale: Boolean(payload.stale),
+            fallback: Boolean(payload.fallback || apiError),
             source: payload.source || "binance-usdm",
             universeSize: Number.isFinite(
               Number(payload.universeSize ?? payload.candidateCount),
