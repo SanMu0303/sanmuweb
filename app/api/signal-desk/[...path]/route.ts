@@ -1,38 +1,40 @@
 import {createSignalDeskMarket} from '@/server/signal-desk-market.mjs';
 
-// The adapter only uses Web APIs, so run it at the edge in Singapore.
-// Binance's USDⓈ-M public endpoints reject requests from some US egress IPs;
-// keeping this route out of the default US Node region preserves direct
-// Binance public-data access without any API key.
-export const runtime = 'edge';
+// Binance's public USDⓈ-M REST API is more reliable from a Node runtime than
+// from the Edge egress used by the previous deployment.  Keep the function
+// close to the site's primary audience, while the browser-side provider still
+// has a fixed, CORS-enabled Binance fallback for read-only public endpoints.
+// No user-supplied upstream URL, credential, or private endpoint is accepted.
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const preferredRegion = 'sin1';
+export const preferredRegion = 'hkg1';
 
 const market = createSignalDeskMarket();
 
 type RouteContext = {params: Promise<{path?: string[]}>};
 
 const SCANNER_UNAVAILABLE = {
-  error: '实时信号扫描在当前部署环境中尚未启用',
+  error: '服务端 SSE 推送在当前部署环境中尚未启用',
   code: 'scanner_unavailable',
   signals: [],
   status: {
-    state: 'unavailable',
+    state: 'browser_local',
     transport: 'not_configured',
-    reason: '该功能需要常驻扫描器和长连接；当前无状态部署不会伪造实时信号。',
+    reason: '终端当前使用浏览器直连币安公共 WebSocket；服务端常驻扫描器尚未配置。',
   },
 };
 
-// REST snapshots are available on Vercel, while the original project's
-// process-local WebSocket scanner is not.  Keep this successful response
-// separate from the SSE endpoints so the terminal can load Binance prices,
-// K-lines and contracts without pretending that a persistent scanner exists.
+// REST snapshots are available on Vercel, while the terminal runs its single
+// browser-local Binance WebSocket only while a user keeps the desk open. Keep
+// this status separate from SSE: it accurately describes a live local scan,
+// without pretending Vercel is hosting a durable background worker.
 const SCANNER_STATUS = {
   signals: [],
   status: {
-    state: 'unavailable',
-    transport: 'rest_polling',
-    reason: '币安行情已通过公共 REST 接口接入；全市场扫描器需要常驻服务，尚未启用。',
+    state: 'browser_local',
+    transport: 'browser_websocket',
+    scope: '币安 USDⓈ-M · 价格、成交量、OI 与新高/新低',
+    reason: '终端打开时由浏览器直连币安公共行情流；资金费率、强平和系统信号未纳入当前规则。关闭页面后不继续后台扫描。',
   },
 };
 
@@ -119,6 +121,8 @@ export async function GET(request: Request, context: RouteContext) {
         return response(await market.universe(common));
       case 'tickers':
         return response(await market.tickers(common));
+      case 'contract-heat':
+        return response(await market.contractHeat(common));
       case 'market-summary':
         return response(await market.marketSummary({...common, symbol: url.searchParams.get('symbol') || undefined}));
       default:
@@ -132,8 +136,8 @@ export async function GET(request: Request, context: RouteContext) {
 export async function POST(_request: Request, context: RouteContext) {
   const {path = []} = await context.params;
   if (pathName(path) === 'config') {
-    // The client can retain its local settings.  We deliberately do not claim
-    // they configure a non-existent background scanner.
+    // Scanner settings live in the current browser. A serverless route must
+    // not claim to configure a non-existent shared background scanner.
     return Response.json({accepted: false, ...SCANNER_STATUS}, {headers: headers()});
   }
   return Response.json({error: '接口不存在', code: 'not_found'}, {status: 404, headers: headers()});

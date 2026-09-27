@@ -18,6 +18,16 @@ const SOURCE_ORDER = ['binance-usdm', 'bybit-linear', 'okx-swap'];
 const FAILURE_WINDOW_MS = 60_000;
 const MAX_CACHE_ITEMS = 96;
 const MAX_OI_PAGES = 8;
+// The heat board deliberately remains a bounded, low-frequency read of the
+// Binance public API.  It is not a background scanner: one refresh reads the
+// 24h ticker batch and a small 1H OI window only for the most liquid contracts.
+const HEAT_CACHE_TTL_MS = 90_000;
+const HEAT_LIQUIDITY_FLOOR_USDT = 5_000_000;
+const HEAT_CANDIDATE_LIMIT = 60;
+const HEAT_RESULT_LIMIT = 20;
+const HEAT_OI_CONCURRENCY = 6;
+const HEAT_OI_HISTORY_LIMIT = 6;
+const HEAT_WEIGHTS = Object.freeze({activity: 40, price: 30, oi: 30});
 
 const TIMEFRAMES = {
   '15m': {seconds: 900, binance: '15m', bybit: '15', bybitOi: '15min', okx: '15m'},
@@ -61,6 +71,68 @@ function firstNumber(...values) {
     if (number !== null) return number;
   }
   return null;
+}
+
+function clamp(value, lower, upper) {
+  return Math.min(upper, Math.max(lower, value));
+}
+
+function rounded(value, places = 1) {
+  if (!Number.isFinite(value)) return null;
+  const factor = 10 ** places;
+  return Math.round(value * factor) / factor;
+}
+
+function absolutePercentChange(current, previous) {
+  if (!(previous > 0) || !Number.isFinite(current)) return null;
+  return Math.abs(((current / previous) - 1) * 100);
+}
+
+// Percentiles make assets with very different prices and contract sizes
+// comparable. Equal values intentionally receive the same midpoint score
+// instead of depending on response order from the exchange.
+function percentileScores(items, valueOf) {
+  const values = items
+    .map(item => ({symbol: item.symbol, value: valueOf(item)}))
+    .filter(item => Number.isFinite(item.value));
+  const output = new Map();
+  if (!values.length) return output;
+  if (values.length === 1) {
+    output.set(values[0].symbol, 50);
+    return output;
+  }
+  values.sort((left, right) => left.value - right.value || left.symbol.localeCompare(right.symbol));
+  for (let start = 0; start < values.length;) {
+    let end = start;
+    while (end + 1 < values.length && values[end + 1].value === values[start].value) end += 1;
+    const score = ((start + end) / 2 / (values.length - 1)) * 100;
+    for (let index = start; index <= end; index += 1) output.set(values[index].symbol, score);
+    start = end + 1;
+  }
+  return output;
+}
+
+function weightedScore(parts) {
+  const available = parts.filter(part => Number.isFinite(part?.score) && Number.isFinite(part?.weight) && part.weight > 0);
+  const totalWeight = available.reduce((sum, part) => sum + part.weight, 0);
+  if (!totalWeight) return {score: null, effectiveWeights: {activity: 0, price: 0, oi: 0}};
+  const effectiveWeights = {activity: 0, price: 0, oi: 0};
+  for (const part of available) effectiveWeights[part.key] = (part.weight / totalWeight) * 100;
+  return {
+    score: available.reduce((sum, part) => sum + part.score * part.weight, 0) / totalWeight,
+    effectiveWeights,
+  };
+}
+
+function runPool(items, limit, worker) {
+  const queue = [...items];
+  const workers = Array.from({length: Math.min(Math.max(1, limit), queue.length)}, async () => {
+    while (queue.length) {
+      const item = queue.shift();
+      await worker(item);
+    }
+  });
+  return Promise.all(workers);
 }
 
 function validSymbol(symbol) {
@@ -205,6 +277,7 @@ function normalizeBinanceTicker(row) {
     priceChangePercent: toNumber(row.priceChangePercent),
     quoteVolume: toNumber(row.quoteVolume),
     volume: toNumber(row.volume),
+    tradeCount: toNumber(row.count),
     highPrice: toNumber(row.highPrice),
     lowPrice: toNumber(row.lowPrice),
     markPrice: null,
@@ -226,6 +299,7 @@ function normalizeBybitTicker(row) {
     priceChangePercent: percent === null ? null : row.price24hPcnt !== undefined ? percent * 100 : percent,
     quoteVolume: firstNumber(row.turnover24h, row.quoteVolume),
     volume: firstNumber(row.volume24h, row.volume),
+    tradeCount: null,
     highPrice: firstNumber(row.highPrice24h, row.highPrice),
     lowPrice: firstNumber(row.lowPrice24h, row.lowPrice),
     markPrice: firstNumber(row.markPrice, row.lastPrice),
@@ -248,6 +322,7 @@ function normalizeOkxTicker(row) {
     priceChangePercent: lastPrice !== null && open24h !== null && open24h !== 0 ? ((lastPrice - open24h) / open24h) * 100 : null,
     quoteVolume: lastPrice !== null && baseVolume !== null ? lastPrice * baseVolume : null,
     volume: baseVolume,
+    tradeCount: null,
     highPrice: toNumber(row.high24h),
     lowPrice: toNumber(row.low24h),
     markPrice: lastPrice,
@@ -271,6 +346,10 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
   const cache = new Map();
   const pending = new Map();
   const unavailableUntil = new Map();
+  // A warm edge/serverless instance retains the preceding Top 20 long enough
+  // to show rank movement. It is deliberately only an in-process snapshot:
+  // cross-instance persistence needs a durable store and is not claimed here.
+  let heatSnapshot = null;
 
   function pruneCache() {
     const time = now();
@@ -509,7 +588,10 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
   }
 
   async function binanceTickers() {
-    const [raw, contractResult] = await Promise.all([binance('/fapi/v1/ticker/24hr'), binanceContracts()]);
+    // The contract directory changes far less often than ticker data. Reuse
+    // the cached catalog here so an all-market reader does not repeatedly
+    // request exchangeInfo just to filter the 24h ticker batch.
+    const [raw, contractResult] = await Promise.all([binance('/fapi/v1/ticker/24hr'), contracts({source: 'binance-usdm'})]);
     const rows = Array.isArray(raw) ? raw : [];
     return withMeta(eligibleTickers(rows, contractResult.value, normalizeBinanceTicker), 'binance-usdm');
   }
@@ -528,6 +610,167 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
   async function tickers(input = {}) {
     const requested = cleanSource(input.source);
     return fromSource(requested, { 'binance-usdm': binanceTickers, 'bybit-linear': bybitTickers, 'okx-swap': okxTickers });
+  }
+
+  function binanceHeatOiMetrics(rows) {
+    const points = (Array.isArray(rows) ? rows : [])
+      .map(row => ({
+        time: toNumber(row?.timestamp),
+        // USDⓈ-M exposes a USDT notional field here. Older / incomplete rows
+        // can omit it, in which case the same contract's quantity still gives
+        // a valid percentage change.
+        value: firstNumber(row?.sumOpenInterestValue, row?.sumOpenInterest),
+      }))
+      .filter(point => point.time !== null && point.value !== null && point.value > 0)
+      .sort((left, right) => left.time - right.time);
+    const latest = points.at(-1);
+    if (!latest) return {oiChange1h: null, oiChange4h: null, oiActivity: null};
+    const oneHour = absolutePercentChange(latest.value, points.at(-2)?.value);
+    const fourHour = absolutePercentChange(latest.value, points.at(-5)?.value);
+    const weighted = [
+      {value: oneHour, weight: 40},
+      {value: fourHour, weight: 60},
+    ].filter(part => Number.isFinite(part.value));
+    const weight = weighted.reduce((sum, part) => sum + part.weight, 0);
+    return {
+      oiChange1h: oneHour,
+      oiChange4h: fourHour,
+      oiActivity: weight
+        ? weighted.reduce((sum, part) => sum + part.value * part.weight, 0) / weight
+        : null,
+    };
+  }
+
+  function blendedPercentile(scores) {
+    const available = scores.filter(part => Number.isFinite(part?.score) && part.weight > 0);
+    const weight = available.reduce((sum, part) => sum + part.weight, 0);
+    return weight
+      ? available.reduce((sum, part) => sum + part.score * part.weight, 0) / weight
+      : null;
+  }
+
+  // This is a transparent, bounded ranking rather than a claim of an
+  // exchange-provided "trending" feed. Every score comes from Binance
+  // USDⓈ-M public data: 24h activity (40%), 24h price activity (30%), and
+  // recent 1H / 4H OI change (30%).
+  async function contractHeat(input = {}) {
+    const requested = cleanSource(input.source);
+    if (requested && requested !== 'binance-usdm') {
+      fail('合约热度当前仅支持 Binance USDⓈ-M', 400, {code: 'heat_source_not_supported'});
+    }
+
+    return cached('contract-heat:binance-usdm', HEAT_CACHE_TTL_MS, async () => {
+      const tickerResult = await binanceTickers();
+      const universe = tickerResult.value;
+      const candidates = universe
+        .filter(item => Number.isFinite(item.quoteVolume) && item.quoteVolume >= HEAT_LIQUIDITY_FLOOR_USDT)
+        .sort((left, right) => (right.quoteVolume - left.quoteVolume) || left.symbol.localeCompare(right.symbol))
+        .slice(0, HEAT_CANDIDATE_LIMIT)
+        .map(item => ({
+          ...item,
+          rangePercent24h: item.highPrice > 0 && item.lowPrice > 0
+            ? ((item.highPrice / item.lowPrice) - 1) * 100
+            : null,
+          oiChange1h: null,
+          oiChange4h: null,
+          oiActivity: null,
+        }));
+
+      // A missing OI series removes only the OI component for that contract;
+      // it must never make the entire public heat board unavailable.
+      await runPool(candidates, HEAT_OI_CONCURRENCY, async candidate => {
+        try {
+          const raw = await binance('/futures/data/openInterestHist', {
+            symbol: candidate.symbol,
+            period: '1h',
+            limit: HEAT_OI_HISTORY_LIMIT,
+          });
+          Object.assign(candidate, binanceHeatOiMetrics(raw));
+        } catch {
+          // The final score reweights the remaining components. The client
+          // receives no invented OI value and still gets a usable Top 20.
+        }
+      });
+
+      const quoteVolumeScores = percentileScores(candidates, item => item.quoteVolume);
+      const tradeCountScores = percentileScores(candidates, item => item.tradeCount);
+      const priceActivityScores = percentileScores(candidates, item => {
+        const change = Math.abs(item.priceChangePercent ?? NaN);
+        const range = item.rangePercent24h;
+        if (!Number.isFinite(change) && !Number.isFinite(range)) return null;
+        if (!Number.isFinite(change)) return range;
+        if (!Number.isFinite(range)) return change;
+        return change * 0.65 + range * 0.35;
+      });
+      const oiActivityScores = percentileScores(candidates, item => item.oiActivity);
+
+      const ranked = candidates.map(candidate => {
+        const activity = blendedPercentile([
+          {score: quoteVolumeScores.get(candidate.symbol), weight: 75},
+          {score: tradeCountScores.get(candidate.symbol), weight: 25},
+        ]);
+        const price = priceActivityScores.get(candidate.symbol) ?? null;
+        const oi = oiActivityScores.get(candidate.symbol) ?? null;
+        const composite = weightedScore([
+          {key: 'activity', score: activity, weight: HEAT_WEIGHTS.activity},
+          {key: 'price', score: price, weight: HEAT_WEIGHTS.price},
+          {key: 'oi', score: oi, weight: HEAT_WEIGHTS.oi},
+        ]);
+        return {
+          symbol: candidate.symbol,
+          score: rounded(composite.score),
+          components: {
+            activity: rounded(activity),
+            price: rounded(price),
+            oi: rounded(oi),
+            effectiveWeights: Object.fromEntries(
+              Object.entries(composite.effectiveWeights).map(([key, value]) => [key, rounded(value)]),
+            ),
+          },
+          metrics: {
+            quoteVolume24h: candidate.quoteVolume,
+            tradeCount24h: candidate.tradeCount,
+            priceChangePercent24h: candidate.priceChangePercent,
+            rangePercent24h: rounded(candidate.rangePercent24h, 4),
+            oiChange1h: rounded(candidate.oiChange1h, 4),
+            oiChange4h: rounded(candidate.oiChange4h, 4),
+          },
+        };
+      }).filter(item => Number.isFinite(item.score));
+
+      ranked.sort((left, right) => (right.score - left.score)
+        || ((right.metrics.quoteVolume24h || 0) - (left.metrics.quoteVolume24h || 0))
+        || left.symbol.localeCompare(right.symbol));
+      const firstSnapshot = heatSnapshot === null;
+      const nextItems = ranked.slice(0, HEAT_RESULT_LIMIT).map((item, index) => {
+        const rank = index + 1;
+        const previousRank = heatSnapshot?.ranks?.get(item.symbol);
+        return {
+          ...item,
+          rank,
+          previousRank: Number.isInteger(previousRank) ? previousRank : null,
+          rankChange: firstSnapshot || !Number.isInteger(previousRank) ? null : previousRank - rank,
+          isNew: !firstSnapshot && !Number.isInteger(previousRank),
+          firstSnapshot,
+        };
+      });
+      heatSnapshot = {
+        ranks: new Map(nextItems.map(item => [item.symbol, item.rank])),
+        asOf: now(),
+      };
+
+      return withMeta({
+        source: 'binance-usdm',
+        asOf: now(),
+        stale: false,
+        universeSize: universe.length,
+        candidateCount: candidates.length,
+        resultLimit: HEAT_RESULT_LIMIT,
+        liquidityFloorUSDT: HEAT_LIQUIDITY_FLOOR_USDT,
+        weights: HEAT_WEIGHTS,
+        items: nextItems,
+      }, 'binance-usdm');
+    });
   }
 
   async function binanceKlines(input) {
@@ -805,5 +1048,5 @@ export function createSignalDeskMarket({fetcher = fetch, now = () => Date.now()}
     });
   }
 
-  return {contracts, universe, tickers, klines, oi, oiHistory, marketSummary};
+  return {contracts, universe, tickers, contractHeat, klines, oi, oiHistory, marketSummary};
 }

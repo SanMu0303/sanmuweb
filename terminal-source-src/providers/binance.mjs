@@ -94,11 +94,47 @@ function normalizeKlines(rows) {
     .filter((row) => Number.isFinite(row.time) && [row.open, row.high, row.low, row.close, row.volume].every(Number.isFinite));
 }
 
-function normalizeOi(rows) {
-  return (Array.isArray(rows) ? rows : [])
-    .map((row) => ({time: Math.floor(Number(row?.timestamp) / 1000), value: Number(row?.sumOpenInterest)}))
-    .filter((row) => Number.isFinite(row.time) && Number.isFinite(row.value))
-    .sort((a, b) => a.time - b.time);
+/**
+ * Binance's openInterestHist timestamp is the end of the sampled period.
+ * K lines, on the other hand, are keyed by their opening time.  The chart
+ * intentionally joins the two series by time, so retaining Binance's raw
+ * timestamp shifts every OI point one bar to the right (or drops it entirely
+ * when the upstream timestamp includes milliseconds).
+ */
+export function oiPeriodEndToKlineOpen(timestamp, timeframe) {
+  const step = STEP_SECONDS[timeframe];
+  const milliseconds = Number(timestamp);
+  if (!step || !Number.isFinite(milliseconds) || milliseconds < 0) return null;
+  // An exact boundary (for example 10:00:00.000) closes the preceding K line.
+  // A non-boundary upstream value is still placed in the K line containing it.
+  const seconds = Math.floor(milliseconds / 1_000);
+  return Math.floor(Math.max(0, seconds - 1) / step) * step;
+}
+
+/**
+ * Convert and de-duplicate Binance OI rows into the same seconds/open-time
+ * convention used by K lines. `range` is expressed in K-line opening times.
+ */
+export function normalizeBinanceOiHistory(rows, timeframe, range = {}) {
+  const from = Number(range?.start);
+  const to = Number(range?.end);
+  const hasFrom = Number.isFinite(from);
+  const hasTo = Number.isFinite(to);
+  const byKlineTime = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const sourceTime = Number(row?.timestamp);
+    const value = Number(row?.sumOpenInterest);
+    const time = oiPeriodEndToKlineOpen(sourceTime, timeframe);
+    if (!Number.isFinite(sourceTime) || !Number.isFinite(value) || time === null) continue;
+    if ((hasFrom && time < from) || (hasTo && time > to)) continue;
+    // If an upstream response has multiple snapshots inside a period, retain
+    // the newest snapshot for that K line rather than fabricating a new bar.
+    const previous = byKlineTime.get(time);
+    if (!previous || sourceTime >= previous.sourceTime) byKlineTime.set(time, {time, value, sourceTime});
+  }
+  return [...byKlineTime.values()]
+    .sort((left, right) => left.time - right.time)
+    .map(({time, value}) => ({time, value}));
 }
 
 function directOiRange(timeframe, at, from, to) {
@@ -114,34 +150,37 @@ function directOiRange(timeframe, at, from, to) {
   return start > end ? null : {start, end};
 }
 
-async function directBinanceOiHistory(symbol, timeframe, at, from, to) {
+export async function directBinanceOiHistory(symbol, timeframe, at, from, to) {
   const range = directOiRange(timeframe, at, from, to);
   if (!range) return [];
   const key = `${symbol}:${timeframe}:${range.start}:${range.end}`;
   const cached = directOiHistoryCache.get(key);
   if (cached?.expiresAt > Date.now()) return cached.value;
-  const values = new Map();
-  let end = range.end * 1_000;
+  const rows = [];
+  // Request through the end of the final displayed K line.  OI records use a
+  // period-end timestamp, while `range.end` is that K line's opening time.
+  // The current/open K line naturally has no finished-period OI yet.
+  const step = STEP_SECONDS[timeframe];
+  let end = Math.min(Date.now(), (range.end + step) * 1_000 - 1);
   for (let page = 0; page < DIRECT_OI_HISTORY_MAX_PAGES && end >= range.start * 1_000; page += 1) {
-    const rows = await binanceRequest("/futures/data/openInterestHist", {
+    const pageRows = await binanceRequest("/futures/data/openInterestHist", {
       symbol,
       period: period(timeframe),
       limit: 500,
       endTime: end,
     });
-    if (!Array.isArray(rows) || !rows.length) break;
+    if (!Array.isArray(pageRows) || !pageRows.length) break;
     let earliest = Infinity;
-    for (const row of rows) {
+    for (const row of pageRows) {
       const timestamp = Number(row?.timestamp);
-      const value = Number(row?.sumOpenInterest);
-      if (!Number.isFinite(timestamp) || !Number.isFinite(value)) continue;
+      if (!Number.isFinite(timestamp)) continue;
       earliest = Math.min(earliest, timestamp);
-      if (timestamp >= range.start * 1_000 && timestamp <= range.end * 1_000) values.set(timestamp, {time: Math.floor(timestamp / 1_000), value});
+      rows.push(row);
     }
     if (!Number.isFinite(earliest) || earliest <= range.start * 1_000 || earliest > end) break;
     end = earliest - 1;
   }
-  const value = [...values.values()].sort((left, right) => left.time - right.time);
+  const value = normalizeBinanceOiHistory(rows, timeframe, range);
   directOiHistoryCache.set(key, {value, expiresAt: Date.now() + DIRECT_OI_HISTORY_CACHE_MS});
   if (directOiHistoryCache.size > 24) {
     for (const [cacheKey, entry] of directOiHistoryCache) {
@@ -388,6 +427,26 @@ export class BinanceProvider {
   getOI(symbol) {
     return preferProxy("oi?symbol=" + encodeURIComponent(symbol), undefined, () => binanceRequest("/fapi/v1/openInterest", {symbol}));
   }
+  // The browser scanner keeps its high-frequency public-data work off the
+  // Vercel relay. These helpers remain read-only and fall back to the normal
+  // routed requests if a browser cannot reach Binance REST directly.
+  getScannerKlines(symbol, timeframe) {
+    return binanceRequest("/fapi/v1/klines", {
+      symbol,
+      interval: period(timeframe),
+      limit: 181,
+    })
+      .then(normalizeKlines)
+      .catch(() => this.getKlines(symbol, timeframe, undefined, true, 181));
+  }
+  getScannerOIHistory(symbol, timeframe, at, from, to) {
+    return directBinanceOiHistory(symbol, timeframe, at, from, to)
+      .catch(() => this.getOIHistory(symbol, timeframe, at, from, to));
+  }
+  getScannerOI(symbol) {
+    return binanceRequest("/fapi/v1/openInterest", {symbol})
+      .catch(() => this.getOI(symbol));
+  }
   getUniverse() {
     return preferProxy("universe", undefined, () => directBinanceContractsRequest());
   }
@@ -404,7 +463,9 @@ export class BinanceProvider {
       config: this.scannerConfig || {},
       loadUniverse: () => this.getUniverse(),
       loadTickers: () => this.getTickers(),
-      loadOpenInterest: (symbol) => this.getOI(symbol),
+      loadKlines: (symbol, timeframe) => this.getScannerKlines(symbol, timeframe),
+      loadOIHistory: (symbol, timeframe, at, from, to) => this.getScannerOIHistory(symbol, timeframe, at, from, to),
+      loadOpenInterest: (symbol) => this.getScannerOI(symbol),
       onData,
       onError,
     });
@@ -423,7 +484,7 @@ export class BinanceProvider {
           state: "scanning",
           transport: "browser_websocket",
           message: "等待启动币安 USDⓈ-M 实时扫描",
-          scope: "币安 USDⓈ-M · 全市场价格、资金费率、强平快照",
+          scope: "币安 USDⓈ-M · 价格、成交量、OI 与新高/新低",
         },
       },
     );
