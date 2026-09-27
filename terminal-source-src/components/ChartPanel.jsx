@@ -1,6 +1,6 @@
 import ContractPicker from "./ContractPicker.jsx";
 import MarketSummary from "./MarketSummary.jsx";
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useDeferredValue, useEffect, useRef, useState, useMemo } from "react";
 import {
   createChart,
   createSeriesMarkers,
@@ -18,11 +18,338 @@ import {
 } from "../signalPresentation.mjs";
 import { TIMEFRAMES, SECONDS } from "../scanner/config.mjs";
 import {
+  bollingerBands,
   candleChangePercent,
   chartDrawing,
   exponentialMovingAverage,
+  relativeStrengthIndex,
   simpleMovingAverage,
+  volumeWeightedAveragePrice,
 } from "../chartTools.mjs";
+import {
+  chartIndicatorLabel,
+  createChartIndicator,
+  decodeChartIndicators,
+  encodeChartIndicators,
+  INDICATOR_TYPES,
+  MAX_CHART_INDICATORS,
+  normalizeChartIndicators,
+} from "../chartIndicators.mjs";
+import { storage } from "../storage.mjs";
+const MAIN_LINE_OPTIONS = {
+  lineWidth: 1,
+  priceLineVisible: false,
+  lastValueVisible: false,
+  crosshairMarkerVisible: false,
+};
+
+function lineOptions(color, title, extra = {}) {
+  return { ...MAIN_LINE_OPTIONS, color, title, ...extra };
+}
+
+function makeIndicatorDescriptors(indicators, bars) {
+  return indicators
+    .filter((indicator) => indicator.enabled)
+    .flatMap((indicator) => {
+      const title = chartIndicatorLabel(indicator);
+      const color = indicator.color;
+      switch (indicator.type) {
+        case "sma":
+          return [
+            {
+              id: indicator.id,
+              type: indicator.type,
+              pane: 0,
+              lines: [
+                {
+                  key: "value",
+                  data: simpleMovingAverage(bars, indicator.period),
+                  options: lineOptions(color, title),
+                },
+              ],
+            },
+          ];
+        case "ema":
+          return [
+            {
+              id: indicator.id,
+              type: indicator.type,
+              pane: 0,
+              lines: [
+                {
+                  key: "value",
+                  data: exponentialMovingAverage(bars, indicator.period),
+                  options: lineOptions(color, title, { lineStyle: 2 }),
+                },
+              ],
+            },
+          ];
+        case "bollinger": {
+          const bands = bollingerBands(
+            bars,
+            indicator.period,
+            indicator.multiplier,
+          );
+          return [
+            {
+              id: indicator.id,
+              type: indicator.type,
+              pane: 0,
+              lines: [
+                {
+                  key: "upper",
+                  data: bands.upper,
+                  options: lineOptions(color, `${title} 上轨`, { lineStyle: 2 }),
+                },
+                {
+                  key: "middle",
+                  data: bands.middle,
+                  options: lineOptions(color, `${title} 中轨`),
+                },
+                {
+                  key: "lower",
+                  data: bands.lower,
+                  options: lineOptions(color, `${title} 下轨`, { lineStyle: 2 }),
+                },
+              ],
+            },
+          ];
+        }
+        case "rsi":
+          return [
+            {
+              id: indicator.id,
+              type: indicator.type,
+              pane: 2,
+              levels: {
+                overbought: indicator.overbought,
+                oversold: indicator.oversold,
+              },
+              lines: [
+                {
+                  key: "value",
+                  data: relativeStrengthIndex(bars, indicator.period),
+                  options: lineOptions(color, title, {
+                    lineWidth: 2,
+                    priceFormat: { type: "price", precision: 2, minMove: 0.01 },
+                    autoscaleInfoProvider: () => ({
+                      priceRange: { minValue: 0, maxValue: 100 },
+                      margins: { above: 0.08, below: 0.08 },
+                    }),
+                  }),
+                },
+              ],
+            },
+          ];
+        case "vwap":
+          return [
+            {
+              id: indicator.id,
+              type: indicator.type,
+              pane: 0,
+              lines: [
+                {
+                  key: "value",
+                  data: volumeWeightedAveragePrice(bars),
+                  options: lineOptions(color, title, { lineWidth: 2 }),
+                },
+              ],
+            },
+          ];
+        default:
+          return [];
+      }
+    });
+}
+
+function IndicatorSettings({ indicators, onAdd, onChange, onRemove, onReset }) {
+  return (
+    <section className="chart-indicator-settings" aria-label="图表指标设置">
+      <header>
+        <div>
+          <strong>指标设置</strong>
+          <span>可同时叠加多根均线；周期范围 2–500</span>
+        </div>
+        <button type="button" className="indicator-reset" onClick={onReset}>
+          恢复默认
+        </button>
+      </header>
+      <div className="indicator-add-row" aria-label="添加指标">
+        {Object.entries(INDICATOR_TYPES).map(([type, definition]) => (
+          <button
+            key={type}
+            type="button"
+            disabled={indicators.length >= MAX_CHART_INDICATORS && type !== "vwap"}
+            onClick={() => onAdd(type)}
+          >
+            ＋ {definition.label}
+          </button>
+        ))}
+        <span className="indicator-limit">最多 {MAX_CHART_INDICATORS} 项</span>
+      </div>
+      <div className="indicator-editor-list">
+        {!indicators.length && (
+          <p className="indicator-empty">尚未添加指标，可从上方选择。</p>
+        )}
+        {indicators.map((indicator) => {
+          const definition = INDICATOR_TYPES[indicator.type];
+          const supportsPeriod = Boolean(definition.defaultPeriod);
+          return (
+            <div
+              className={`indicator-editor-row${indicator.enabled ? " is-enabled" : ""}`}
+              key={indicator.id}
+            >
+              <label className="indicator-enabled" title="显示或隐藏指标">
+                <input
+                  type="checkbox"
+                  checked={indicator.enabled}
+                  onChange={(event) =>
+                    onChange(indicator.id, { enabled: event.target.checked })
+                  }
+                />
+                <span className="sr-only">{chartIndicatorLabel(indicator)}</span>
+              </label>
+              <select
+                aria-label={`${chartIndicatorLabel(indicator)} 指标类型`}
+                value={indicator.type}
+                onChange={(event) =>
+                  onChange(indicator.id, { type: event.target.value })
+                }
+              >
+                {Object.entries(INDICATOR_TYPES).map(([type, item]) => (
+                  <option value={type} key={type}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              {supportsPeriod && (
+                <label>
+                  <span>周期</span>
+                  <input
+                    key={`${indicator.id}:period:${indicator.period}`}
+                    aria-label={`${definition.label} 周期`}
+                    type="number"
+                    inputMode="numeric"
+                    min="2"
+                    max="500"
+                    defaultValue={indicator.period}
+                    onBlur={(event) =>
+                      onChange(indicator.id, { period: event.target.value })
+                    }
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") event.currentTarget.blur();
+                    }}
+                  />
+                </label>
+              )}
+              {indicator.type === "bollinger" && (
+                <label>
+                  <span>倍数</span>
+                  <input
+                    key={`${indicator.id}:multiplier:${indicator.multiplier}`}
+                    aria-label="布林带倍数"
+                    type="number"
+                    inputMode="decimal"
+                    min="0.1"
+                    max="10"
+                    step="0.1"
+                    defaultValue={indicator.multiplier}
+                    onBlur={(event) =>
+                      onChange(indicator.id, {
+                        multiplier: event.target.value,
+                      })
+                    }
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") event.currentTarget.blur();
+                    }}
+                  />
+                </label>
+              )}
+              {indicator.type === "rsi" && (
+                <div className="indicator-rsi-levels">
+                  <label>
+                    <span>超买</span>
+                    <input
+                      key={`${indicator.id}:overbought:${indicator.overbought}`}
+                      aria-label="RSI 超买"
+                      type="number"
+                      inputMode="decimal"
+                      min="50"
+                      max="100"
+                      step="1"
+                      defaultValue={indicator.overbought}
+                      onBlur={(event) =>
+                        onChange(indicator.id, { overbought: event.target.value })
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") event.currentTarget.blur();
+                      }}
+                    />
+                  </label>
+                  <label>
+                    <span>超卖</span>
+                    <input
+                      key={`${indicator.id}:oversold:${indicator.oversold}`}
+                      aria-label="RSI 超卖"
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      max="50"
+                      step="1"
+                      defaultValue={indicator.oversold}
+                      onBlur={(event) =>
+                        onChange(indicator.id, { oversold: event.target.value })
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") event.currentTarget.blur();
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
+              <label className="indicator-color" title="指标线颜色">
+                <span className="sr-only">{chartIndicatorLabel(indicator)} 颜色</span>
+                <input
+                  aria-label={`${chartIndicatorLabel(indicator)} 颜色`}
+                  type="color"
+                  value={indicator.color}
+                  onChange={(event) =>
+                    onChange(indicator.id, { color: event.target.value })
+                  }
+                />
+              </label>
+              <span className="indicator-row-label">
+                {chartIndicatorLabel(indicator)}
+              </span>
+              <button
+                type="button"
+                className="indicator-remove"
+                aria-label={`删除 ${chartIndicatorLabel(indicator)}`}
+                title="删除指标"
+                onClick={() => onRemove(indicator.id)}
+              >
+                ×
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function applyAuxiliaryPaneHeights(api, surface, oiVisible, hasRsi) {
+  const height = Math.max(surface?.clientHeight || 0, 220);
+  const oiHeight = oiVisible
+    ? Math.min(130, Math.max(72, Math.round(height * 0.27)))
+    : 30;
+  const rsiHeight = hasRsi
+    ? Math.min(104, Math.max(68, Math.round(height * 0.22)))
+    : 30;
+  api.chart.panes()[1]?.setHeight(oiHeight);
+  api.chart.panes()[2]?.setHeight(rsiHeight);
+}
+
 export function CandleChart({
   bars,
   identity,
@@ -30,10 +357,7 @@ export function CandleChart({
   volume,
   oiPoints,
   oiVisible,
-  maPoints,
-  emaPoints,
-  maVisible,
-  emaVisible,
+  indicatorDescriptors,
   drawMode,
   drawings,
   onAddDrawing,
@@ -44,6 +368,7 @@ export function CandleChart({
   const surface = useRef();
   const api = useRef();
   const lastIdentity = useRef("");
+  const auxiliaryHeightKey = useRef("");
   const onCrosshairRef = useRef(onCrosshair);
   const onDrawingRef = useRef(onAddDrawing);
   const drawModeRef = useRef(drawMode);
@@ -118,24 +443,6 @@ export function CandleChart({
     chart
       .priceScale("volume")
       .applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
-    const maLine = chart.addSeries(LineSeries, {
-      color: "#F2A65A",
-      lineWidth: 1,
-      lineStyle: 0,
-      priceLineVisible: false,
-      lastValueVisible: false,
-      crosshairMarkerVisible: false,
-      title: "MA20",
-    });
-    const emaLine = chart.addSeries(LineSeries, {
-      color: "#7C9EFF",
-      lineWidth: 1,
-      lineStyle: 2,
-      priceLineVisible: false,
-      lastValueVisible: false,
-      crosshairMarkerVisible: false,
-      title: "EMA20",
-    });
     const oiLine = chart.addSeries(
       LineSeries,
       {
@@ -177,9 +484,8 @@ export function CandleChart({
       chart,
       candles,
       volumes,
-      maLine,
-      emaLine,
       oiLine,
+      indicatorSeries: new Map(),
       markers,
       report,
       refresh,
@@ -283,12 +589,68 @@ export function CandleChart({
   useEffect(() => {
     const a = api.current;
     if (!a) return;
-    a.maLine.setData(maVisible ? maPoints : []);
-    a.emaLine.setData(emaVisible ? emaPoints : []);
-    a.maLine.applyOptions({ visible: maVisible });
-    a.emaLine.applyOptions({ visible: emaVisible });
+    const wanted = new Set(indicatorDescriptors.map((indicator) => indicator.id));
+
+    for (const [id, existing] of a.indicatorSeries) {
+      if (wanted.has(id)) continue;
+      existing.series.forEach((series) => a.chart.removeSeries(series));
+      a.indicatorSeries.delete(id);
+    }
+
+    for (const indicator of indicatorDescriptors) {
+      const structure = `${indicator.type}:${indicator.pane}:${indicator.lines
+        .map((line) => line.key)
+        .join(",")}`;
+      let entry = a.indicatorSeries.get(indicator.id);
+      if (!entry || entry.structure !== structure) {
+        if (entry) entry.series.forEach((series) => a.chart.removeSeries(series));
+        const priceLines = [];
+        const series = indicator.lines.map((line) => {
+          const next = a.chart.addSeries(LineSeries, line.options, indicator.pane);
+          if (indicator.type === "rsi") {
+            priceLines.push(
+              next.createPriceLine({
+                price: indicator.levels?.overbought ?? 70,
+                color: "#5c4646",
+                lineWidth: 1,
+                lineStyle: 2,
+                axisLabelVisible: false,
+                title: "",
+              }),
+              next.createPriceLine({
+                price: indicator.levels?.oversold ?? 30,
+                color: "#3d5653",
+                lineWidth: 1,
+                lineStyle: 2,
+                axisLabelVisible: false,
+                title: "",
+              }),
+            );
+          }
+          return next;
+        });
+        entry = { structure, series, pane: indicator.pane, priceLines };
+        a.indicatorSeries.set(indicator.id, entry);
+      }
+      entry.series.forEach((series, index) => {
+        const line = indicator.lines[index];
+        series.applyOptions(line.options);
+        series.setData(line.data);
+      });
+      if (indicator.type === "rsi") {
+        entry.priceLines?.[0]?.applyOptions({
+          price: indicator.levels?.overbought ?? 70,
+        });
+        entry.priceLines?.[1]?.applyOptions({
+          price: indicator.levels?.oversold ?? 30,
+        });
+      }
+    }
+
+    const hasRsi = indicatorDescriptors.some((indicator) => indicator.pane === 2);
+    applyAuxiliaryPaneHeights(a, surface.current, oiVisible, hasRsi);
     a.refresh();
-  }, [maPoints, emaPoints, maVisible, emaVisible, identity]);
+  }, [indicatorDescriptors, identity]);
 
   useEffect(() => {
     const a = api.current;
@@ -296,7 +658,8 @@ export function CandleChart({
     const times = new Set(bars.map((bar) => bar.time));
     a.oiLine.setData(oiVisible ? oiPoints.filter((point) => times.has(point.time)) : []);
     a.oiLine.applyOptions({ visible: oiVisible });
-    a.chart.panes()[1]?.setHeight(oiVisible ? 130 : 30);
+    const hasRsi = indicatorDescriptors.some((indicator) => indicator.pane === 2);
+    applyAuxiliaryPaneHeights(a, surface.current, oiVisible, hasRsi);
     a.refresh();
   }, [
     oiPoints,
@@ -304,7 +667,18 @@ export function CandleChart({
     bars[0]?.time,
     bars.at(-1)?.time,
     identity,
+    indicatorDescriptors,
   ]);
+
+  useEffect(() => {
+    const a = api.current;
+    if (!a) return;
+    const hasRsi = indicatorDescriptors.some((indicator) => indicator.pane === 2);
+    const key = `${surface.current?.clientHeight || 0}:${oiVisible}:${hasRsi}`;
+    if (auxiliaryHeightKey.current === key) return;
+    auxiliaryHeightKey.current = key;
+    applyAuxiliaryPaneHeights(a, surface.current, oiVisible, hasRsi);
+  }, [viewportVersion, oiVisible, indicatorDescriptors]);
 
   const geometry = useMemo(() => {
     void viewportVersion;
@@ -411,6 +785,7 @@ export function CandleChart({
       data-bar-count={bars.length}
       data-oi-count={oiVisible ? alignedOI.length : 0}
       data-drawing-count={drawings.length}
+      data-indicator-count={indicatorDescriptors.length}
     >
       <div ref={el} className="candle-chart-surface" />
       <svg
@@ -485,8 +860,10 @@ export default function ChartPanel({
     [historyState, setHistoryState] = useState("ready"),
     [volume, setVolume] = useState(true),
     [oiVisible, setOiVisible] = useState(true),
-    [maVisible, setMaVisible] = useState(false),
-    [emaVisible, setEmaVisible] = useState(false),
+    [indicators, setIndicators] = useState(() =>
+      decodeChartIndicators(storage.read(`chart-indicators:${mode}`, null)),
+    ),
+    [indicatorSettingsOpen, setIndicatorSettingsOpen] = useState(false),
     [drawMode, setDrawMode] = useState(null),
     [drawingsByChart, setDrawingsByChart] = useState({}),
     [oiData, setOiData] = useState({identity:"",points:[],loading:true,error:""}),
@@ -504,12 +881,22 @@ export default function ChartPanel({
   const drawings = drawingsByChart[drawingKey] || [];
   const historyRequest = useRef({identity, busy:false, ended:false});
   if (historyRequest.current.identity !== identity) historyRequest.current = {identity,busy:false,ended:false};
+  const indicatorStorageKey = `chart-indicators:${mode}`;
   useEffect(() => {
     setDrawMode(null);
   }, [drawingKey]);
   useEffect(() => {
+    setIndicators(decodeChartIndicators(storage.read(indicatorStorageKey, null)));
+    setIndicatorSettingsOpen(false);
+  }, [indicatorStorageKey]);
+  useEffect(() => {
+    storage.write(indicatorStorageKey, encodeChartIndicators(indicators));
+  }, [indicatorStorageKey, indicators]);
+  useEffect(() => {
     const cancelDrawing = (event) => {
-      if (event.key === "Escape") setDrawMode(null);
+      if (event.key !== "Escape") return;
+      setDrawMode(null);
+      setIndicatorSettingsOpen(false);
     };
     window.addEventListener("keydown", cancelDrawing);
     return () => window.removeEventListener("keydown", cancelDrawing);
@@ -642,14 +1029,31 @@ export default function ChartPanel({
   }, [identity,provider,oiVisible,loadedIdentity,bars[0]?.time,bars.at(-1)?.time]);
   const oiPoints = oiData.identity === identity ? oiData.points : [];
   const renderedBars = loadedIdentity === identity ? bars : [];
-  const maPoints = useMemo(
-    () => (maVisible ? simpleMovingAverage(renderedBars) : []),
-    [renderedBars, maVisible],
+  // New WebSocket bars can arrive several times before the browser has an idle
+  // frame. Deferring the expensive indicator recalculation keeps drawing and
+  // chart navigation responsive while still catching up to the live candle.
+  const deferredIndicatorBars = useDeferredValue(renderedBars);
+  const indicatorDescriptors = useMemo(
+    () => makeIndicatorDescriptors(indicators, deferredIndicatorBars),
+    [indicators, deferredIndicatorBars],
   );
-  const emaPoints = useMemo(
-    () => (emaVisible ? exponentialMovingAverage(renderedBars) : []),
-    [renderedBars, emaVisible],
-  );
+  const enabledIndicators = indicators.filter((indicator) => indicator.enabled);
+  const addIndicator = (type) => {
+    setIndicators((current) => createChartIndicator(type, current));
+  };
+  const updateIndicator = (id, patch) => {
+    setIndicators((current) =>
+      normalizeChartIndicators(
+        current.map((indicator) =>
+          indicator.id === id ? { ...indicator, ...patch } : indicator,
+        ),
+      ),
+    );
+  };
+  const removeIndicator = (id) => {
+    setIndicators((current) => current.filter((indicator) => indicator.id !== id));
+  };
+  const resetIndicators = () => setIndicators(decodeChartIndicators(null));
   const addDrawing = (drawing) => {
     setDrawingsByChart((previous) => ({
       ...previous,
@@ -804,24 +1208,32 @@ export default function ChartPanel({
             清除绘制
           </button>
         </div>
-        <div className="chart-tool-group chart-indicators" aria-label="基础指标">
+        <div className="chart-tool-group chart-indicators" aria-label="图表指标">
           <span className="chart-tool-label">指标</span>
-          <label>
-            <input
-              type="checkbox"
-              checked={maVisible}
-              onChange={(event) => setMaVisible(event.target.checked)}
-            />
-            MA20
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={emaVisible}
-              onChange={(event) => setEmaVisible(event.target.checked)}
-            />
-            EMA20
-          </label>
+          <button
+            type="button"
+            className={indicatorSettingsOpen ? "active" : ""}
+            aria-expanded={indicatorSettingsOpen}
+            aria-controls="chart-indicator-settings"
+            onClick={() => setIndicatorSettingsOpen((open) => !open)}
+          >
+            指标设置{enabledIndicators.length ? ` ${enabledIndicators.length}` : ""} ▾
+          </button>
+          {enabledIndicators.slice(0, 3).map((indicator) => (
+            <span
+              key={indicator.id}
+              className="chart-indicator-chip"
+              style={{ "--indicator-color": indicator.color }}
+              title={`${chartIndicatorLabel(indicator)} · 在指标设置中编辑`}
+            >
+              {chartIndicatorLabel(indicator)}
+            </span>
+          ))}
+          {enabledIndicators.length > 3 && (
+            <span className="chart-indicator-chip more">
+              +{enabledIndicators.length - 3}
+            </span>
+          )}
         </div>
         <span className="chart-tool-hint" role="status">
           {drawMode === "trend"
@@ -831,6 +1243,17 @@ export default function ChartPanel({
               : "趋势线拖动绘制 · 水平线点击添加"}
         </span>
       </div>
+      {indicatorSettingsOpen && (
+        <div id="chart-indicator-settings" className="chart-indicator-panel">
+          <IndicatorSettings
+            indicators={indicators}
+            onAdd={addIndicator}
+            onChange={updateIndicator}
+            onRemove={removeIndicator}
+            onReset={resetIndicators}
+          />
+        </div>
+      )}
       <div className="chart-wrap">
         <CandleChart
           bars={renderedBars}
@@ -840,10 +1263,7 @@ export default function ChartPanel({
           onLoadEarlier={loadEarlier}
           oiPoints={oiPoints}
           oiVisible={oiVisible}
-          maPoints={maPoints}
-          emaPoints={emaPoints}
-          maVisible={maVisible}
-          emaVisible={emaVisible}
+          indicatorDescriptors={indicatorDescriptors}
           drawMode={drawMode}
           drawings={drawings}
           onAddDrawing={addDrawing}

@@ -2013,3 +2013,214 @@ kbd {
 @media(max-width:1100px) { .market-summary {gap:7px 12px;} .metric-status {display:none;} }
 .contract-picker {display:flex;gap:6px;margin-top:8px;}
 .contract-picker select,.market-tabs select {background:#111314;color:#8D9195;border:1px solid #202326;border-radius:4px;font-size:11px;padding:4px 6px;max-width:240px;}
+
+/* Configurable chart indicators.  The panel is deliberately part of the
+   terminal tool strip so it does not hide a live chart behind a modal. */
+.chart-indicator-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, var(--indicator-color, #62676b) 52%, #202326);
+  border-radius: 3px;
+  color: var(--indicator-color, #8d9195);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.chart-indicator-chip.more {
+  border-color: #34393c;
+  color: #8d9195;
+}
+.chart-indicator-panel {
+  flex: 0 0 auto;
+  max-height: 232px;
+  overflow: auto;
+  border-bottom: 1px solid #202326;
+  background: #0b0d0e;
+}
+.chart-indicator-settings {
+  padding: 9px 22px 11px;
+  color: #8d9195;
+  font: 10px ui-monospace, monospace;
+}
+.chart-indicator-settings > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.chart-indicator-settings > header strong {
+  display: block;
+  color: #c5c9c7;
+  font-size: 10px;
+  font-weight: 500;
+}
+.chart-indicator-settings > header span {
+  display: block;
+  margin-top: 2px;
+  color: #62676b;
+  font-size: 9px;
+}
+.chart-indicator-settings button {
+  min-height: 24px;
+  padding: 4px 7px;
+  border-color: #2a2e30;
+  border-radius: 3px;
+  color: #aeb5b1;
+  font: 9px ui-monospace, monospace;
+}
+.chart-indicator-settings button:hover {
+  background: #17211d;
+  color: #d4e4d8;
+}
+.indicator-reset {
+  color: #7d8588 !important;
+}
+.indicator-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1c2022;
+}
+.indicator-editor-list {
+  display: grid;
+  gap: 5px;
+  padding-top: 8px;
+}
+.indicator-empty {
+  padding: 5px 0;
+  color: #62676b;
+}
+.indicator-limit {
+  align-self: center;
+  margin-left: auto;
+  color: #62676b;
+  font-size: 8px;
+}
+.indicator-editor-row {
+  display: grid;
+  grid-template-columns: 18px 64px minmax(108px, 1fr) minmax(100px, 1fr) 26px 86px 24px;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 3px 5px;
+  border: 1px solid #1d2123;
+  border-radius: 3px;
+  background: #0e1112;
+}
+.indicator-editor-row.is-enabled {
+  border-color: #35483d;
+  background: #101714;
+}
+.indicator-editor-row select,
+.indicator-editor-row input[type="number"] {
+  width: 100%;
+  min-height: 23px;
+  padding: 3px 5px;
+  border-color: #2a2e30;
+  border-radius: 3px;
+  background: #111416;
+  color: #d4d7d5;
+  font: 9px ui-monospace, monospace;
+}
+.indicator-editor-row > label:not(.indicator-enabled):not(.indicator-color) {
+  display: grid;
+  grid-template-columns: 27px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  color: #737a7d;
+  white-space: nowrap;
+}
+.indicator-enabled {
+  display: grid;
+  place-items: center;
+}
+.indicator-enabled input {
+  margin: 0 !important;
+}
+.indicator-rsi-levels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  min-width: 0;
+}
+.indicator-rsi-levels label {
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  color: #737a7d;
+  white-space: nowrap;
+}
+.indicator-rsi-levels input {
+  width: 100%;
+  min-width: 0;
+}
+.indicator-color {
+  display: grid;
+  place-items: center;
+}
+.indicator-color input {
+  width: 22px;
+  height: 22px;
+  padding: 1px;
+  border: 1px solid #2a2e30;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+}
+.indicator-row-label {
+  overflow: hidden;
+  color: #aeb5b1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.indicator-remove {
+  width: 24px;
+  min-width: 24px;
+  padding: 0 !important;
+  border-color: transparent !important;
+  color: #7d8588 !important;
+  font-size: 15px !important;
+  line-height: 20px;
+}
+.indicator-remove:hover {
+  color: #ef6a6a !important;
+}
+/* The OI information is a chart overlay, not a fixed pseudo-pane.  Keeping it
+   at the top prevents it from drifting into a visible RSI pane. */
+.oi-legend {
+  top: 6px;
+  bottom: auto;
+  padding: 3px 5px;
+  background: #08090ad9;
+}
+
+@media (max-width: 700px) {
+  .chart-indicator-panel { max-height: min(248px, 42dvh); }
+  .chart-indicator-settings { padding: 8px 14px 10px; }
+  .chart-indicator-settings > header span { max-width: 200px; }
+  .indicator-editor-row {
+    grid-template-columns: 18px 56px minmax(104px, 1fr) 25px 72px 23px;
+    gap: 4px;
+  }
+  .indicator-editor-row > label:not(.indicator-enabled):not(.indicator-color) {
+    grid-column: span 2;
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
+  .indicator-row-label { display: none; }
+  .indicator-rsi-levels {
+    grid-column: span 2;
+  }
+  .indicator-rsi-levels label {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+  .chart-indicator-chip { display: none; }
+  .oi-legend {
+    max-width: calc(100% - 22px);
+    font-size: 8px;
+  }
+}
