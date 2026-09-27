@@ -2033,13 +2033,13 @@ kbd {
 }
 .chart-indicator-panel {
   flex: 0 0 auto;
-  max-height: 232px;
+  max-height: 184px;
   overflow: auto;
   border-bottom: 1px solid #202326;
   background: #0b0d0e;
 }
 .chart-indicator-settings {
-  padding: 9px 22px 11px;
+  padding: 7px 22px 8px;
   color: #8d9195;
   font: 10px ui-monospace, monospace;
 }
@@ -2047,142 +2047,114 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 10px;
+  min-height: 24px;
 }
 .chart-indicator-settings > header strong {
-  display: block;
   color: #c5c9c7;
   font-size: 10px;
   font-weight: 500;
 }
-.chart-indicator-settings > header span {
-  display: block;
-  margin-top: 2px;
-  color: #62676b;
-  font-size: 9px;
+.indicator-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
 }
-.chart-indicator-settings button {
-  min-height: 24px;
-  padding: 4px 7px;
-  border-color: #2a2e30;
+.chart-indicator-settings button,
+.indicator-add-select {
+  min-height: 23px;
+  padding: 3px 7px;
+  border: 1px solid #2a2e30;
   border-radius: 3px;
+  background: #0e1112;
   color: #aeb5b1;
   font: 9px ui-monospace, monospace;
 }
-.chart-indicator-settings button:hover {
+.chart-indicator-settings button:hover,
+.indicator-add-select:hover:not(:disabled) {
   background: #17211d;
   color: #d4e4d8;
+}
+.indicator-add-select {
+  max-width: 104px;
+  cursor: pointer;
+}
+.indicator-add-select:disabled {
+  cursor: not-allowed;
+  opacity: .5;
 }
 .indicator-reset {
   color: #7d8588 !important;
 }
-.indicator-add-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #1c2022;
-}
 .indicator-editor-list {
   display: grid;
-  gap: 5px;
-  padding-top: 8px;
-}
-.indicator-empty {
-  padding: 5px 0;
-  color: #62676b;
-}
-.indicator-limit {
-  align-self: center;
-  margin-left: auto;
-  color: #62676b;
-  font-size: 8px;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid #1c2022;
 }
 .indicator-editor-row {
-  display: grid;
-  grid-template-columns: 18px 64px minmax(108px, 1fr) minmax(100px, 1fr) 26px 86px 24px;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  min-height: 30px;
-  padding: 3px 5px;
-  border: 1px solid #1d2123;
+  gap: 5px;
+  min-height: 29px;
+  padding: 3px 6px;
+  border: 1px solid #27302c;
   border-radius: 3px;
   background: #0e1112;
 }
-.indicator-editor-row.is-enabled {
-  border-color: #35483d;
-  background: #101714;
+.indicator-type {
+  flex: 0 0 36px;
+  color: #d4d7d5;
+  font-size: 9px;
+  font-weight: 600;
 }
-.indicator-editor-row select,
-.indicator-editor-row input[type="number"] {
-  width: 100%;
-  min-height: 23px;
-  padding: 3px 5px;
-  border-color: #2a2e30;
+.indicator-control {
+  display: grid;
+  grid-template-columns: 25px 66px;
+  align-items: center;
+  gap: 4px;
+  color: #737a7d;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.indicator-control input[type="number"] {
+  width: 66px;
+  min-height: 22px;
+  padding: 2px 4px;
+  border: 1px solid #2a2e30;
   border-radius: 3px;
   background: #111416;
   color: #d4d7d5;
   font: 9px ui-monospace, monospace;
 }
-.indicator-editor-row > label:not(.indicator-enabled):not(.indicator-color) {
-  display: grid;
-  grid-template-columns: 27px minmax(0, 1fr);
-  align-items: center;
-  gap: 4px;
-  color: #737a7d;
-  white-space: nowrap;
-}
-.indicator-enabled {
-  display: grid;
-  place-items: center;
-}
-.indicator-enabled input {
-  margin: 0 !important;
-}
 .indicator-rsi-levels {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: inline-flex;
+  flex-wrap: wrap;
   gap: 4px;
-  min-width: 0;
-}
-.indicator-rsi-levels label {
-  display: grid;
-  grid-template-columns: 25px minmax(0, 1fr);
-  align-items: center;
-  gap: 3px;
-  min-width: 0;
-  color: #737a7d;
-  white-space: nowrap;
-}
-.indicator-rsi-levels input {
-  width: 100%;
   min-width: 0;
 }
 .indicator-color {
   display: grid;
   place-items: center;
+  margin-left: auto;
 }
 .indicator-color input {
-  width: 22px;
-  height: 22px;
+  width: 21px;
+  height: 21px;
   padding: 1px;
   border: 1px solid #2a2e30;
   border-radius: 3px;
   background: transparent;
   cursor: pointer;
 }
-.indicator-row-label {
-  overflow: hidden;
-  color: #aeb5b1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .indicator-remove {
-  width: 24px;
-  min-width: 24px;
+  width: 22px;
+  min-width: 22px;
   padding: 0 !important;
   border-color: transparent !important;
+  background: transparent !important;
   color: #7d8588 !important;
   font-size: 15px !important;
   line-height: 20px;
@@ -2200,24 +2172,20 @@ kbd {
 }
 
 @media (max-width: 700px) {
-  .chart-indicator-panel { max-height: min(248px, 42dvh); }
-  .chart-indicator-settings { padding: 8px 14px 10px; }
-  .chart-indicator-settings > header span { max-width: 200px; }
+  .chart-indicator-panel { max-height: min(184px, 34dvh); }
+  .chart-indicator-settings { padding: 6px 14px 7px; }
   .indicator-editor-row {
-    grid-template-columns: 18px 56px minmax(104px, 1fr) 25px 72px 23px;
     gap: 4px;
+    padding: 3px 5px;
   }
-  .indicator-editor-row > label:not(.indicator-enabled):not(.indicator-color) {
-    grid-column: span 2;
-    grid-template-columns: 26px minmax(0, 1fr);
-  }
-  .indicator-row-label { display: none; }
+  .indicator-type { flex-basis: 34px; }
+  .indicator-control { grid-template-columns: 24px 58px; }
+  .indicator-control input[type="number"] { width: 58px; }
   .indicator-rsi-levels {
-    grid-column: span 2;
+    width: 100%;
+    padding-left: 39px;
   }
-  .indicator-rsi-levels label {
-    grid-template-columns: 24px minmax(0, 1fr);
-  }
+  .indicator-color { margin-left: 0; }
   .chart-indicator-chip { display: none; }
   .oi-legend {
     max-width: calc(100% - 22px);

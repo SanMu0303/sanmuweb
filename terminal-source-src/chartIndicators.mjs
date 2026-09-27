@@ -1,12 +1,14 @@
 import {
   DEFAULT_BOLLINGER_MULTIPLIER,
-  DEFAULT_INDICATOR_PERIOD,
   normalizeBollingerMultiplier,
   normalizeIndicatorPeriod,
 } from "./chartTools.mjs";
 
-export const CHART_INDICATOR_SCHEMA_VERSION = 1;
+export const CHART_INDICATOR_SCHEMA_VERSION = 2;
+// Eight visible indicators keep a busy chart readable. Disabled presets are
+// stored separately so they do not consume this user-facing limit.
 export const MAX_CHART_INDICATORS = 8;
+const MAX_STORED_CHART_INDICATORS = 16;
 
 export const INDICATOR_TYPES = Object.freeze({
   sma: { label: "MA", defaultPeriod: 20, pane: "main" },
@@ -91,19 +93,18 @@ function normalizedIndicator(raw, index, usedIds) {
   let collision = 2;
   while (usedIds.has(id)) id = `${base}-${collision++}`;
   usedIds.add(id);
-  const defaultPeriod = INDICATOR_TYPES[type].defaultPeriod;
+  const definition = INDICATOR_TYPES[type];
   const indicator = {
     id,
     type,
     enabled: Boolean(raw?.enabled),
     color: colorFor(index, raw?.color),
   };
-  if (defaultPeriod)
-    indicator.period = normalizeIndicatorPeriod(raw?.period, defaultPeriod);
+  if (definition.defaultPeriod)
+    indicator.period = normalizeIndicatorPeriod(raw?.period, definition.defaultPeriod);
   if (type === "bollinger")
     indicator.multiplier = normalizeBollingerMultiplier(raw?.multiplier);
   if (type === "rsi") {
-    const definition = INDICATOR_TYPES.rsi;
     indicator.overbought = normalizeRsiLevel(
       raw?.overbought,
       definition.defaultOverbought,
@@ -128,7 +129,7 @@ export function normalizeChartIndicators(value) {
       : DEFAULT_CHART_INDICATORS;
   const usedIds = new Set();
   return source
-    .slice(0, MAX_CHART_INDICATORS)
+    .slice(0, MAX_STORED_CHART_INDICATORS)
     .map((indicator, index) => normalizedIndicator(indicator, index, usedIds));
 }
 
@@ -143,17 +144,30 @@ export function encodeChartIndicators(indicators) {
   };
 }
 
+export function isDefaultChartIndicator(id) {
+  return DEFAULT_CHART_INDICATORS.some((indicator) => indicator.id === id);
+}
+
 export function createChartIndicator(type, indicators = []) {
   const safe = safeType(type);
   const current = normalizeChartIndicators(indicators);
-  if (safe === "vwap") {
-    const existing = current.find((indicator) => indicator.type === "vwap");
-    if (existing) {
-      return current.map((indicator) =>
-        indicator.id === existing.id ? { ...indicator, enabled: true } : indicator,
-      );
-    }
+  if (current.filter((indicator) => indicator.enabled).length >= MAX_CHART_INDICATORS)
+    return current;
+
+  const inactivePreset = current.find(
+    (indicator) => indicator.type === safe && !indicator.enabled,
+  );
+  if (inactivePreset) {
+    return current.map((indicator) =>
+      indicator.id === inactivePreset.id ? { ...indicator, enabled: true } : indicator,
+    );
   }
+
+  // VWAP has a single daily-session anchor. Adding the same one twice would
+  // only stack identical lines on top of each other.
+  if (safe === "vwap" && current.some((indicator) => indicator.type === "vwap"))
+    return current;
+
   const sequence = current.filter((indicator) => indicator.type === safe).length + 1;
   const definition = INDICATOR_TYPES[safe];
   const usedIds = new Set(current.map((indicator) => indicator.id));
@@ -183,7 +197,7 @@ export function createChartIndicator(type, indicators = []) {
     current.length,
     usedIds,
   );
-  return [...current, next].slice(0, MAX_CHART_INDICATORS);
+  return [...current, next].slice(0, MAX_STORED_CHART_INDICATORS);
 }
 
 export function chartIndicatorLabel(indicator) {

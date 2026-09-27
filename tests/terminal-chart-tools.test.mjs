@@ -11,7 +11,9 @@ import {
 } from "../terminal-source-src/chartTools.mjs";
 import {
   createChartIndicator,
+  DEFAULT_CHART_INDICATORS,
   decodeChartIndicators,
+  MAX_CHART_INDICATORS,
   encodeChartIndicators,
   normalizeChartIndicators,
 } from "../terminal-source-src/chartIndicators.mjs";
@@ -117,7 +119,13 @@ test("VWAP resets on the next UTC session", () => {
 
 test("indicator preferences retain multiple moving averages and safe periods", () => {
   const defaults = decodeChartIndicators(null);
-  const withSecondAverage = createChartIndicator("sma", defaults);
+  const withFirstAverage = createChartIndicator("sma", defaults);
+  const firstAverage = withFirstAverage.find((item) => item.type === "sma");
+  assert.equal(withFirstAverage.filter((item) => item.type === "sma").length, 1);
+  assert.equal(firstAverage.period, 20);
+  assert.equal(firstAverage.enabled, true);
+
+  const withSecondAverage = createChartIndicator("sma", withFirstAverage);
   assert.equal(withSecondAverage.filter((item) => item.type === "sma").length, 2);
   assert.equal(withSecondAverage.at(-1).period, 50);
   assert.equal(withSecondAverage.at(-1).enabled, true);
@@ -142,4 +150,17 @@ test("indicator preferences retain multiple moving averages and safe periods", (
   const withVwap = createChartIndicator("vwap", defaults);
   assert.equal(withVwap.filter((item) => item.type === "vwap").length, 1);
   assert.equal(withVwap.find((item) => item.type === "vwap").enabled, true);
+
+  const fullSet = Array.from({ length: MAX_CHART_INDICATORS }, (_, index) => ({
+    id: `sma-full-${index}`,
+    type: "sma",
+    period: index + 2,
+    enabled: true,
+  }));
+  const hiddenPreset = DEFAULT_CHART_INDICATORS.find(
+    (indicator) => indicator.id === "ema-20",
+  );
+  const atLimit = createChartIndicator("ema", [...fullSet, hiddenPreset]);
+  assert.equal(atLimit.filter((item) => item.enabled).length, MAX_CHART_INDICATORS);
+  assert.equal(atLimit.find((item) => item.id === "ema-20").enabled, false);
 });

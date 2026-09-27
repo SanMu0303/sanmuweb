@@ -32,6 +32,7 @@ import {
   decodeChartIndicators,
   encodeChartIndicators,
   INDICATOR_TYPES,
+  isDefaultChartIndicator,
   MAX_CHART_INDICATORS,
   normalizeChartIndicators,
 } from "../chartIndicators.mjs";
@@ -162,178 +163,142 @@ function makeIndicatorDescriptors(indicators, bars) {
     });
 }
 
+function NumberControl({ label, ariaLabel, value, min, max, step = "1", onCommit }) {
+  return (
+    <label className="indicator-control">
+      <span>{label}</span>
+      <input
+        key={`${ariaLabel}:${value}`}
+        aria-label={ariaLabel}
+        type="number"
+        inputMode="decimal"
+        min={min}
+        max={max}
+        step={step}
+        defaultValue={value}
+        onBlur={(event) => onCommit(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.currentTarget.blur();
+        }}
+      />
+    </label>
+  );
+}
+
 function IndicatorSettings({ indicators, onAdd, onChange, onRemove, onReset }) {
+  const activeIndicators = indicators.filter((indicator) => indicator.enabled);
+  const atLimit = activeIndicators.length >= MAX_CHART_INDICATORS;
+
   return (
     <section className="chart-indicator-settings" aria-label="图表指标设置">
       <header>
-        <div>
-          <strong>指标设置</strong>
-          <span>可同时叠加多根均线；周期范围 2–500</span>
-        </div>
-        <button type="button" className="indicator-reset" onClick={onReset}>
-          恢复默认
-        </button>
-      </header>
-      <div className="indicator-add-row" aria-label="添加指标">
-        {Object.entries(INDICATOR_TYPES).map(([type, definition]) => (
-          <button
-            key={type}
-            type="button"
-            disabled={indicators.length >= MAX_CHART_INDICATORS && type !== "vwap"}
-            onClick={() => onAdd(type)}
+        <strong>指标设置</strong>
+        <div className="indicator-actions">
+          <select
+            className="indicator-add-select"
+            aria-label="添加指标"
+            defaultValue=""
+            disabled={atLimit}
+            title={atLimit ? `最多同时显示 ${MAX_CHART_INDICATORS} 项指标` : "添加指标"}
+            onChange={(event) => {
+              const type = event.currentTarget.value;
+              if (!type) return;
+              onAdd(type);
+              event.currentTarget.value = "";
+            }}
           >
-            ＋ {definition.label}
+            <option value="" disabled>
+              ＋ 添加指标
+            </option>
+            {Object.entries(INDICATOR_TYPES).map(([type, definition]) => (
+              <option value={type} key={type}>
+                {definition.label}
+              </option>
+            ))}
+          </select>
+          <button type="button" className="indicator-reset" onClick={onReset}>
+            恢复默认
           </button>
-        ))}
-        <span className="indicator-limit">最多 {MAX_CHART_INDICATORS} 项</span>
-      </div>
-      <div className="indicator-editor-list">
-        {!indicators.length && (
-          <p className="indicator-empty">尚未添加指标，可从上方选择。</p>
-        )}
-        {indicators.map((indicator) => {
-          const definition = INDICATOR_TYPES[indicator.type];
-          const supportsPeriod = Boolean(definition.defaultPeriod);
-          return (
-            <div
-              className={`indicator-editor-row${indicator.enabled ? " is-enabled" : ""}`}
-              key={indicator.id}
-            >
-              <label className="indicator-enabled" title="显示或隐藏指标">
-                <input
-                  type="checkbox"
-                  checked={indicator.enabled}
-                  onChange={(event) =>
-                    onChange(indicator.id, { enabled: event.target.checked })
-                  }
-                />
-                <span className="sr-only">{chartIndicatorLabel(indicator)}</span>
-              </label>
-              <select
-                aria-label={`${chartIndicatorLabel(indicator)} 指标类型`}
-                value={indicator.type}
-                onChange={(event) =>
-                  onChange(indicator.id, { type: event.target.value })
-                }
-              >
-                {Object.entries(INDICATOR_TYPES).map(([type, item]) => (
-                  <option value={type} key={type}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-              {supportsPeriod && (
-                <label>
-                  <span>周期</span>
-                  <input
-                    key={`${indicator.id}:period:${indicator.period}`}
-                    aria-label={`${definition.label} 周期`}
-                    type="number"
-                    inputMode="numeric"
+        </div>
+      </header>
+      {activeIndicators.length ? (
+        <div className="indicator-editor-list">
+          {activeIndicators.map((indicator) => {
+            const definition = INDICATOR_TYPES[indicator.type];
+            const isPreset = isDefaultChartIndicator(indicator.id);
+            return (
+              <div className={`indicator-editor-row type-${indicator.type}`} key={indicator.id}>
+                <strong className="indicator-type">{definition.label}</strong>
+                {definition.defaultPeriod ? (
+                  <NumberControl
+                    label="周期"
+                    ariaLabel={`${definition.label} 周期`}
+                    value={indicator.period}
                     min="2"
                     max="500"
-                    defaultValue={indicator.period}
-                    onBlur={(event) =>
-                      onChange(indicator.id, { period: event.target.value })
-                    }
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") event.currentTarget.blur();
-                    }}
+                    onCommit={(period) => onChange(indicator.id, { period })}
                   />
-                </label>
-              )}
-              {indicator.type === "bollinger" && (
-                <label>
-                  <span>倍数</span>
-                  <input
-                    key={`${indicator.id}:multiplier:${indicator.multiplier}`}
-                    aria-label="布林带倍数"
-                    type="number"
-                    inputMode="decimal"
+                ) : null}
+                {indicator.type === "bollinger" ? (
+                  <NumberControl
+                    label="倍数"
+                    ariaLabel="布林带倍数"
+                    value={indicator.multiplier}
                     min="0.1"
                     max="10"
                     step="0.1"
-                    defaultValue={indicator.multiplier}
-                    onBlur={(event) =>
-                      onChange(indicator.id, {
-                        multiplier: event.target.value,
-                      })
+                    onCommit={(multiplier) =>
+                      onChange(indicator.id, { multiplier })
                     }
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") event.currentTarget.blur();
-                    }}
                   />
-                </label>
-              )}
-              {indicator.type === "rsi" && (
-                <div className="indicator-rsi-levels">
-                  <label>
-                    <span>超买</span>
-                    <input
-                      key={`${indicator.id}:overbought:${indicator.overbought}`}
-                      aria-label="RSI 超买"
-                      type="number"
-                      inputMode="decimal"
+                ) : null}
+                {indicator.type === "rsi" ? (
+                  <div className="indicator-rsi-levels">
+                    <NumberControl
+                      label="超买"
+                      ariaLabel="RSI 超买"
+                      value={indicator.overbought}
                       min="50"
                       max="100"
-                      step="1"
-                      defaultValue={indicator.overbought}
-                      onBlur={(event) =>
-                        onChange(indicator.id, { overbought: event.target.value })
+                      onCommit={(overbought) =>
+                        onChange(indicator.id, { overbought })
                       }
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") event.currentTarget.blur();
-                      }}
                     />
-                  </label>
-                  <label>
-                    <span>超卖</span>
-                    <input
-                      key={`${indicator.id}:oversold:${indicator.oversold}`}
-                      aria-label="RSI 超卖"
-                      type="number"
-                      inputMode="decimal"
+                    <NumberControl
+                      label="超卖"
+                      ariaLabel="RSI 超卖"
+                      value={indicator.oversold}
                       min="0"
                       max="50"
-                      step="1"
-                      defaultValue={indicator.oversold}
-                      onBlur={(event) =>
-                        onChange(indicator.id, { oversold: event.target.value })
-                      }
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") event.currentTarget.blur();
-                      }}
+                      onCommit={(oversold) => onChange(indicator.id, { oversold })}
                     />
-                  </label>
-                </div>
-              )}
-              <label className="indicator-color" title="指标线颜色">
-                <span className="sr-only">{chartIndicatorLabel(indicator)} 颜色</span>
-                <input
-                  aria-label={`${chartIndicatorLabel(indicator)} 颜色`}
-                  type="color"
-                  value={indicator.color}
-                  onChange={(event) =>
-                    onChange(indicator.id, { color: event.target.value })
-                  }
-                />
-              </label>
-              <span className="indicator-row-label">
-                {chartIndicatorLabel(indicator)}
-              </span>
-              <button
-                type="button"
-                className="indicator-remove"
-                aria-label={`删除 ${chartIndicatorLabel(indicator)}`}
-                title="删除指标"
-                onClick={() => onRemove(indicator.id)}
-              >
-                ×
-              </button>
-            </div>
-          );
-        })}
-      </div>
+                  </div>
+                ) : null}
+                <label className="indicator-color" title="指标线颜色">
+                  <span className="sr-only">{chartIndicatorLabel(indicator)} 颜色</span>
+                  <input
+                    aria-label={`${chartIndicatorLabel(indicator)} 颜色`}
+                    type="color"
+                    value={indicator.color}
+                    onChange={(event) =>
+                      onChange(indicator.id, { color: event.target.value })
+                    }
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="indicator-remove"
+                  aria-label={`${isPreset ? "隐藏" : "移除"} ${chartIndicatorLabel(indicator)}`}
+                  title={isPreset ? "隐藏指标" : "移除指标"}
+                  onClick={() => onRemove(indicator.id)}
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -1051,7 +1016,13 @@ export default function ChartPanel({
     );
   };
   const removeIndicator = (id) => {
-    setIndicators((current) => current.filter((indicator) => indicator.id !== id));
+    setIndicators((current) =>
+      isDefaultChartIndicator(id)
+        ? current.map((indicator) =>
+            indicator.id === id ? { ...indicator, enabled: false } : indicator,
+          )
+        : current.filter((indicator) => indicator.id !== id),
+    );
   };
   const resetIndicators = () => setIndicators(decodeChartIndicators(null));
   const addDrawing = (drawing) => {
