@@ -15,7 +15,7 @@ export default function TerminalPage() {
     <section className="trend-signal-terminal-shell" aria-label="趋势交易信号工作台">
       <iframe
         className="trend-signal-terminal-frame"
-        src="/terminal-source/index.html?build=20260927-live-fallback-v4"
+        src="/terminal-source/index.html?build=20260927-clear-history-v1"
         title="趋势交易信号工作台"
         allow="clipboard-write; fullscreen"
         referrerPolicy="same-origin"
