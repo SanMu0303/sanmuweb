@@ -5,6 +5,8 @@ export default function SignalFeed({
   onSelect,
   selected,
   counts,
+  historyCount,
+  onClearHistory,
   statusTab,
   onStatus,
   status,
@@ -13,7 +15,18 @@ export default function SignalFeed({
     <aside className="signal-feed">
       <div className="panel-heading">
         <h2>信号流</h2>
-        <span className="eyebrow">SIGNAL QUEUE</span>
+        <div className="feed-heading-actions">
+          <button
+            type="button"
+            className="clear-signal-history"
+            disabled={!historyCount}
+            onClick={onClearHistory}
+            title="清除所有已推送的历史信号；后续新信号仍会正常显示"
+          >
+            清除
+          </button>
+          <span className="eyebrow">SIGNAL QUEUE</span>
+        </div>
       </div>
       <div className="status-tabs" aria-label="信号状态">
         {[

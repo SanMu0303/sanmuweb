@@ -18,6 +18,11 @@ import SignalFilters from "./components/SignalFilters.jsx";
 import { shortcutAction, navigationTarget } from "./shortcuts.mjs";
 import { activeSignals, filterSignals, signalStatus } from "./filters.mjs";
 import { decorateContractHeatItems, directBinanceContractHeat } from "./contractHeat.mjs";
+import {
+  normalizeSignalHistoryClearedAt,
+  SIGNAL_HISTORY_CLEAR_STORAGE_KEY,
+  signalsAfterHistoryClear,
+} from "./signalHistory.mjs";
 
 function Settings({ config, onSave, onClose }) {
   const [error, setError] = useState("");
@@ -92,7 +97,15 @@ function Settings({ config, onSave, onClose }) {
 function Desk({ mode, onMode }) {
   const key = (k) => (mode === "LIVE" ? "LIVE:usdm" : mode) + ":" + k;
   const [signals, setSignals] = useState(() =>
-      activeSignals(storage.read(key("signals"), [])),
+      signalsAfterHistoryClear(
+        activeSignals(storage.read(key("signals"), [])),
+        storage.read(key(SIGNAL_HISTORY_CLEAR_STORAGE_KEY), 0),
+      ),
+    ),
+    [signalHistoryClearedAt, setSignalHistoryClearedAt] = useState(() =>
+      normalizeSignalHistoryClearedAt(
+        storage.read(key(SIGNAL_HISTORY_CLEAR_STORAGE_KEY), 0),
+      ),
     ),
     [watchlist, setWatchlist] = useState(() =>
       storage.read(key("watchlist"), mode === "DEMO" ? demoWatchlist : []),
@@ -131,11 +144,19 @@ function Desk({ mode, onMode }) {
     [watchOpen, setWatchOpen] = useState(false);
   const navigation = useRef([]),
     previewed = useRef(false),
+    signalHistoryClearRef = useRef(signalHistoryClearedAt),
     heatRanks = useRef(new Map()),
     heatHasSnapshot = useRef(false);
   const provider = providers[mode];
   useEffect(() => {
-    const values = { signals, watchlist, plans, ignored, filters };
+    const values = {
+      signals,
+      watchlist,
+      plans,
+      ignored,
+      filters,
+      [SIGNAL_HISTORY_CLEAR_STORAGE_KEY]: signalHistoryClearedAt,
+    };
     const valuesFailed = Object.entries(values).some(([k, v]) =>
       !storage.write(key(k), v),
     );
@@ -144,7 +165,10 @@ function Desk({ mode, onMode }) {
       encodeScannerConfig(config),
     );
     setStorageError(valuesFailed || !configSaved);
-  }, [signals, watchlist, plans, ignored, filters, config]);
+  }, [signals, signalHistoryClearedAt, watchlist, plans, ignored, filters, config]);
+  useEffect(() => {
+    signalHistoryClearRef.current = signalHistoryClearedAt;
+  }, [signalHistoryClearedAt]);
   useEffect(() => {
     let alive = true;
     let timer = null;
@@ -251,7 +275,15 @@ function Desk({ mode, onMode }) {
         if (alive) {
           setStatus(result.status);
           setSignals((prev) =>
-            acceptSignals(result.signals, prev, ignored, config),
+            acceptSignals(
+              signalsAfterHistoryClear(
+                result.signals,
+                signalHistoryClearRef.current,
+              ),
+              prev,
+              ignored,
+              config,
+            ),
           );
         }
       } catch (e) {
@@ -273,7 +305,15 @@ function Desk({ mode, onMode }) {
               setStatus(result.status);
               if (result.signals.length)
                 setSignals((prev) =>
-                  acceptSignals(result.signals, prev, ignored, config),
+                  acceptSignals(
+                    signalsAfterHistoryClear(
+                      result.signals,
+                      signalHistoryClearRef.current,
+                    ),
+                    prev,
+                    ignored,
+                    config,
+                  ),
                 );
             },
             () => {
@@ -381,6 +421,31 @@ function Desk({ mode, onMode }) {
     ...selection,
     signal:
       classified.find((s) => s.id === selection.signal?.id) || selection.signal,
+  };
+  const clearSignalHistory = () => {
+    const clearedCount = signals.length;
+    const clearedAt = Date.now();
+    signalHistoryClearRef.current = clearedAt;
+    const signalsSaved = storage.write(key("signals"), []);
+    const cutoffSaved = storage.write(
+      key(SIGNAL_HISTORY_CLEAR_STORAGE_KEY),
+      clearedAt,
+    );
+    if (!signalsSaved || !cutoffSaved) setStorageError(true);
+    setSignalHistoryClearedAt(clearedAt);
+    setSignals([]);
+    navigation.current = [];
+    previewed.current = false;
+    setSelection((current) => ({
+      symbol: current.symbol,
+      timeframe: current.timeframe,
+    }));
+    setStatusTab("unread");
+    setNotice(
+      clearedCount
+        ? `已清除 ${clearedCount} 条历史信号 · 实时扫描继续运行`
+        : "没有可清除的历史信号",
+    );
   };
   const select = (s, capture = true) => {
     previewed.current = true;
@@ -582,6 +647,8 @@ function Desk({ mode, onMode }) {
           onSelect={select}
           selected={selection.signal?.id}
           counts={counts}
+          historyCount={signals.length}
+          onClearHistory={clearSignalHistory}
           statusTab={statusTab}
           onStatus={(s) => {
             setStatusTab(s);
